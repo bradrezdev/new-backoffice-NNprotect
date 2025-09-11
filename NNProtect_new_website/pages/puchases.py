@@ -430,8 +430,7 @@ def purchases() -> rx.Component:
                                     rx.vstack(
                                         rx.box(
                                             rx.icon("package-check", size=24, color="#FFFFFF"),
-                                            #bg="#0BD43A",
-                                            bg="#6B7280" + "70",
+                                            bg="#0BD43A",
                                             border_radius="50%",
                                             padding="10px",
                                         ),

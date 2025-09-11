@@ -49,7 +49,7 @@ def sidebar_item(text: str, icon: str, href: str) -> rx.Component:
                     "bg": rx.color("accent", 4),
                     "color": rx.color("accent", 11),
                 },
-                "border-radius": "0.5rem",
+                "border-radius": "1rem",
             },
         ),
         href=href,
@@ -71,7 +71,7 @@ def sidebar_subitem(text: str, href: str) -> rx.Component:
                     "bg": rx.color("accent", 4),
                     "color": rx.color("accent", 11),
                 },
-                "border-radius": "0.5rem",
+                "border-radius": "1rem",
             },
         ),
         href=href,
@@ -84,7 +84,6 @@ def desktop_sidebar() -> rx.Component:
     return rx.box(
         rx.vstack(
             rx.image(src="/nnprotect_logo.png", height="5vh", position="top", margin="auto"),
-            rx.spacer(),
             rx.spacer(),
             rx.spacer(),
             rx.spacer(),
@@ -111,17 +110,6 @@ def desktop_sidebar() -> rx.Component:
             sidebar_item("Tickets/Soporte", "messages-square", "/tickets"),
             sidebar_item("Tienda", "store", "/store"),
             sidebar_item("Herramientas", "folder-cog", "/tools"),
-            rx.button(
-                "Cerrar sesión",
-                bg=rx.color_mode_cond(
-                    light=Custom_theme().light_colors()["secondary"],
-                    dark=Custom_theme().light_colors()["secondary"],
-                ),
-                border_radius="16px",
-                height="48px",
-                margin_top="32px",
-                width="100%",
-            ),
             spacing="2",
             width="100%",
         ),
@@ -134,8 +122,12 @@ def desktop_sidebar() -> rx.Component:
             light=Custom_theme().light_colors()["box_shadow"],
             dark=Custom_theme().dark_colors()["box_shadow"],
         ),
-        justify="start",
-        padding="40px 20px 40px 20px",
+        top="128px",
+        left="2vw",
+        z_index="1",
+        position="fixed",
+        align="start",
+        padding="32px 20px 16px 20px",
         height="auto",
         max_width="16vw",
     )
@@ -208,9 +200,9 @@ def main_container_derecha(*children):
         rx.vstack(
             *children,
         ),
-        margin_left="24px",
+        margin_left="240px",
         width="77vw",  # Cambiado de 60vw a 100%
-        flex="1",      # Para que ocupe el espacio restante
+        #flex="1",      # Para que ocupe el espacio restante
     )
 
 def mobile_header():
