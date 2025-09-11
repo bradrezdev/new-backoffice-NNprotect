@@ -3,12 +3,13 @@
 import reflex as rx
 from ..theme import Custom_theme
 from rxconfig import config
-from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar
+from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
 
 def income_reports() -> rx.Component:
     return rx.center(
         rx.desktop_only(
             rx.vstack(
+                logged_in_user(),
                 rx.hstack(
                     desktop_sidebar(),
                     main_container_derecha(
@@ -142,8 +143,8 @@ def income_reports() -> rx.Component:
                     ),
                     width="100%",
                 ),
-                justify="center",
-                margin_top="120px",
+                align="end",
+                margin_top="8em",
                 margin_bottom="2em",
                 max_width="1920px",
             )

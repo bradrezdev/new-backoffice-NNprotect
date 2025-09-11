@@ -3,7 +3,7 @@
 import reflex as rx
 from ..theme import Custom_theme
 from rxconfig import config
-from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar
+from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
 
 def network_reports() -> rx.Component:
 	"""Página de reportes de red"""
@@ -12,6 +12,7 @@ def network_reports() -> rx.Component:
 		rx.desktop_only(
 			# Solo se muestra en escritorio
 			rx.vstack(
+				logged_in_user(), # Muestra el usuario logueado en la esquina superior derecha
 				# Contenedor vertical principal
 				rx.hstack(
 					# Contenedor horizontal para sidebar y contenido principal
@@ -385,8 +386,8 @@ def network_reports() -> rx.Component:
 					width="100%",
 				),
 				# Propiedades vstack que contiene el contenido de la página
-				justify="center",
-				margin_top="120px",
+				align="end",
+				margin_top="8em",
 				margin_bottom="2em",
 				max_width="1920px",
 				width="100%",

@@ -3,13 +3,14 @@
 import reflex as rx
 from ..theme import Custom_theme
 from rxconfig import config
-from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar
+from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
 
 def register() -> rx.Component:
     # Welcome Page (Index)
     return rx.center(
         rx.desktop_only(
             rx.vstack(
+                logged_in_user(), # Muestra el usuario logueado en la esquina superior derecha
                 rx.hstack(
                     desktop_sidebar(),
                     # Container de la derecha. Contiene el formulario de registro.
@@ -263,9 +264,10 @@ def register() -> rx.Component:
                     width="100%", # Propiedad necesaria para que el contenedor quede centrado no importa si la ventana es muy grande.
                 ),
                 # Propiedades vstack que contiene el contenido de la página.
-                justify="center",  # --- Propiedades rx.vstack ---
-                margin_top="120px",
+                align="end",
+                margin_top="8em",
                 margin_bottom="2em",
+                width="100%",
                 max_width="1920px",
             )
         ),

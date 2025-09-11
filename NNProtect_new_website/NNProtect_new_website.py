@@ -11,7 +11,7 @@ from .pages.store import store
 from .pages.income_reports import income_reports
 
 # --- Components ---
-from .layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar
+from .layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
 from .theme import Custom_theme
 from rxconfig import config
 
@@ -22,6 +22,7 @@ def index() -> rx.Component:
         rx.desktop_only(
             # Solo se muestra en escritorio
             rx.vstack(
+                logged_in_user(),
                 # Contenedor vertical principal
                 rx.hstack(
                     # Contenedor horizontal para sidebar y contenido principal
@@ -267,8 +268,8 @@ def index() -> rx.Component:
                     width="100%",                  # Ancho completo (Propiedad necesaria para que el contenedor quede centrado no importa si la ventana es muy grande.)
                 ),
                 # Propiedades vstack que contiene el contenido de la página.
-                justify="center",           # Centrado vertical
-                margin_top="120px",         # Espacio superior
+                align="end",           # Centrado vertical
+                margin_top="8em",         # Espacio superior
                 margin_bottom="2em",        # Espacio inferior
                 width="100%",
                 max_width="1920px",         # Ancho máximo
@@ -576,7 +577,7 @@ def index() -> rx.Component:
         position="absolute",            # Posición absoluta
         width="100%",                  # Ancho de la ventana
     )
-app = rx.App(theme=rx.theme(appearance="light"))
+app = rx.App(theme=rx.theme(appearance="inherit"))
 
 app.add_page(index, title="NN Protect | Dashboard")
 app.add_page(login, title="NN Protect | Iniciar sesión", route="/login")

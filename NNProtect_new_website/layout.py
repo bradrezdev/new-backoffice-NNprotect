@@ -1,6 +1,36 @@
 import reflex as rx
 from .theme import Custom_theme
 
+
+#############################################
+# --- Componentes para la cuenta activa --- #
+#############################################
+
+def logged_in_user() -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.image(src="/user_avatar.png", width="40px", border_radius="full", margin_right="8px"),
+            rx.text("Bryan Núñez", font_size="1rem", font_weight="medium", margin_right="16px"),
+            rx.icon("ellipsis-vertical", size=20, margin_left="4px"),
+            align="center",
+            padding="12px 24px 12px 24px",
+        ),
+        top="32px",
+        z_index="10",
+        position="fixed",
+        border_radius="32px",
+        bg=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["traslucid-background"],
+            dark=Custom_theme().dark_colors()["traslucid-background"]
+        ),
+        box_shadow=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["box_shadow"],
+            dark=Custom_theme().dark_colors()["box_shadow"],
+        ),
+        backdrop_filter="blur(8px)",  # Efecto de desenfoque (blur)
+        align="end",
+    )
+
 #######################################
 # --- Componentes para el sidebar --- #
 #######################################
