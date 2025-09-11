@@ -3,8 +3,7 @@
 import reflex as rx
 from ..theme import Custom_theme
 from rxconfig import config
-from ..layout import main_container_derecha, mobile_header
-from ..state import desktop_sidebar, mobile_sidebar
+from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar
 
 def register() -> rx.Component:
     # Welcome Page (Index)

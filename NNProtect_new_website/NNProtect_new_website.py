@@ -11,10 +11,9 @@ from .pages.store import store
 from .pages.income_reports import income_reports
 
 # --- Components ---
+from .layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar
 from .theme import Custom_theme
-from .state import desktop_sidebar, mobile_sidebar
 from rxconfig import config
-from .layout import main_container_derecha, mobile_header
 
 def index() -> rx.Component:
     # Welcome Page (Index)
@@ -268,7 +267,7 @@ def index() -> rx.Component:
                 justify="center",           # Centrado vertical
                 margin_top="120px",         # Espacio superior
                 margin_bottom="2em",        # Espacio inferior
-                max_width="1440px",         # Ancho máximo
+                max_width="1920px",         # Ancho máximo
             )
         ),
         
@@ -573,7 +572,7 @@ def index() -> rx.Component:
         position="absolute",            # Posición absoluta
         width="100%",                  # Ancho de la ventana
     )
-app = rx.App(theme=rx.theme(appearance="dark"))
+app = rx.App(theme=rx.theme(appearance="light"))
 
 app.add_page(index, title="NN Protect | Dashboard")
 app.add_page(login, title="NN Protect | Iniciar sesión", route="/login")
