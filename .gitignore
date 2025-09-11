@@ -5,3 +5,5 @@ assets/external/
 *.db
 .web
 .git*
+.DS_Store
+._*

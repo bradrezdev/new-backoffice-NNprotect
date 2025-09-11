@@ -107,7 +107,7 @@ def desktop_sidebar() -> rx.Component:
         justify="start",
         padding="40px 20px 40px 20px",
         height="auto",
-        width="16vw",
+        max_width="16vw",
     )
 
 def mobile_sidebar() -> rx.Component:
@@ -178,8 +178,8 @@ def main_container_derecha(*children):
         rx.vstack(
             *children,
         ),
-        #margin_left="px",
-        width="80vw",  # Cambiado de 60vw a 100%
+        margin_left="24px",
+        width="77vw",  # Cambiado de 60vw a 100%
         flex="1",      # Para que ocupe el espacio restante
     )
 

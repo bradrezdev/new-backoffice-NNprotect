@@ -254,17 +254,19 @@ def register() -> rx.Component:
 
                                 ),
                                 spacing="9",  # --- Propiedades rx.hstack ---
-                                width="139%",
+                                width="100%",
                             ),
                             # Propiedades @Main container de la derecha
+                            width="100%", # Ancho total del contenido de la página
                         ),
-                    )
+                    ),
+                    width="100%", # Propiedad necesaria para que el contenedor quede centrado no importa si la ventana es muy grande.
                 ),
                 # Propiedades vstack que contiene el contenido de la página.
                 justify="center",  # --- Propiedades rx.vstack ---
                 margin_top="120px",
                 margin_bottom="2em",
-                max_width="1440px",
+                max_width="1920px",
             )
         ),
         

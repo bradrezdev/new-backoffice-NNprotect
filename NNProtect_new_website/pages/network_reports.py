@@ -381,13 +381,14 @@ def network_reports() -> rx.Component:
 							# Propiedades del vstack principal
 							width="100%",
 						),
-					)
+					),
+					width="100%",
 				),
 				# Propiedades vstack que contiene el contenido de la página
 				justify="center",
 				margin_top="120px",
 				margin_bottom="2em",
-				max_width="1440px",
+				max_width="1920px",
 				width="100%",
 			),
 			#width="100%",

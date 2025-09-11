@@ -259,14 +259,18 @@ def index() -> rx.Component:
                                     margin_top="1em",
                                 ),
                             ),
+                            # Propiedades del vstack que contiene el contenido de la página
+                            width="100%", # Ancho total del contenido de la página
                         ),
-                    )
+                    ),
                     # Propiedades de flex dentro del vstack que contiene el contenido de la página.
+                    width="100%",                  # Ancho completo (Propiedad necesaria para que el contenedor quede centrado no importa si la ventana es muy grande.)
                 ),
                 # Propiedades vstack que contiene el contenido de la página.
                 justify="center",           # Centrado vertical
                 margin_top="120px",         # Espacio superior
                 margin_bottom="2em",        # Espacio inferior
+                width="100%",
                 max_width="1920px",         # Ancho máximo
             )
         ),

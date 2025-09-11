@@ -137,14 +137,15 @@ def income_reports() -> rx.Component:
                             ),
                             
                             spacing="4",
-                            width="100%"
+                            width="100%",
                         )
-                    )
+                    ),
+                    width="100%",
                 ),
                 justify="center",
                 margin_top="120px",
                 margin_bottom="2em",
-                max_width="1440px",
+                max_width="1920px",
             )
         ),
         

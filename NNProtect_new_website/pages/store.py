@@ -121,7 +121,7 @@ def store() -> rx.Component:
                 justify="center",  # --- Propiedades rx.vstack ---
                 margin_top="120px",
                 margin_bottom="2em",
-                max_width="1440px",
+                max_width="1920px",
             )
         ),
         
