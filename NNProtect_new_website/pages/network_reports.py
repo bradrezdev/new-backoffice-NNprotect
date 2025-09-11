@@ -27,7 +27,7 @@ def network_reports() -> rx.Component:
 								"Reportes de Red",
 								font_size="2rem",
 								font_weight="bold",
-								margin_bottom="1.5rem"
+								margin_bottom="0.1em"
 							),
 							
 							# Secciones de detalles del usuario y patrocinador
@@ -123,7 +123,6 @@ def network_reports() -> rx.Component:
 									width="50%",
 									#box_shadow=Custom_theme().light_colors()["box_shadow"]
 								),
-								
 								spacing="4",
 								width="100%"
 							),

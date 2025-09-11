@@ -18,7 +18,7 @@ def income_reports() -> rx.Component:
                                 "Reportes de ingresos",
                                 font_size="2rem",
                                 font_weight="bold",
-                                margin_bottom="1rem"
+                                margin_bottom="0.1em"
                             ),
                             
                             # Resumen de ingresos

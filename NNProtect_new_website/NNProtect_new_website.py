@@ -9,6 +9,7 @@ from .pages.login import login
 from .pages.new_register import register
 from .pages.store import store
 from .pages.income_reports import income_reports
+from .pages.puchases import purchases
 
 # --- Components ---
 from .layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
@@ -586,3 +587,4 @@ app.add_page(network, title="NN Protect | Red", route="/network")
 app.add_page(network_reports, title="NN Protect | Reportes de Red", route="/network_reports")
 app.add_page(income_reports, title="NN Protect | Reportes de Ingresos", route="/income_reports")
 app.add_page(store, title="NN Protect | Tienda", route="/store")
+app.add_page(purchases, title="NN Protect | Compras", route="/purchases")
