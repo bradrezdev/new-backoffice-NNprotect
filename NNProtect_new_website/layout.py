@@ -106,7 +106,7 @@ def desktop_sidebar() -> rx.Component:
             ),
             sidebar_item("Compras", "scroll-text", "/purchases"),
             sidebar_item("Tienda", "store", "/store"),
-            sidebar_item("Billetera", "wallet", "/wallet"),
+            sidebar_item("Retiros", "wallet", "/withdrawals"),
             sidebar_item("NN Travels", "plane", "/travels"),
             sidebar_item("Tickets/Soporte", "messages-square", "/tickets"),
             sidebar_item("Herramientas", "folder-cog", "/tools"),

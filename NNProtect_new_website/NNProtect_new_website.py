@@ -10,6 +10,8 @@ from .pages.new_register import register
 from .pages.store import store
 from .pages.income_reports import income_reports
 from .pages.puchases import purchases
+from .pages.withdrawals import withdrawals
+from .pages.new_withdrawal import new_withdrawal
 
 # --- Components ---
 from .layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
@@ -219,13 +221,17 @@ def index() -> rx.Component:
                                     width="25%",
                                 ),
                                 rx.vstack(
-                                    rx.button(
-                                        "Solicitar comisiones",
-                                        bg="#0039F2",
-                                        color="white",
-                                        border_radius="32px",
+                                    rx.link(
+                                        rx.button(
+                                            "Solicitar comisiones",
+                                            bg="#0039F2",
+                                            color="white",
+                                            border_radius="32px",
+                                            width="100%",
+                                        ),
                                         width="100%",
                                         height="40px",
+                                        href="/new_withdrawal",
                                     ),
                                     rx.button(
                                         "Transferencia interna",
@@ -588,3 +594,5 @@ app.add_page(network_reports, title="NN Protect | Reportes de Red", route="/netw
 app.add_page(income_reports, title="NN Protect | Reportes de Ingresos", route="/income_reports")
 app.add_page(store, title="NN Protect | Tienda", route="/store")
 app.add_page(purchases, title="NN Protect | Compras", route="/purchases")
+app.add_page(withdrawals, title="NN Protect | Retiros", route="/withdrawals")
+app.add_page(new_withdrawal, title="NN Protect | Nuevo Retiro", route="/new_withdrawal")
