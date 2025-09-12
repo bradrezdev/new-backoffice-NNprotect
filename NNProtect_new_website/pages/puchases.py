@@ -82,7 +82,7 @@ def purchases() -> rx.Component:
                                         direction="row",
                                     ),
                                     rx.flex(
-                                        rx.badge("Pagado", color_scheme="green", font_size="0.8em", border_radius="12px", padding="0.2em 1em"),
+                                        rx.badge("Pendiente", color_scheme="orange", font_size="0.8em", border_radius="12px", padding="0.2em 1em"),
                                         rx.button(
                                             rx.icon("download", size=16),
                                             "PDF",
@@ -104,7 +104,7 @@ def purchases() -> rx.Component:
                                     rx.vstack(
                                         rx.box(
                                             rx.icon("clipboard-clock", size=24, color="#FFFFFF"),
-                                            bg="#E1E115",
+                                            bg="#6B7280" + "70",
                                             border_radius="50%",
                                             padding="10px",
                                         ),
@@ -114,7 +114,7 @@ def purchases() -> rx.Component:
                                     rx.vstack(
                                         rx.box(
                                             rx.icon("package-open", size=24, color="#FFFFFF"),
-                                            bg="#B4D012",
+                                            bg="#6B7280" + "70",
                                             border_radius="50%",
                                             padding="10px",
                                         ),
@@ -124,7 +124,7 @@ def purchases() -> rx.Component:
                                     rx.vstack(
                                         rx.box(
                                             rx.icon("truck", size=24, color="#FFFFFF"),
-                                            bg="#64D012",
+                                            bg="#6B7280" + "70",
                                             border_radius="50%",
                                             padding="10px",
                                         ),
@@ -511,7 +511,7 @@ def purchases() -> rx.Component:
                                         size="6",
                                     ),
                                     rx.heading(
-                                        "$1746.50 MXN",
+                                        "$349.30 MXN",
                                         color=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["secondary"],
                                             dark=Custom_theme().light_colors()["secondary"],
@@ -532,7 +532,7 @@ def purchases() -> rx.Component:
                                         rx.hstack(
                                             rx.icon("calendar", size=20, color="#6B7280"),
                                             rx.text(
-                                                "10 de septiembre de 2025 - 09:53",
+                                                "07 de junio de 2025 - 10:21",
                                                 font_size="0.9em",
                                                 color="#6B7280"
                                             ),
@@ -548,7 +548,7 @@ def purchases() -> rx.Component:
                                         rx.hstack(
                                             rx.icon("credit-card", size=20, color="#6B7280"),
                                             rx.text(
-                                                "Tarjeta de crédito",
+                                                "Tarjeta de débito",
                                                 font_size="0.9em",
                                                 color="#6B7280"
                                             ),
@@ -556,7 +556,7 @@ def purchases() -> rx.Component:
                                         rx.hstack(
                                             rx.icon("container", size=20, color="#6B7280"),
                                             rx.text(
-                                                "CEDIS: Oficina de Guadalajara",
+                                                "Dinomiciio del cliente",
                                                 font_size="0.9em",
                                                 color="#6B7280"
                                             ),
@@ -565,7 +565,7 @@ def purchases() -> rx.Component:
                                         direction="row",
                                     ),
                                     rx.flex(
-                                        rx.badge("Pagado", color_scheme="green", font_size="0.8em", border_radius="12px", padding="0.2em 1em"),
+                                        rx.badge("Cancelado", color_scheme="red", font_size="0.8em", border_radius="12px", padding="0.2em 1em"),
                                         rx.button(
                                             rx.icon("download", size=16),
                                             "PDF",
@@ -597,7 +597,7 @@ def purchases() -> rx.Component:
                                     rx.vstack(
                                         rx.box(
                                             rx.icon("package-open", size=24, color="#FFFFFF"),
-                                            bg="#B4D012",
+                                            bg="#6B7280" + "70",
                                             border_radius="50%",
                                             padding="10px",
                                         ),
@@ -607,7 +607,7 @@ def purchases() -> rx.Component:
                                     rx.vstack(
                                         rx.box(
                                             rx.icon("truck", size=24, color="#FFFFFF"),
-                                            bg="#64D012",
+                                            bg="#6B7280" + "70",
                                             border_radius="50%",
                                             padding="10px",
                                         ),
@@ -697,7 +697,7 @@ def purchases() -> rx.Component:
                 ),
                 align="end",
                 margin_top="8em",
-                margin_bottom="2em",
+                margin_bottom="0.2em",
                 max_width="1920px",
             )
         ),

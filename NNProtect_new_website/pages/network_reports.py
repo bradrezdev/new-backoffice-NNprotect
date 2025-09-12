@@ -696,7 +696,7 @@ def network_reports() -> rx.Component:
 					border_radius="16px",
 					padding="16px",
 					width="100%",
-					margin_bottom="1rem"
+					margin_bottom="0.4em",
 				),
 				# Propiedades del vstack móvil
 				width="100%",
