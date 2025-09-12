@@ -1,6 +1,94 @@
 import reflex as rx
 from .theme import Custom_theme
 
+############################################
+# --- Componente links + cuenta activa --- #
+############################################
+
+def header() -> rx.Component:
+    return rx.hstack(
+        rx.spacer(),
+        quick_links(),
+        logged_in_user(),
+        width="95%",
+        position="fixed",
+        top="24px",
+        #left="13%",
+        z_index="10",
+        justify="between",
+    )
+
+##########################################
+# --- Componentes para links rápidos --- #
+##########################################
+
+def quick_links() -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.link(
+                rx.button(
+                    "Nuevo registro",
+                    height="40px",
+                    variant="solid",
+                    border_radius="32px",
+                    padding="24px 12px",
+                    _hover={"opacity": 0.9},
+                )
+            ),
+            rx.link(
+                rx.button(
+                    "Reportes de red",
+                    height="40px",
+                    variant="solid",
+                    border_radius="32px",
+                    padding="24px 12px",
+                    _hover={"opacity": 0.9},
+                )
+            ),
+            rx.link(
+                rx.button(
+                    "Detalles de comisiones",
+                    height="40px",
+                    variant="solid",
+                    border_radius="32px",
+                    padding="24px 12px",
+                    _hover={"opacity": 0.9},
+                )
+            ),
+            rx.link(
+                rx.button(
+                    "Solicitar comisiones",
+                    height="40px",
+                    variant="solid",
+                    border_radius="32px",
+                    padding="24px 12px",
+                    _hover={"opacity": 0.9},
+                )
+            ),
+            rx.link(
+                rx.button(
+                    "Transferencia interna",
+                    height="40px",
+                    variant="solid",
+                    border_radius="32px",
+                    padding="24px 12px",
+                    _hover={"opacity": 0.9},
+                )
+            ),
+        ),
+        border_radius="32px",
+        padding="8px",
+        bg=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["traslucid-background"],
+            dark=Custom_theme().dark_colors()["traslucid-background"]
+        ),
+        box_shadow=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["box_shadow"],
+            dark=Custom_theme().dark_colors()["box_shadow"],
+        ),
+        backdrop_filter="blur(8px)",  # Efecto de desenfoque (blur)
+    )
+
 
 #############################################
 # --- Componentes para la cuenta activa --- #
@@ -15,9 +103,9 @@ def logged_in_user() -> rx.Component:
             align="center",
             padding="12px 24px 12px 24px",
         ),
-        top="32px",
-        z_index="10",
-        position="fixed",
+        #top="32px",
+        #z_index="10",
+        #position="fixed",
         border_radius="32px",
         bg=rx.color_mode_cond(
             light=Custom_theme().light_colors()["traslucid-background"],
@@ -28,7 +116,7 @@ def logged_in_user() -> rx.Component:
             dark=Custom_theme().dark_colors()["box_shadow"],
         ),
         backdrop_filter="blur(8px)",  # Efecto de desenfoque (blur)
-        align="end",
+        #align="end",
     )
 
 #######################################
