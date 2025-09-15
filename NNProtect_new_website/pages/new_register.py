@@ -460,9 +460,9 @@ def register() -> rx.Component:
                                 dark=Custom_theme().dark_colors()["primary"]
                             ),
                             color="white",
-                            border_radius="12px",
+                            border_radius="29px",
                             width="100%",
-                            height="50px",
+                            height="64px",
                             font_size="1.1rem",
                             font_weight="bold",
                             type="submit"

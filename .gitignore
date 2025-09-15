@@ -7,3 +7,4 @@ assets/external/
 .git*
 .DS_Store
 ._*
+create_pwa_files.py

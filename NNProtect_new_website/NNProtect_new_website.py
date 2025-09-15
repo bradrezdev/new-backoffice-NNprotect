@@ -17,6 +17,7 @@ from .pages.new_withdrawal import new_withdrawal
 # --- Components ---
 from .layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 from .theme import Custom_theme
+from .status_bar import pwa_meta_tags, wrap_page_with_statusbar  # ← NUEVO IMPORT
 from rxconfig import config
 
 def index() -> rx.Component:
