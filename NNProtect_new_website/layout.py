@@ -8,7 +8,7 @@ from .theme import Custom_theme
 def header() -> rx.Component:
     return rx.hstack(
         rx.spacer(),
-        quick_links(),
+        #quick_links(),
         logged_in_user(),
         width="95%",
         position="fixed",
@@ -21,7 +21,7 @@ def header() -> rx.Component:
 ##########################################
 # --- Componentes para links rápidos --- #
 ##########################################
-
+"""
 def quick_links() -> rx.Component:
     return rx.box(
         rx.hstack(
@@ -88,7 +88,7 @@ def quick_links() -> rx.Component:
         ),
         backdrop_filter="blur(8px)",  # Efecto de desenfoque (blur)
     )
-
+"""
 
 #############################################
 # --- Componentes para la cuenta activa --- #

@@ -3,7 +3,7 @@
 import reflex as rx
 from ..theme import Custom_theme
 from rxconfig import config
-from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
+from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 
 def orders() -> rx.Component:
 	"""Página que muestra todas las órdenes del usuario"""
@@ -11,7 +11,7 @@ def orders() -> rx.Component:
 		# Versión de escritorio
 		rx.desktop_only(
 			rx.vstack(
-				logged_in_user(),  # Muestra el usuario logueado en la esquina superior derecha
+				header(),  # Muestra el usuario logueado en la esquina superior derecha
 				rx.hstack(
 					desktop_sidebar(),
 					main_container_derecha(

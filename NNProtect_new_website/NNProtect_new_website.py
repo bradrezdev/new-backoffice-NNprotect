@@ -276,7 +276,7 @@ def index() -> rx.Component:
                     width="100%",                  # Ancho completo (Propiedad necesaria para que el contenedor quede centrado no importa si la ventana es muy grande.)
                 ),
                 # Propiedades vstack que contiene el contenido de la página.
-                #justify="end",        # Centrado vertical
+                align="end",        # Centrado vertical
                 margin_top="8em",         # Espacio superior
                 margin_bottom="2em",      # Espacio inferior
                 width="100%",
