@@ -590,7 +590,17 @@ def index() -> rx.Component:
         position="absolute",            # Posición absoluta
         width="100%",                  # Ancho de la ventana
     )
-app = rx.App(theme=rx.theme(appearance="inherit"))
+
+pwa_meta = rx.el.meta(
+    name="apple-mobile-web-app-status-bar-style",
+    content="black-translucent"
+)
+app = rx.App(
+    theme=rx.theme(appearance="inherit"),
+    head_components=[
+        pwa_meta
+    ]
+)
 
 app.add_page(index, title="NN Protect | Dashboard")
 app.add_page(login, title="NN Protect | Iniciar sesión", route="/login")

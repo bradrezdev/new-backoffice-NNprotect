@@ -477,7 +477,7 @@ def register() -> rx.Component:
                     width="100%",
                     padding="10px",
                     margin_top="80px",
-                    margin_bottom="1em"
+                    margin_bottom="15px"
                 ),
                 
                 width="100%",
