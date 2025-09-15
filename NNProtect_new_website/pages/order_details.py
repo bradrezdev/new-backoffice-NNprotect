@@ -5,7 +5,7 @@ from ..theme import Custom_theme
 from rxconfig import config
 from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
 
-def purchases() -> rx.Component:
+def order_details() -> rx.Component:
     return rx.center(
         rx.desktop_only(
             rx.vstack(

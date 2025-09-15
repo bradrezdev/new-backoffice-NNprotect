@@ -10,6 +10,7 @@ class Custom_theme():
             "tertiary": "#FFFFFF",
             "background": "#F2F3F8",
             "traslucid-background": "rgba(255, 255, 255, 0.5)",
+            "traslucid-background-blue": "rgba(0, 57, 242, 0.8)",
             "text": "#000000",
             "border": "#0039F2",
             "box_shadow": "0px 0px 16px 3px #5E79FF10"

@@ -9,7 +9,8 @@ from .pages.login import login
 from .pages.new_register import register
 from .pages.store import store
 from .pages.income_reports import income_reports
-from .pages.puchases import purchases
+from .pages.orders import orders
+from .pages.order_details import order_details
 from .pages.withdrawals import withdrawals
 from .pages.new_withdrawal import new_withdrawal
 
@@ -593,6 +594,7 @@ app.add_page(network, title="NN Protect | Red", route="/network")
 app.add_page(network_reports, title="NN Protect | Reportes de Red", route="/network_reports")
 app.add_page(income_reports, title="NN Protect | Reportes de Ingresos", route="/income_reports")
 app.add_page(store, title="NN Protect | Tienda", route="/store")
-app.add_page(purchases, title="NN Protect | Compras", route="/purchases")
+app.add_page(orders, title="NN Protect | Órdenes", route="/orders")
+app.add_page(order_details, title="NN Protect | Detalles de Orden", route="/order_details")
 app.add_page(withdrawals, title="NN Protect | Retiros", route="/withdrawals")
 app.add_page(new_withdrawal, title="NN Protect | Nuevo Retiro", route="/new_withdrawal")
