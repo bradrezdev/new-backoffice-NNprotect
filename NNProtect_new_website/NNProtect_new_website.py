@@ -316,10 +316,9 @@ def index() -> rx.Component:
                                 spacing="1"
                             ),
                             bg="#32D74B",
-                            padding="1rem",
-                            border_radius="16px",
+                            padding="16px",
+                            border_radius="29px",
                             width="100%",
-                            cursor="pointer",
                             on_click=lambda: rx.redirect("/network_reports")
                         ),
                         rx.box(
@@ -332,8 +331,8 @@ def index() -> rx.Component:
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            padding="1rem",
-                            border_radius="16px",
+                            padding="16px",
+                            border_radius="29px",
                             width="100%"
                         ),
                         rx.box(
@@ -344,8 +343,8 @@ def index() -> rx.Component:
                             ),
                             bg="#0039F2",
                             color="white",
-                            padding="1rem",
-                            border_radius="16px",
+                            padding="16px",
+                            border_radius="29px",
                             width="100%"
                         ),
                         rx.box(
@@ -356,8 +355,8 @@ def index() -> rx.Component:
                             ),
                             bg="#5E79FF",
                             color="white",
-                            padding="1rem",
-                            border_radius="16px",
+                            padding="16px",
+                            border_radius="29px",
                             width="100%"
                         ),
                         rx.box(
@@ -370,8 +369,8 @@ def index() -> rx.Component:
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            padding="1rem",
-                            border_radius="12px",
+                            padding="16px",
+                            border_radius="29px",
                             width="100%"
                         ),
                         rx.box(
@@ -384,8 +383,8 @@ def index() -> rx.Component:
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            padding="1rem",
-                            border_radius="12px",
+                            padding="16px",
+                            border_radius="29px",
                             width="100%"
                         ),
                         columns="2",
@@ -409,10 +408,9 @@ def index() -> rx.Component:
                             spacing="2"
                         ),
                         bg="#5E79FF",
-                        padding="1.5rem",
-                        border_radius="16px",
+                        padding="16px",
+                        border_radius="29px",
                         width="100%",
-                        margin_bottom="1.5rem",
                         cursor="pointer",
                         on_click=lambda: rx.redirect("/network_reports")
                     ),
@@ -422,10 +420,11 @@ def index() -> rx.Component:
                         rx.vstack(
                             rx.text("Enlace de referido", font_size="0.9rem", font_weight="bold", margin_bottom="0.5rem"),
                             rx.input(
-                                value="nnprotect.com.mx/ref=244",
+                                width="100%",
+                                value="https://nnprotect.com.mx/ref=244",
                                 read_only=True,
-                                border_radius="8px",
-                                font_size="0.8rem"
+                                border_radius="13px",
+                                font_size="0.8rem",
                             ),
                             spacing="2"
                         ),
@@ -433,10 +432,9 @@ def index() -> rx.Component:
                             light=Custom_theme().light_colors()["tertiary"],
                             dark=Custom_theme().dark_colors()["tertiary"]
                         ),
-                        padding="1rem",
-                        border_radius="12px",
+                        padding="16px",
+                        border_radius="29px",
                         width="100%",
-                        margin_bottom="1.5rem"
                     ),
                     
                     # Reporte de usuarios móvil
@@ -460,10 +458,9 @@ def index() -> rx.Component:
                             light=Custom_theme().light_colors()["tertiary"],
                             dark=Custom_theme().dark_colors()["tertiary"]
                         ),
-                        padding="1rem",
-                        border_radius="12px",
+                        padding="16px",
+                        border_radius="29px",
                         width="100%",
-                        margin_bottom="1.5rem"
                     ),
                     
                     # Finanzas móvil
@@ -476,8 +473,8 @@ def index() -> rx.Component:
                             ),
                             bg="#0039F2",
                             color="white",
-                            padding="1rem",
-                            border_radius="12px",
+                            padding="16px",
+                            border_radius="29px",
                             width="100%"
                         ),
                         rx.hstack(
@@ -491,9 +488,9 @@ def index() -> rx.Component:
                                     light=Custom_theme().light_colors()["tertiary"],
                                     dark=Custom_theme().dark_colors()["tertiary"]
                                 ),
-                                padding="1rem",
-                                border_radius="12px",
-                                width="48%"
+                                padding="16px",
+                                border_radius="29px",
+                                width="49%"
                             ),
                             rx.box(
                                 rx.vstack(
@@ -505,9 +502,9 @@ def index() -> rx.Component:
                                     light=Custom_theme().light_colors()["tertiary"],
                                     dark=Custom_theme().dark_colors()["tertiary"]
                                 ),
-                                padding="1rem",
-                                border_radius="12px",
-                                width="48%"
+                                padding="16px",
+                                border_radius="29px",
+                                width="49%"
                             ),
                             justify="between",
                             width="100%"
@@ -518,28 +515,31 @@ def index() -> rx.Component:
                                     "Solicitar comisiones",
                                     bg="#0039F2",
                                     color="white",
-                                    border_radius="32px",
+                                    border_radius="22px",
+                                    height="48px",
                                     width="100%",
                                 ),
                                 width="100%",
-                                height="40px",
                                 href="/new_withdrawal",
                             ),
-                            rx.button(
-                                "Transferencia interna",
-                                bg=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["tertiary"],
-                                    dark=Custom_theme().dark_colors()["tertiary"]
+                            rx.link(
+                                rx.button(
+                                    "Transferencia interna",
+                                    bg=rx.color_mode_cond(
+                                        light=Custom_theme().light_colors()["tertiary"],
+                                        dark=Custom_theme().dark_colors()["tertiary"]
+                                    ),
+                                    color=rx.color_mode_cond(
+                                        light=Custom_theme().light_colors()["text"],
+                                        dark=Custom_theme().dark_colors()["text"]
+                                    ),
+                                    border="1px solid #0039F2",
+                                    border_radius="22px",
+                                    height="48px",
+                                    width="100%",
                                 ),
-                                border="1px solid #0039F2",
-                                color=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["text"],
-                                    dark=Custom_theme().dark_colors()["text"]
-                                ),
-                                border_radius="12px",
                                 width="100%",
-                                height="40px",
-                                font_size="0.9rem"
+                                href="/",
                             ),
                             spacing="2",
                             width="100%"
