@@ -205,13 +205,11 @@ def store() -> rx.Component:
                     
                     spacing="4",
                     width="100%",
-                    padding="1rem",
+                    padding="1em",
                     margin_top="80px",
-                    margin_bottom="2rem"
                 ),
-                
-                width="100%"
-            )
+            ),
+            width="100%",
         ),
         
         # Propiedades del contenedor principal.

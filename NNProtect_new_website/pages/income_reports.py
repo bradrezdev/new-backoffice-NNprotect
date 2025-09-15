@@ -294,18 +294,14 @@ def income_reports() -> rx.Component:
                         padding="1rem",
                         width="100%"
                     ),
-                    
                     spacing="4",
                     width="100%",
                     padding="1rem",
                     margin_top="80px"
                 ),
-                
-                width="100%",
-                height="100%"
-            )
+            ),
+            width="100%",
         ),
-        
         bg=rx.color_mode_cond(
             light=Custom_theme().light_colors()["background"],
             dark=Custom_theme().dark_colors()["background"]

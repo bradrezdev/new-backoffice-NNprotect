@@ -521,58 +521,53 @@ def new_withdrawal() -> rx.Component:
                                 border="1px solid rgba(37, 99, 235, 0.2)",
                                 border_radius="12px",
                                 padding="16px",
-                                margin_bottom="1.5em",
                                 width="100%"
                             ),
-                            
-                            # Botones de acción (móvil)
-                            rx.vstack(
-                                rx.button(
-                                    rx.icon("send", size=16),
-                                    "Enviar solicitud",
-                                    bg=Custom_theme().light_colors()["primary"],
-                                    color="white",
-                                    size="3",
-                                    border_radius="12px",
-                                    padding="16px",
-                                    _hover={"opacity": 0.9},
-                                    width="100%"
-                                ),
-                                rx.button(
-                                    "Cancelar",
-                                    variant="outline",
-                                    size="2",
-                                    border_radius="10px",
-                                    padding="12px",
-                                    width="100%",
-                                    _hover={"opacity": 0.8}
-                                ),
-                                spacing="2",
-                                width="100%"
-                            )
                         ),
                         bg=rx.color_mode_cond(
                             light=Custom_theme().light_colors()["tertiary"],
                             dark=Custom_theme().dark_colors()["tertiary"]
                         ),
                         border_radius="20px",
-                        padding="24px",
+                        padding="16px",
                         box_shadow="0 2px 4px rgba(0, 0, 0, 0.05)",
                         width="100%",
-                        margin_bottom="32px"
+                        margin_bottom="1em"
                     ),
                     
+                    rx.vstack(
+                        rx.button(
+                            rx.icon("send", size=16),
+                            "Enviar solicitud",
+                            bg=Custom_theme().light_colors()["primary"],
+                            color="white",
+                            size="3",
+                            border_radius="12px",
+                            padding="16px",
+                            _hover={"opacity": 0.9},
+                            width="100%"
+                        ),
+                        rx.button(
+                            "Cancelar",
+                            variant="outline",
+                            size="2",
+                            border_radius="10px",
+                            padding="12px",
+                            width="100%",
+                            _hover={"opacity": 0.8}
+                        ),
+                        spacing="2",
+                        width="100%"
+                    ),
+
                     # Propiedades del vstack principal móvil
                     width="100%",
                     padding="16px",
                 ),
-                
-                # Sidebar móvil
-                mobile_sidebar(),
-            )
+            ),
+            width="100%",
         ),
-        width="100vw",
-        height="100%",
+        width="100%",
         bg=rx.color_mode_cond(
             light=Custom_theme().light_colors()["background"],
             dark=Custom_theme().dark_colors()["background"],

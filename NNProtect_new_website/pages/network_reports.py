@@ -401,10 +401,9 @@ def network_reports() -> rx.Component:
 		
 		# Versión móvil
 		rx.mobile_only(
-			rx.vstack(
-				# Encabezado de la página móvil
-				mobile_header(),
-				
+			# Encabezado de la página móvil
+			mobile_header(),
+			rx.vstack(				
 				# Sección de detalles del usuario (móvil)
 				rx.box(
 					rx.vstack(
@@ -826,8 +825,9 @@ def network_reports() -> rx.Component:
 					margin_bottom="0.4em",
 				),
 				# Propiedades del vstack móvil
-				width="100%",
-			)
+				padding="1em",
+			),
+			width="100%",
 		),
 		
 		bg=rx.color_mode_cond(

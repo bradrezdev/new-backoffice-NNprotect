@@ -578,7 +578,8 @@ def index() -> rx.Component:
                     dark=Custom_theme().dark_colors()["background"]
                 ),
                 width="100%",
-            )
+            ),
+            width="100%",
         ),
         # Propiedades del contenedor principal.
         bg=rx.color_mode_cond(

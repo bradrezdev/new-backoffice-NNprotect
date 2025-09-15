@@ -704,7 +704,7 @@ def orders() -> rx.Component:
 					),
 					spacing="4",
 					width="100%",
-					#padding="1em",
+					padding="1em",
 					margin_top="80px",
 					margin_bottom="0.2em"
 				),
@@ -712,9 +712,8 @@ def orders() -> rx.Component:
 					light=Custom_theme().light_colors()["background"],
 					dark=Custom_theme().dark_colors()["background"]
 				),
-				width="100%",
-				min_height="100vh"
 			),
+			width="100%"
 		),
 		# Propiedades del contenedor principal.
 		bg=rx.color_mode_cond(

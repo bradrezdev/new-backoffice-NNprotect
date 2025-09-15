@@ -141,7 +141,7 @@ def withdrawals() -> rx.Component:
                                 rx.box(
                                     rx.vstack(
                                         rx.hstack(
-                                            rx.icon("check-circle", size=16, color="#2563eb"),
+                                            rx.icon("check-check", size=16, color="#2563eb"),
                                             rx.text("Completados", font_size="0.9rem", color="gray"),
                                             align="center",
                                             spacing="2"
@@ -181,7 +181,7 @@ def withdrawals() -> rx.Component:
                                 rx.box(
                                     rx.vstack(
                                         rx.hstack(
-                                            rx.icon("x-circle", size=16, color="#dc2626"),
+                                            rx.icon("x", size=16, color="#dc2626"),
                                             rx.text("Rechazados", font_size="0.9rem", color="gray"),
                                             align="center",
                                             spacing="2"
@@ -470,8 +470,26 @@ def withdrawals() -> rx.Component:
                             width="100%"
                         ),
                         spacing="2",
-                        margin_bottom="1.5em",
+                        margin_bottom="1em",
                         width="100%"
+                    ),
+
+                    # Botón nuevo retiro móvil
+                    rx.link(
+                        rx.button(
+                            rx.icon("plus", size=16),
+                            "Nuevo retiro",
+                            bg=Custom_theme().light_colors()["primary"],
+                            color="white",
+                            size="3",
+                            border_radius="12px",
+                            padding="16px",
+                            width="100%",
+                            margin_bottom="1em",
+                            _hover={"opacity": 0.9}
+                        ),
+                        href="/new_withdrawal",
+                        width="100%",
                     ),
                     
                     # Lista de retiros móvil (cards en lugar de tabla)
@@ -563,27 +581,12 @@ def withdrawals() -> rx.Component:
                         margin_bottom="1em"
                     ),
                     
-                    # Botón nuevo retiro móvil
-                    rx.button(
-                        rx.icon("plus", size=16),
-                        "Nuevo retiro",
-                        bg=Custom_theme().light_colors()["primary"],
-                        color="white",
-                        size="3",
-                        border_radius="12px",
-                        padding="16px",
-                        width="100%",
-                        _hover={"opacity": 0.9}
-                    ),
-                    
                     # Propiedades del vstack principal móvil
                     width="100%",
                     padding="16px",
                 ),
-                
-                # Sidebar móvil
-                mobile_sidebar(),
-            )
+            ),
+            width="100%",
         ),
         width="100vw",
         height="100%",

@@ -424,9 +424,8 @@ def order_details() -> rx.Component:
                     margin_top="80px",
                     margin_bottom="2rem"
                 ),
-                
-                width="100%"
-            )
+            ),
+            width="100%",
         ),
 
         bg=rx.color_mode_cond(
