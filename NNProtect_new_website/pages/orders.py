@@ -157,7 +157,7 @@ def orders() -> rx.Component:
 														size="2",
 														variant="soft",
 														color_scheme="blue",
-														on_click=lambda: rx.redirect("/purchases")
+														on_click=lambda: rx.redirect("/order_details")
 													),
 													rx.button(
 														rx.icon("download", size=16),
@@ -199,7 +199,7 @@ def orders() -> rx.Component:
 														size="2",
 														variant="soft",
 														color_scheme="blue",
-														on_click=lambda: rx.redirect("/purchases")
+														on_click=lambda: rx.redirect("/order_details")
 													),
 													rx.button(
 														rx.icon("download", size=16),
@@ -241,7 +241,7 @@ def orders() -> rx.Component:
 														size="2",
 														variant="soft",
 														color_scheme="blue",
-														on_click=lambda: rx.redirect("/purchases")
+														on_click=lambda: rx.redirect("/order_details")
 													),
 													rx.button(
 														rx.icon("download", size=16),
@@ -283,7 +283,7 @@ def orders() -> rx.Component:
 														size="2",
 														variant="soft",
 														color_scheme="blue",
-														on_click=lambda: rx.redirect("/purchases")
+														on_click=lambda: rx.redirect("/order_details")
 													),
 													rx.button(
 														rx.icon("download", size=16),
@@ -325,7 +325,7 @@ def orders() -> rx.Component:
 														size="2",
 														variant="soft",
 														color_scheme="blue",
-														on_click=lambda: rx.redirect("/purchases")
+														on_click=lambda: rx.redirect("/order_details")
 													),
 													rx.button(
 														rx.icon("download", size=16),
@@ -500,7 +500,7 @@ def orders() -> rx.Component:
 										width="48%",
 										height="36px",
 										font_size="0.85rem",
-										on_click=lambda: rx.redirect("/purchases")
+										on_click=lambda: rx.redirect("/order_details")
 									),
 									rx.button(
 										rx.icon("download", size=14),
@@ -577,7 +577,7 @@ def orders() -> rx.Component:
 										width="48%",
 										height="36px",
 										font_size="0.85rem",
-										on_click=lambda: rx.redirect("/purchases")
+										on_click=lambda: rx.redirect("/order_details")
 									),
 									rx.button(
 										rx.icon("download", size=14),
@@ -654,7 +654,7 @@ def orders() -> rx.Component:
 										width="48%",
 										height="36px",
 										font_size="0.85rem",
-										on_click=lambda: rx.redirect("/purchases")
+										on_click=lambda: rx.redirect("/order_details")
 									),
 									rx.button(
 										rx.icon("download", size=14),

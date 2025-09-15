@@ -246,10 +246,10 @@ def mobile_sidebar() -> rx.Component:
                 width="100%",
             ),
             sidebar_item("Órdenes", "scroll-text", "/orders"),
-            sidebar_item("NN Travels", "plane", "/travels"),
-            sidebar_item("Billetera", "wallet", "/wallet"),
-            sidebar_item("Tickets/Soporte", "messages-square", "/tickets"),
             sidebar_item("Tienda", "store", "/store"),
+            sidebar_item("Retiros", "wallet", "/withdrawals"),
+            sidebar_item("NN Travels", "plane", "/travels"),
+            sidebar_item("Tickets/Soporte", "messages-square", "/tickets"),
             sidebar_item("Herramientas", "folder-cog", "/tools"),
             rx.button(
                 "Cerrar sesión",

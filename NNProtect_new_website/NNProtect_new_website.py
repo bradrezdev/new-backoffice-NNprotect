@@ -512,14 +512,17 @@ def index() -> rx.Component:
                             width="100%"
                         ),
                         rx.vstack(
-                            rx.button(
-                                "Solicitar comisiones",
-                                bg="#0039F2",
-                                color="white",
-                                border_radius="12px",
+                            rx.link(
+                                rx.button(
+                                    "Solicitar comisiones",
+                                    bg="#0039F2",
+                                    color="white",
+                                    border_radius="32px",
+                                    width="100%",
+                                ),
                                 width="100%",
-                                height="45px",
-                                font_size="0.9rem"
+                                height="40px",
+                                href="/new_withdrawal",
                             ),
                             rx.button(
                                 "Transferencia interna",

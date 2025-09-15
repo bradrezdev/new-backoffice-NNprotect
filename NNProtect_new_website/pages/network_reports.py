@@ -75,8 +75,8 @@ def network_reports() -> rx.Component:
 									),
 									border_radius="24px",
 									padding="24px",
-									width="50%",
-									#box_shadow=Custom_theme().light_colors()["box_shadow"]
+									width="45%",
+									margin_right="1rem"
 								),
 								
 								# Sección de detalles del patrocinador
@@ -110,6 +110,7 @@ def network_reports() -> rx.Component:
 												width="50%"
 											),
 											width="100%",
+											align="stretch",
 										),
 										spacing="3",
 										width="100%"
@@ -120,11 +121,11 @@ def network_reports() -> rx.Component:
 									),
 									border_radius="24px",
 									padding="24px",
-									width="50%",
-									#box_shadow=Custom_theme().light_colors()["box_shadow"]
+									width="55%"
 								),
-								spacing="4",
-								width="100%"
+								width="100%",
+								align="stretch",
+								margin_bottom="1.5rem"
 							),
 							
 							# Sección de reporte de volumen
@@ -136,11 +137,12 @@ def network_reports() -> rx.Component:
 										font_weight="bold",
 										margin_bottom="1rem"
 									),
+									# Métricas principales
 									rx.hstack(
 										rx.vstack(
 											rx.text("Volumen personal:", font_weight="bold"),
 											rx.text("2,930", color="#32D74B", font_size="2rem"),
-											align="start",
+											align="center",
 											spacing="1"
 										),
 										rx.vstack(
@@ -152,103 +154,106 @@ def network_reports() -> rx.Component:
 										rx.vstack(
 											rx.text("Siguiente rango:", font_weight="bold"),
 											rx.text("1,300,000", color="#5E79FF", font_size="2rem"),
-											align="end",
+											align="center",
 											spacing="1"
 										),
 										justify="between",
 										width="100%"
 									),
-									# Tabla de volumen por niveles y meses
+									rx.divider(),
+									# Tabla de volúmenes
+									rx.text("Detalle por niveles:", font_weight="bold", margin_bottom="0.5rem"),
 									rx.table.root(
 										rx.table.header(
 											rx.table.row(
-												rx.table.column_header_cell("", width="20%"),
-												rx.table.column_header_cell("Mes actual", width="16%"),
-												rx.table.column_header_cell("Junio", width="16%"),
-												rx.table.column_header_cell("Mayo", width="16%"),
-												rx.table.column_header_cell("Abril", width="16%"),
-												rx.table.column_header_cell("Marzo", width="16%")
-											)
+												rx.table.column_header_cell("Nivel"),
+												rx.table.column_header_cell("Mes actual"),
+												rx.table.column_header_cell("Mes 1"),
+												rx.table.column_header_cell("Mes 2"),
+												rx.table.column_header_cell("Mes 3"),
+												rx.table.column_header_cell("Mes 4"),
+											),
+											text_align="center"
 										),
 										rx.table.body(
 											rx.table.row(
 												rx.table.row_header_cell("PV", font_weight="bold"),
 												rx.table.cell("$2,450", color=rx.color("green", 11)),
-												rx.table.cell("$2,300", color=rx.color("gray", 11)),
-												rx.table.cell("$2,100", color=rx.color("gray", 11)),
+												rx.table.cell("$2,200", color=rx.color("gray", 11)),
 												rx.table.cell("$1,950", color=rx.color("gray", 11)),
-												rx.table.cell("$1,800", color=rx.color("gray", 11))
+												rx.table.cell("$2,100", color=rx.color("gray", 11)),
+												rx.table.cell("$2,300", color=rx.color("gray", 11))
 											),
 											rx.table.row(
 												rx.table.row_header_cell("Primer nivel", font_weight="bold"),
 												rx.table.cell("$3,200", color=rx.color("blue", 11)),
-												rx.table.cell("$3,100", color=rx.color("gray", 11)),
-												rx.table.cell("$2,900", color=rx.color("gray", 11)),
-												rx.table.cell("$2,750", color=rx.color("gray", 11)),
-												rx.table.cell("$2,600", color=rx.color("gray", 11))
+												rx.table.cell("$2,800", color=rx.color("gray", 11)),
+												rx.table.cell("$2,500", color=rx.color("gray", 11)),
+												rx.table.cell("$2,700", color=rx.color("gray", 11)),
+												rx.table.cell("$3,000", color=rx.color("gray", 11))
 											),
 											rx.table.row(
 												rx.table.row_header_cell("Segundo nivel", font_weight="bold"),
 												rx.table.cell("$1,850", color=rx.color("orange", 11)),
-												rx.table.cell("$1,700", color=rx.color("gray", 11)),
-												rx.table.cell("$1,650", color=rx.color("gray", 11)),
+												rx.table.cell("$1,600", color=rx.color("gray", 11)),
+												rx.table.cell("$1,400", color=rx.color("gray", 11)),
 												rx.table.cell("$1,500", color=rx.color("gray", 11)),
-												rx.table.cell("$1,400", color=rx.color("gray", 11))
+												rx.table.cell("$1,700", color=rx.color("gray", 11))
 											),
 											rx.table.row(
 												rx.table.row_header_cell("Tercer nivel", font_weight="bold"),
 												rx.table.cell("$980", color=rx.color("purple", 11)),
-												rx.table.cell("$920", color=rx.color("gray", 11)),
 												rx.table.cell("$850", color=rx.color("gray", 11)),
+												rx.table.cell("$750", color=rx.color("gray", 11)),
 												rx.table.cell("$800", color=rx.color("gray", 11)),
-												rx.table.cell("$750", color=rx.color("gray", 11))
+												rx.table.cell("$900", color=rx.color("gray", 11))
 											),
 											rx.table.row(
 												rx.table.row_header_cell("Cuarto nivel", font_weight="bold"),
 												rx.table.cell("$720", color=rx.color("cyan", 11)),
-												rx.table.cell("$680", color=rx.color("gray", 11)),
 												rx.table.cell("$650", color=rx.color("gray", 11)),
+												rx.table.cell("$580", color=rx.color("gray", 11)),
 												rx.table.cell("$600", color=rx.color("gray", 11)),
-												rx.table.cell("$550", color=rx.color("gray", 11))
+												rx.table.cell("$680", color=rx.color("gray", 11))
 											),
 											rx.table.row(
 												rx.table.row_header_cell("Quinto nivel", font_weight="bold"),
-												rx.table.cell("$540", color=rx.color("pink", 11)),
-												rx.table.cell("$510", color=rx.color("gray", 11)),
-												rx.table.cell("$480", color=rx.color("gray", 11)),
+												rx.table.cell("$520", color=rx.color("pink", 11)),
 												rx.table.cell("$450", color=rx.color("gray", 11)),
-												rx.table.cell("$420", color=rx.color("gray", 11))
+												rx.table.cell("$400", color=rx.color("gray", 11)),
+												rx.table.cell("$420", color=rx.color("gray", 11)),
+												rx.table.cell("$480", color=rx.color("gray", 11))
 											),
 											rx.table.row(
 												rx.table.row_header_cell("Sexto nivel", font_weight="bold"),
-												rx.table.cell("$390", color=rx.color("yellow", 11)),
-												rx.table.cell("$370", color=rx.color("gray", 11)),
-												rx.table.cell("$350", color=rx.color("gray", 11)),
+												rx.table.cell("$380", color=rx.color("indigo", 11)),
 												rx.table.cell("$320", color=rx.color("gray", 11)),
-												rx.table.cell("$300", color=rx.color("gray", 11))
+												rx.table.cell("$280", color=rx.color("gray", 11)),
+												rx.table.cell("$300", color=rx.color("gray", 11)),
+												rx.table.cell("$340", color=rx.color("gray", 11))
 											),
 											rx.table.row(
 												rx.table.row_header_cell("Séptimo nivel", font_weight="bold"),
-												rx.table.cell("$280", color=rx.color("red", 11)),
-												rx.table.cell("$260", color=rx.color("gray", 11)),
-												rx.table.cell("$240", color=rx.color("gray", 11)),
-												rx.table.cell("$220", color=rx.color("gray", 11)),
-												rx.table.cell("$200", color=rx.color("gray", 11))
+												rx.table.cell("$240", color=rx.color("teal", 11)),
+												rx.table.cell("$200", color=rx.color("gray", 11)),
+												rx.table.cell("$180", color=rx.color("gray", 11)),
+												rx.table.cell("$190", color=rx.color("gray", 11)),
+												rx.table.cell("$210", color=rx.color("gray", 11))
 											),
 											rx.table.row(
 												rx.table.row_header_cell("Octavo nivel", font_weight="bold"),
-												rx.table.cell("$180", color=rx.color("indigo", 11)),
-												rx.table.cell("$160", color=rx.color("gray", 11)),
-												rx.table.cell("$150", color=rx.color("gray", 11)),
-												rx.table.cell("$140", color=rx.color("gray", 11)),
+												rx.table.cell("$150", color=rx.color("amber", 11)),
+												rx.table.cell("$120", color=rx.color("gray", 11)),
+												rx.table.cell("$100", color=rx.color("gray", 11)),
+												rx.table.cell("$110", color=rx.color("gray", 11)),
 												rx.table.cell("$130", color=rx.color("gray", 11))
 											),
 											rx.table.row(
 												rx.table.row_header_cell("Noveno nivel", font_weight="bold"),
-												rx.table.cell("$120", color=rx.color("teal", 11)),
-												rx.table.cell("$110", color=rx.color("gray", 11)),
-												rx.table.cell("$100", color=rx.color("gray", 11)),
-												rx.table.cell("$90", color=rx.color("gray", 11)),
+												rx.table.cell("$95", color=rx.color("red", 11)),
+												rx.table.cell("$85", color=rx.color("gray", 11)),
+												rx.table.cell("$75", color=rx.color("gray", 11)),
+												rx.table.cell("$80", color=rx.color("gray", 11)),
 												rx.table.cell("$80", color=rx.color("gray", 11))
 											),
 											rx.table.row(
@@ -399,13 +404,6 @@ def network_reports() -> rx.Component:
 			rx.vstack(
 				# Encabezado de la página móvil
 				mobile_header(),
-				#rx.text(
-				#	"Reportes de Red",
-				#	font_size="1.8rem",
-				#	font_weight="bold",
-				#	margin_bottom="1rem",
-				#	text_align="center"
-				#),
 				
 				# Sección de detalles del usuario (móvil)
 				rx.box(
@@ -510,6 +508,266 @@ def network_reports() -> rx.Component:
 					margin_bottom="1rem"
 				),
 				
+				# Sección de equipo de negocio (móvil) - ACTUALIZADA
+				rx.box(
+					rx.vstack(
+						rx.text(
+							"Equipo de negocio",
+							font_size="1.2rem",
+							font_weight="bold",
+							margin_bottom="0.8rem",
+							text_align="center"
+						),
+						# Métricas del equipo en móvil
+						rx.vstack(
+							rx.hstack(
+								rx.text("Total de miembros:", font_weight="bold", font_size="0.9rem"),
+								rx.text("47", color=rx.color("blue", 11), font_size="1.5rem", font_weight="bold"),
+								justify="between",
+								width="100%"
+							),
+							rx.hstack(
+								rx.text("Nuevos este mes:", font_weight="bold", font_size="0.9rem"),
+								rx.text("8", color=rx.color("green", 11), font_size="1.5rem", font_weight="bold"),
+								justify="between",
+								width="100%"
+							),
+							rx.hstack(
+								rx.text("Activos:", font_weight="bold", font_size="0.9rem"),
+								rx.text("42", color=rx.color("orange", 11), font_size="1.5rem", font_weight="bold"),
+								justify="between",
+								width="100%"
+							),
+							spacing="2",
+							width="100%"
+						),
+						rx.divider(),
+						# Inscripciones recientes con información completa para móvil
+						rx.text("Inscripciones del día:", font_weight="bold", font_size="0.9rem", margin_bottom="0.5rem"),
+						rx.vstack(
+							# Primera inscripción - Juan Pérez
+							rx.box(
+								rx.vstack(
+									# Encabezado con nombre y estado
+									rx.hstack(
+										rx.text("Juan Pérez", font_weight="bold", font_size="1rem"),
+										rx.badge("Activo", color_scheme="green", size="1"),
+										justify="between",
+										width="100%"
+									),
+									# Información principal
+									rx.vstack(
+										rx.hstack(
+											rx.text("ID Socio:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("12345", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Contacto:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("+521234567890", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Volumen Personal:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("1465", font_size="0.8rem", font_weight="600", color=rx.color("green", 11)),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Nivel:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("2", font_size="0.8rem", font_weight="600", color=rx.color("blue", 11)),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Fecha Inscripción:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("18/07/2025", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.divider(size="1", margin_y="0.3rem"),
+										rx.hstack(
+											rx.text("Patrocinador:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("Bryan Núñez", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("ID Patrocinador:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("224", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										spacing="1",
+										width="100%"
+									),
+									spacing="2",
+									width="100%"
+								),
+								bg=rx.color_mode_cond(
+									light=rx.color("gray", 2),
+									dark=rx.color("gray", 12)
+								),
+								padding="12px",
+								border_radius="8px",
+								width="100%"
+							),
+							# Segunda inscripción - Ana Martínez
+							rx.box(
+								rx.vstack(
+									# Encabezado con nombre y estado
+									rx.hstack(
+										rx.text("Ana Martínez", font_weight="bold", font_size="1rem"),
+										rx.badge("Activo", color_scheme="green", size="1"),
+										justify="between",
+										width="100%"
+									),
+									# Información principal
+									rx.vstack(
+										rx.hstack(
+											rx.text("ID Socio:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("54321", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Contacto:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("+521098765432", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Volumen Personal:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("2930", font_size="0.8rem", font_weight="600", color=rx.color("green", 11)),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Nivel:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("11", font_size="0.8rem", font_weight="600", color=rx.color("blue", 11)),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Fecha Inscripción:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("15/07/2025", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.divider(size="1", margin_y="0.3rem"),
+										rx.hstack(
+											rx.text("Patrocinador:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("Juan Pérez", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("ID Patrocinador:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("12345", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										spacing="1",
+										width="100%"
+									),
+									spacing="2",
+									width="100%"
+								),
+								bg=rx.color_mode_cond(
+									light=rx.color("gray", 2),
+									dark=rx.color("gray", 12)
+								),
+								padding="12px",
+								border_radius="8px",
+								width="100%"
+							),
+							# Tercera inscripción - Carlos López
+							rx.box(
+								rx.vstack(
+									# Encabezado con nombre y estado
+									rx.hstack(
+										rx.text("Carlos López", font_weight="bold", font_size="1rem"),
+										rx.badge("Inactivo", color_scheme="tomato", size="1"),
+										justify="between",
+										width="100%"
+									),
+									# Información principal
+									rx.vstack(
+										rx.hstack(
+											rx.text("ID Socio:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("67890", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Contacto:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("+521987654321", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Volumen Personal:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("0", font_size="0.8rem", font_weight="600", color=rx.color("red", 11)),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Nivel:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("5", font_size="0.8rem", font_weight="600", color=rx.color("blue", 11)),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("Fecha Inscripción:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("12/07/2025", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.divider(size="1", margin_y="0.3rem"),
+										rx.hstack(
+											rx.text("Patrocinador:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("Enrique Torres", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										rx.hstack(
+											rx.text("ID Patrocinador:", font_size="0.75rem", color=rx.color("gray", 9)),
+											rx.text("42356", font_size="0.8rem", font_weight="600"),
+											justify="between",
+											width="100%"
+										),
+										spacing="1",
+										width="100%"
+									),
+									spacing="2",
+									width="100%"
+								),
+								bg=rx.color_mode_cond(
+									light=rx.color("gray", 2),
+									dark=rx.color("gray", 12)
+								),
+								padding="12px",
+								border_radius="8px",
+								width="100%"
+							),
+							spacing="2",
+							width="100%"
+						),
+						spacing="3",
+						width="100%"
+					),
+					bg=rx.color_mode_cond(
+						light=Custom_theme().light_colors()["tertiary"],
+						dark=Custom_theme().dark_colors()["tertiary"]
+					),
+					border_radius="16px",
+					padding="16px",
+					width="100%",
+					margin_bottom="1rem"
+				),
+				
 				# Sección de reporte de volumen (móvil)
 				rx.box(
 					rx.vstack(
@@ -552,137 +810,6 @@ def network_reports() -> rx.Component:
 							rx.hstack(rx.text("Segundo nivel:", font_weight="bold", font_size="0.8rem"), rx.text("$1,850", color=rx.color("orange", 11), font_size="0.8rem"), justify="between", width="100%"),
 							rx.hstack(rx.text("Tercer nivel:", font_weight="bold", font_size="0.8rem"), rx.text("$980", color=rx.color("purple", 11), font_size="0.8rem"), justify="between", width="100%"),
 							rx.hstack(rx.text("Cuarto nivel:", font_weight="bold", font_size="0.8rem"), rx.text("$720", color=rx.color("cyan", 11), font_size="0.8rem"), justify="between", width="100%"),
-							spacing="1",
-							width="100%"
-						),
-						spacing="2",
-						width="100%"
-					),
-					bg=rx.color_mode_cond(
-						light=Custom_theme().light_colors()["tertiary"],
-						dark=Custom_theme().dark_colors()["tertiary"]
-					),
-					border_radius="16px",
-					padding="16px",
-					width="100%",
-					margin_bottom="1rem"
-				),
-				
-				# Sección de equipo de negocio (móvil)
-				rx.box(
-					rx.vstack(
-						rx.text(
-							"Equipo de negocio",
-							font_size="1.2rem",
-							font_weight="bold",
-							margin_bottom="0.8rem",
-							text_align="center"
-						),
-						# Métricas del equipo en móvil
-						rx.vstack(
-							rx.hstack(
-								rx.text("Total de miembros:", font_weight="bold", font_size="0.9rem"),
-								rx.text("47", color=rx.color("blue", 11), font_size="1.5rem", font_weight="bold"),
-								justify="between",
-								width="100%"
-							),
-							rx.hstack(
-								rx.text("Nuevos este mes:", font_weight="bold", font_size="0.9rem"),
-								rx.text("8", color=rx.color("green", 11), font_size="1.5rem", font_weight="bold"),
-								justify="between",
-								width="100%"
-							),
-							rx.hstack(
-								rx.text("Activos:", font_weight="bold", font_size="0.9rem"),
-								rx.text("42", color=rx.color("orange", 11), font_size="1.5rem", font_weight="bold"),
-								justify="between",
-								width="100%"
-							),
-							spacing="2",
-							width="100%"
-						),
-						rx.divider(),
-						# Inscripciones recientes simplificadas para móvil
-						rx.text("Inscripciones recientes:", font_weight="bold", font_size="0.9rem", margin_bottom="0.5rem"),
-						rx.vstack(
-							# Primera inscripción
-							rx.box(
-								rx.vstack(
-									rx.hstack(
-										rx.text("Juan Pérez", font_weight="bold", font_size="0.9rem"),
-										rx.badge("Activo", color_scheme="green", size="1"),
-										justify="between",
-										width="100%"
-									),
-									rx.hstack(
-										rx.text("ID: 12345", font_size="0.8rem", color=rx.color("gray", 11)),
-										rx.text("18/07/2025", font_size="0.8rem", color=rx.color("gray", 11)),
-										justify="between",
-										width="100%"
-									),
-									spacing="1",
-									width="100%"
-								),
-								bg=rx.color_mode_cond(
-									light=rx.color("gray", 2),
-									dark=rx.color("gray", 12)
-								),
-								padding="8px",
-								border_radius="8px",
-								width="100%"
-							),
-							# Segunda inscripción
-							rx.box(
-								rx.vstack(
-									rx.hstack(
-										rx.text("Ana Martínez", font_weight="bold", font_size="0.9rem"),
-										rx.badge("Activo", color_scheme="green", size="1"),
-										justify="between",
-										width="100%"
-									),
-									rx.hstack(
-										rx.text("ID: 54321", font_size="0.8rem", color=rx.color("gray", 11)),
-										rx.text("15/07/2025", font_size="0.8rem", color=rx.color("gray", 11)),
-										justify="between",
-										width="100%"
-									),
-									spacing="1",
-									width="100%"
-								),
-								bg=rx.color_mode_cond(
-									light=rx.color("gray", 2),
-									dark=rx.color("gray", 12)
-								),
-								padding="8px",
-								border_radius="8px",
-								width="100%"
-							),
-							# Tercera inscripción
-							rx.box(
-								rx.vstack(
-									rx.hstack(
-										rx.text("Carlos López", font_weight="bold", font_size="0.9rem"),
-										rx.badge("Inactivo", color_scheme="tomato", size="1"),
-										justify="between",
-										width="100%"
-									),
-									rx.hstack(
-										rx.text("ID: 67890", font_size="0.8rem", color=rx.color("gray", 11)),
-										rx.text("12/07/2025", font_size="0.8rem", color=rx.color("gray", 11)),
-										justify="between",
-										width="100%"
-									),
-									spacing="1",
-									width="100%"
-								),
-								bg=rx.color_mode_cond(
-									light=rx.color("gray", 2),
-									dark=rx.color("gray", 12)
-								),
-								padding="8px",
-								border_radius="8px",
-								width="100%"
-							),
 							spacing="1",
 							width="100%"
 						),

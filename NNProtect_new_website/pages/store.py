@@ -133,134 +133,59 @@ def store() -> rx.Component:
             rx.vstack(
                 # Header móvil
                 mobile_header(),
-
+                
                 # Contenido principal móvil
                 rx.vstack(
-                    # Banner móvil
-                    rx.box(
-                        rx.image(
-                            src="/hero_dreamingdeep.jpg",
-                            height="100%",
-                            width="100%",
-                            object_fit="cover",
-                            border_radius="16px",
-                            position="absolute",
-                            z_index=0,
-                            top=0,
-                            left=0,
-                        ),
-                        rx.box(
-                            rx.vstack(
-                                rx.text("Adiós noches largas", font_size="1.2rem", font_weight="regular", color="#1C1C1E"),
-                                rx.text("Dreaming Deep", font_size="1.8rem", font_weight="bold", color="#D8B4FE"),
-                                rx.text("Melatonina, L-theanina y GABA.", font_size="0.9rem", color="#1C1C1E", margin_bottom="8px"),
-                                rx.button("Descubrir", bg="#FFFFFF", color="black", border_radius="16px", padding_x="16px", font_size="0.9rem"),
+                    # Título y carrito
+                    rx.hstack(
+                        rx.text("Tienda", font_size="1.5rem", font_weight="bold"),
+                        rx.spacer(),
+                        rx.button(
+                            rx.hstack(
+                                rx.icon("shopping-cart", size=20),
+                                rx.text("(0)", font_size="0.9rem"),
                                 spacing="1"
                             ),
-                            padding="1rem",
-                            position="absolute",
-                            z_index=1,
-                            bottom="0",
-                            left="0",
+                            variant="soft",
+                            size="2"
                         ),
-                        position="relative",
-                        height="180px",
                         width="100%",
-                        border_radius="16px",
-                        overflow="hidden",
-                        margin_bottom="1.5rem",
+                        margin_bottom="1rem"
                     ),
                     
-                    # Populares del mes móvil
-                    rx.text("Populares del mes", font_size="1.3rem", font_weight="bold", margin_bottom="1rem"),
-                    rx.grid(
-                        *[rx.box(
-                            rx.vstack(
-                                rx.image(src=f"/product_{i}.png", height="80px", object_fit="contain"),
-                                rx.text("Producto", font_weight="bold", font_size="0.9rem", text_align="center"),
-                                rx.text("$999.00", font_weight="medium", font_size="0.9rem", color=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["primary"],
-                                    dark=Custom_theme().dark_colors()["primary"]
-                                )),
-                                rx.hstack(
-                                    rx.button("-", width="24px", height="24px", border_radius="50%", bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["tertiary"],
-                                        dark=Custom_theme().dark_colors()["tertiary"]
-                                    ), font_size="0.8rem"),
-                                    rx.text("0", font_size="0.9rem"),
-                                    rx.button("+", width="24px", height="24px", border_radius="50%", bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["tertiary"],
-                                        dark=Custom_theme().dark_colors()["tertiary"]
-                                    ), font_size="0.8rem"),
-                                    justify="center",
-                                    spacing="2"
-                                ),
-                                rx.button(
-                                    "Agregar", 
-                                    bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["primary"],
-                                        dark=Custom_theme().dark_colors()["primary"]
-                                    ), 
-                                    color="white", 
-                                    border_radius="8px", 
-                                    width="100%",
-                                    font_size="0.8rem",
-                                    height="35px"
-                                ),
-                                spacing="2",
-                                align="center",
-                                width="100%"
-                            ),
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["tertiary"],
-                                dark=Custom_theme().dark_colors()["tertiary"]
-                            ),
-                            border_radius="12px",
-                            padding="1rem",
-                            width="100%"
-                        ) for i in range(1, 5)],
-                        columns="2",
-                        spacing="3",
+                    # Categorías móvil
+                    rx.text("Categorías", font_size="1.2rem", font_weight="bold", margin_bottom="0.5rem"),
+                    rx.hstack(
+                        *[rx.button(
+                            categoria,
+                            variant="soft" if i == 0 else "outline",
+                            size="1",
+                            font_size="0.8rem"
+                        ) for i, categoria in enumerate(["Todo", "Salud", "Belleza", "Hogar"])],
+                        spacing="2",
                         width="100%",
                         margin_bottom="2rem"
                     ),
                     
-                    # Todos los productos móvil
-                    rx.text("Todos los productos", font_size="1.3rem", font_weight="bold", margin_bottom="1rem"),
+                    # Grid de productos móvil
+                    rx.text("Todos los productos", font_size="1.2rem", font_weight="bold", margin_bottom="1rem"),
                     rx.grid(
                         *[rx.box(
                             rx.vstack(
-                                rx.image(src=f"/product_{i}.png", height="80px", object_fit="contain"),
+                                rx.image(src=f"/product_{i}.png", height="100px", width="100%", object_fit="contain"),
                                 rx.text(f"Producto {i}", font_weight="bold", font_size="0.9rem", text_align="center"),
-                                rx.text("$999.00", font_weight="medium", font_size="0.9rem", color=rx.color_mode_cond(
+                                rx.text("$999.00", font_weight="600", font_size="0.9rem", color=rx.color_mode_cond(
                                     light=Custom_theme().light_colors()["primary"],
                                     dark=Custom_theme().dark_colors()["primary"]
                                 )),
                                 rx.hstack(
-                                    rx.button("-", width="24px", height="24px", border_radius="50%", bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["tertiary"],
-                                        dark=Custom_theme().dark_colors()["tertiary"]
-                                    ), font_size="0.8rem"),
+                                    rx.button("-", size="1", variant="soft"),
                                     rx.text("0", font_size="0.9rem"),
-                                    rx.button("+", width="24px", height="24px", border_radius="50%", bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["tertiary"],
-                                        dark=Custom_theme().dark_colors()["tertiary"]
-                                    ), font_size="0.8rem"),
+                                    rx.button("+", size="1", variant="soft"),
                                     justify="center",
                                     spacing="2"
                                 ),
-                                rx.button(
-                                    "Agregar", 
-                                    bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["primary"],
-                                        dark=Custom_theme().dark_colors()["primary"]
-                                    ), 
-                                    color="white", 
-                                    border_radius="8px", 
-                                    width="100%",
-                                    font_size="0.8rem",
-                                    height="35px"
-                                ),
+                                rx.button("Agregar", size="2", width="100%", variant="solid"),
                                 spacing="2",
                                 align="center",
                                 width="100%"
@@ -272,25 +197,20 @@ def store() -> rx.Component:
                             border_radius="12px",
                             padding="1rem",
                             width="100%"
-                        ) for i in range(1, 13)],
+                        ) for i in range(1, 7)],
                         columns="2",
                         spacing="3",
-                        width="100%",
-                        margin_bottom="2rem"
+                        width="100%"
                     ),
                     
                     spacing="4",
                     width="100%",
                     padding="1rem",
-                    margin_top="80px"
+                    margin_top="80px",
+                    margin_bottom="2rem"
                 ),
                 
-                width="100%",
-                min_height="100vh",
-                bg=rx.color_mode_cond(
-                    light=Custom_theme().light_colors()["background"],
-                    dark=Custom_theme().dark_colors()["background"]
-                )
+                width="100%"
             )
         ),
         

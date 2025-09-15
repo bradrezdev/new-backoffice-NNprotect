@@ -326,6 +326,109 @@ def order_details() -> rx.Component:
                 max_width="1920px",
             )
         ),
+
+        rx.mobile_only(
+            rx.vstack(
+                # Header móvil
+                mobile_header(),
+                
+                # Contenido principal móvil
+                rx.vstack(
+                    rx.text(
+                        "Compras",
+                        font_size="1.5rem",
+                        font_weight="bold",
+                        margin_bottom="1rem",
+                        text_align="center"
+                    ),
+                    
+                    # Lista de órdenes móvil
+                    *[rx.box(
+                        rx.vstack(
+                            # Encabezado de orden
+                            rx.hstack(
+                                rx.text(f"Orden #{orden_id}", font_weight="bold", font_size="1rem"),
+                                rx.text(total, font_weight="bold", font_size="1rem", color=rx.color_mode_cond(
+                                    light=Custom_theme().light_colors()["secondary"],
+                                    dark=Custom_theme().light_colors()["secondary"]
+                                )),
+                                justify="between",
+                                width="100%"
+                            ),
+                            
+                            rx.divider(margin_y="0.5rem"),
+                            
+                            # Detalles de la orden
+                            rx.vstack(
+                                rx.hstack(
+                                    rx.icon("calendar", size=16, color="#6B7280"),
+                                    rx.text(fecha, font_size="0.8rem", color="#6B7280"),
+                                    spacing="1"
+                                ),
+                                rx.hstack(
+                                    rx.icon("credit-card", size=16, color="#6B7280"),
+                                    rx.text(metodo, font_size="0.8rem", color="#6B7280"),
+                                    spacing="1"
+                                ),
+                                rx.hstack(
+                                    rx.icon("truck", size=16, color="#6B7280"),
+                                    rx.text(estado_envio, font_size="0.8rem", color="#6B7280"),
+                                    spacing="1"
+                                ),
+                                spacing="2",
+                                width="100%"
+                            ),
+                            
+                            rx.divider(margin_y="0.5rem"),
+                            
+                            # Productos
+                            rx.text("Productos:", font_weight="600", font_size="0.9rem"),
+                            *[rx.hstack(
+                                rx.text(f"• {producto}", font_size="0.85rem"),
+                                rx.text(f"x{cantidad}", font_size="0.85rem", color="gray"),
+                                rx.spacer(),
+                                rx.text(precio, font_size="0.85rem", font_weight="600"),
+                                width="100%"
+                            ) for producto, cantidad, precio in productos],
+                            
+                            # Botón de detalles
+                            rx.button(
+                                "Ver detalles",
+                                size="2",
+                                width="100%",
+                                variant="soft",
+                                margin_top="0.5rem"
+                            ),
+                            
+                            spacing="2",
+                            width="100%"
+                        ),
+                        bg=rx.color_mode_cond(
+                            light=Custom_theme().light_colors()["tertiary"],
+                            dark=Custom_theme().dark_colors()["tertiary"]
+                        ),
+                        border_radius="12px",
+                        padding="1rem",
+                        width="100%",
+                        margin_bottom="1rem"
+                    ) for orden_id, total, fecha, metodo, estado_envio, productos in [
+                        ("12345", "$1,746.50", "10 sept 2025 - 09:53", "Tarjeta de crédito", "En camino", 
+                        [("Producto 1", "2", "$500.00"), ("Producto 2", "1", "$746.50"), ("Producto 3", "3", "$500.00")]),
+                        ("12344", "$2,890.00", "8 sept 2025 - 14:20", "PayPal", "Entregado",
+                        [("Producto 4", "1", "$1,890.00"), ("Producto 5", "2", "$1,000.00")]),
+                    ]],
+                    
+                    spacing="4",
+                    width="100%",
+                    padding="1rem",
+                    margin_top="80px",
+                    margin_bottom="2rem"
+                ),
+                
+                width="100%"
+            )
+        ),
+
         bg=rx.color_mode_cond(
             light=Custom_theme().light_colors()["background"],
             dark=Custom_theme().dark_colors()["background"]

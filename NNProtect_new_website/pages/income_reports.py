@@ -158,16 +158,20 @@ def income_reports() -> rx.Component:
                 
                 # Contenido principal móvil
                 rx.vstack(
-                    # Resumen de ingresos móvil
-                    rx.vstack(
+                    rx.text(
+                        "Reportes de Ingresos",
+                        font_size="1.5rem",
+                        font_weight="bold",
+                        margin_bottom="1rem",
+                        text_align="center"
+                    ),
+                    
+                    # Resumen de ingresos móvil - Grid 2x2
+                    rx.grid(
                         rx.box(
                             rx.vstack(
-                                rx.text("Ingresos totales", font_weight="bold", font_size="1rem", text_align="center"),
-                                rx.text("$15,420.50", font_size="1.8rem", font_weight="bold", color=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["primary"],
-                                    dark=Custom_theme().dark_colors()["primary"]
-                                ), text_align="center"),
-                                rx.text("Este mes", font_size="0.8rem", color="gray", text_align="center"),
+                                rx.text("Ingresos Totales", font_size="0.8rem", text_align="center"),
+                                rx.text("$12,450.75", font_size="1.3rem", font_weight="bold", color="green", text_align="center"),
                                 spacing="1"
                             ),
                             bg=rx.color_mode_cond(
@@ -175,97 +179,119 @@ def income_reports() -> rx.Component:
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
                             border_radius="12px",
-                            padding="1.5rem",
-                            width="100%",
-                            margin_bottom="1rem"
-                        ),
-                        
-                        rx.hstack(
-                            rx.box(
-                                rx.vstack(
-                                    rx.text("Comisiones", font_weight="bold", font_size="0.9rem", text_align="center"),
-                                    rx.text("$3,280.75", font_size="1.3rem", font_weight="bold", color=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["secondary"],
-                                        dark=Custom_theme().dark_colors()["secondary"]
-                                    ), text_align="center"),
-                                    spacing="1"
-                                ),
-                                bg=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["tertiary"],
-                                    dark=Custom_theme().dark_colors()["tertiary"]
-                                ),
-                                border_radius="12px",
-                                padding="1rem",
-                                width="48%"
-                            ),
-                            rx.box(
-                                rx.vstack(
-                                    rx.text("Bonos", font_weight="bold", font_size="0.9rem", text_align="center"),
-                                    rx.text("$1,890.25", font_size="1.3rem", font_weight="bold", color="green", text_align="center"),
-                                    spacing="1"
-                                ),
-                                bg=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["tertiary"],
-                                    dark=Custom_theme().dark_colors()["tertiary"]
-                                ),
-                                border_radius="12px",
-                                padding="1rem",
-                                width="48%"
-                            ),
-                            justify="between",
+                            padding="1rem",
                             width="100%"
                         ),
-                        
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Comisiones", font_size="0.8rem", text_align="center"),
+                                rx.text("$3,567.50", font_size="1.3rem", font_weight="bold", color="blue", text_align="center"),
+                                spacing="1"
+                            ),
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["tertiary"],
+                                dark=Custom_theme().dark_colors()["tertiary"]
+                            ),
+                            border_radius="12px",
+                            padding="1rem",
+                            width="100%"
+                        ),
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Ventas", font_size="0.8rem", text_align="center"),
+                                rx.text("$7,890.00", font_size="1.3rem", font_weight="bold", color="orange", text_align="center"),
+                                spacing="1"
+                            ),
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["tertiary"],
+                                dark=Custom_theme().dark_colors()["tertiary"]
+                            ),
+                            border_radius="12px",
+                            padding="1rem",
+                            width="100%"
+                        ),
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Bonos", font_size="0.8rem", text_align="center"),
+                                rx.text("$1,890.25", font_size="1.3rem", font_weight="bold", color="purple", text_align="center"),
+                                spacing="1"
+                            ),
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["tertiary"],
+                                dark=Custom_theme().dark_colors()["tertiary"]
+                            ),
+                            border_radius="12px",
+                            padding="1rem",
+                            width="100%"
+                        ),
+                        columns="2",
+                        spacing="2",
                         width="100%",
                         margin_bottom="2rem"
                     ),
                     
-                    # Tabla móvil simplificada
+                    # Historial simplificado para móvil
                     rx.box(
                         rx.vstack(
                             rx.text("Historial de ingresos", font_weight="bold", font_size="1.2rem", margin_bottom="1rem"),
                             
+                            # Tarjetas de historial
                             *[rx.box(
                                 rx.vstack(
                                     rx.hstack(
-                                        rx.text(f"Enero 2024", font_weight="bold"),
-                                        rx.spacer(),
-                                        rx.badge("Pagado", color="green")
-                                    ),
-                                    rx.hstack(
-                                        rx.vstack(
-                                            rx.text("Ventas", font_size="0.8rem", color="gray"),
-                                            rx.text("$4,500.00", font_weight="bold", font_size="0.9rem")
-                                        ),
-                                        rx.vstack(
-                                            rx.text("Comisiones", font_size="0.8rem", color="gray"),
-                                            rx.text("$1,200.50", font_weight="bold", font_size="0.9rem")
-                                        ),
-                                        rx.vstack(
-                                            rx.text("Total", font_size="0.8rem", color="gray"),
-                                            rx.text("$6,500.75", font_weight="bold", font_size="1rem", color=rx.color_mode_cond(
-                                                light=Custom_theme().light_colors()["primary"],
-                                                dark=Custom_theme().dark_colors()["primary"]
-                                            ))
-                                        ),
+                                        rx.text(mes, font_weight="bold", font_size="1rem"),
+                                        rx.badge(estado, color_scheme="green" if estado == "Pagado" else "orange", size="1"),
                                         justify="between",
+                                        width="100%"
+                                    ),
+                                    rx.divider(margin_y="0.5rem"),
+                                    rx.grid(
+                                        rx.vstack(
+                                            rx.text("Ventas", font_size="0.75rem", color=rx.color("gray", 9)),
+                                            rx.text(ventas, font_weight="600", font_size="0.9rem")
+                                        ),
+                                        rx.vstack(
+                                            rx.text("Comisiones", font_size="0.75rem", color=rx.color("gray", 9)),
+                                            rx.text(comisiones, font_weight="600", font_size="0.9rem")
+                                        ),
+                                        rx.vstack(
+                                            rx.text("Bonos", font_size="0.75rem", color=rx.color("gray", 9)),
+                                            rx.text(bonos, font_weight="600", font_size="0.9rem")
+                                        ),
+                                        rx.vstack(
+                                            rx.text("Total", font_size="0.75rem", color=rx.color("gray", 9)),
+                                            rx.text(total, font_weight="bold", font_size="0.9rem", color="green")
+                                        ),
+                                        columns="2",
+                                        spacing="2",
                                         width="100%"
                                     ),
                                     spacing="2",
                                     width="100%"
                                 ),
                                 bg=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["tertiary"],
-                                    dark=Custom_theme().dark_colors()["tertiary"]
+                                    light=rx.color("gray", 2),
+                                    dark=rx.color("gray", 12)
                                 ),
-                                border_radius="12px",
-                                padding="1rem",
+                                padding="12px",
+                                border_radius="8px",
                                 width="100%",
                                 margin_bottom="0.5rem"
-                            ) for i in range(3)],
+                            ) for mes, ventas, comisiones, bonos, total, estado in [
+                                ("Enero 2024", "$4,500.00", "$1,200.50", "$780.25", "$6,480.75", "Pagado"),
+                                ("Febrero 2024", "$5,800.00", "$1,450.00", "$950.50", "$8,200.50", "Pagado"),
+                                ("Marzo 2024", "$5,200.00", "$1,580.25", "$920.75", "$7,701.00", "Pendiente")
+                            ]],
                             
+                            spacing="3",
                             width="100%"
                         ),
+                        bg=rx.color_mode_cond(
+                            light=Custom_theme().light_colors()["tertiary"],
+                            dark=Custom_theme().dark_colors()["tertiary"]
+                        ),
+                        border_radius="16px",
+                        padding="1rem",
                         width="100%"
                     ),
                     
@@ -274,13 +300,9 @@ def income_reports() -> rx.Component:
                     padding="1rem",
                     margin_top="80px"
                 ),
-                max_width="1920px",
-                margin_bottom="0.2em",
+                
                 width="100%",
-                bg=rx.color_mode_cond(
-                    light=Custom_theme().light_colors()["background"],
-                    dark=Custom_theme().dark_colors()["background"]
-                )
+                height="100%"
             )
         ),
         
