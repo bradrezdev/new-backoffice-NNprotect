@@ -588,7 +588,7 @@ def index() -> rx.Component:
         position="absolute",            # Posición absoluta
         width="100%",                  # Ancho de la ventana
     )
-app = rx.App(theme=rx.theme(appearance="light"))
+app = rx.App(theme=rx.theme(appearance="inherit"))
 
 app.add_page(index, title="NN Protect | Dashboard")
 app.add_page(login, title="NN Protect | Iniciar sesión", route="/login")

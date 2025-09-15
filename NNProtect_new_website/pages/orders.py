@@ -19,7 +19,7 @@ def orders() -> rx.Component:
 							# Encabezado de la página
 							rx.text(
 								"Órdenes",
-								font_size="2rem",
+								font_size="2em",
 								font_weight="bold",
 								margin_bottom="0.5em"
 							),
@@ -70,7 +70,7 @@ def orders() -> rx.Component:
 								
 								width="100%",
 								justify="between",
-								margin_bottom="2rem"
+								margin_bottom="2em"
 							),
 							
 							# Tabla de órdenes
@@ -375,7 +375,7 @@ def orders() -> rx.Component:
 									spacing="2"
 								),
 								width="100%",
-								margin_top="2rem"
+								margin_top="2em"
 							),
 							
 							spacing="4",
@@ -410,7 +410,7 @@ def orders() -> rx.Component:
 								bg="transparent",
 								width="100%",
 								_focus={"outline": "none"},
-								font_size="0.9rem"
+								font_size="0.9em"
 							),
 							width="100%",
 							align="center",
@@ -424,7 +424,7 @@ def orders() -> rx.Component:
 						padding="10px 16px",
 						width="100%",
 						border=f"1px solid {rx.color('gray', 6)}",
-						margin_bottom="1rem"
+						margin_bottom="1em"
 					),
 					
 					# Filtros móvil
@@ -445,7 +445,7 @@ def orders() -> rx.Component:
 						),
 						justify="between",
 						width="100%",
-						margin_bottom="1.5rem"
+						margin_bottom="1.5em"
 					),
 					
 					# Lista de órdenes móvil (cards en lugar de tabla)
@@ -454,7 +454,7 @@ def orders() -> rx.Component:
 						rx.box(
 							rx.vstack(
 								rx.hstack(
-									rx.text("#12345", font_weight="bold", font_size="1.1rem"),
+									rx.text("#12345", font_weight="bold", font_size="1.1em"),
 									rx.spacer(),
 									rx.badge("Pendiente", color_scheme="orange", size="1")
 								),
@@ -462,17 +462,17 @@ def orders() -> rx.Component:
 								rx.vstack(
 									rx.hstack(
 										rx.icon("map-pin", size=14, color=rx.color("gray", 11)),
-										rx.text("Av. Siempre Viva 742, Colima", font_size="0.85rem", color=rx.color("gray", 11)),
+										rx.text("Av. Siempre Viva 742, Colima", font_size="0.85em", color=rx.color("gray", 11)),
 										spacing="1"
 									),
 									rx.hstack(
 										rx.icon("calendar", size=14, color=rx.color("gray", 11)),
-										rx.text("10/09/2025", font_size="0.85rem", color=rx.color("gray", 11)),
+										rx.text("10/09/2025", font_size="0.85em", color=rx.color("gray", 11)),
 										spacing="1"
 									),
 									rx.hstack(
 										rx.icon("credit-card", size=14, color=rx.color("gray", 11)),
-										rx.text("Tarjeta crédito", font_size="0.85rem", color=rx.color("gray", 11)),
+										rx.text("Tarjeta crédito", font_size="0.85em", color=rx.color("gray", 11)),
 										spacing="1"
 									),
 									spacing="1",
@@ -481,8 +481,8 @@ def orders() -> rx.Component:
 								),
 								
 								rx.hstack(
-									rx.text("Total:", font_size="0.9rem"),
-									rx.text("$1,746.50", font_weight="bold", font_size="1.1rem", color=rx.color_mode_cond(
+									rx.text("Total:", font_size="0.9em"),
+									rx.text("$1,746.50", font_weight="bold", font_size="1.1em", color=rx.color_mode_cond(
 										light=Custom_theme().light_colors()["primary"],
 										dark=Custom_theme().dark_colors()["primary"]
 									)),
@@ -499,7 +499,7 @@ def orders() -> rx.Component:
 										color="white",
 										width="48%",
 										height="36px",
-										font_size="0.85rem",
+										font_size="0.85em",
 										on_click=lambda: rx.redirect("/order_details")
 									),
 									rx.button(
@@ -508,7 +508,7 @@ def orders() -> rx.Component:
 										variant="outline",
 										width="48%",
 										height="36px",
-										font_size="0.85rem"
+										font_size="0.85em"
 									),
 									width="100%",
 									justify="between"
@@ -522,16 +522,16 @@ def orders() -> rx.Component:
 								dark=Custom_theme().dark_colors()["tertiary"]
 							),
 							border_radius="12px",
-							padding="1rem",
+							padding="1em",
 							width="100%",
-							margin_bottom="0.8rem"
+							margin_bottom="0.8em"
 						),
 						
 						# Orden 2 móvil
 						rx.box(
 							rx.vstack(
 								rx.hstack(
-									rx.text("#67890", font_weight="bold", font_size="1.1rem"),
+									rx.text("#67890", font_weight="bold", font_size="1.1em"),
 									rx.spacer(),
 									rx.badge("Entregado", color_scheme="green", size="1")
 								),
@@ -539,17 +539,17 @@ def orders() -> rx.Component:
 								rx.vstack(
 									rx.hstack(
 										rx.icon("map-pin", size=14, color=rx.color("gray", 11)),
-										rx.text("Santo Domingo, RD", font_size="0.85rem", color=rx.color("gray", 11)),
+										rx.text("Santo Domingo, RD", font_size="0.85em", color=rx.color("gray", 11)),
 										spacing="1"
 									),
 									rx.hstack(
 										rx.icon("calendar", size=14, color=rx.color("gray", 11)),
-										rx.text("01/08/2025", font_size="0.85rem", color=rx.color("gray", 11)),
+										rx.text("01/08/2025", font_size="0.85em", color=rx.color("gray", 11)),
 										spacing="1"
 									),
 									rx.hstack(
 										rx.icon("wallet", size=14, color=rx.color("gray", 11)),
-										rx.text("Billetera digital", font_size="0.85rem", color=rx.color("gray", 11)),
+										rx.text("Billetera digital", font_size="0.85em", color=rx.color("gray", 11)),
 										spacing="1"
 									),
 									spacing="1",
@@ -558,8 +558,8 @@ def orders() -> rx.Component:
 								),
 								
 								rx.hstack(
-									rx.text("Total:", font_size="0.9rem"),
-									rx.text("$1,926.50", font_weight="bold", font_size="1.1rem", color=rx.color_mode_cond(
+									rx.text("Total:", font_size="0.9em"),
+									rx.text("$1,926.50", font_weight="bold", font_size="1.1em", color=rx.color_mode_cond(
 										light=Custom_theme().light_colors()["primary"],
 										dark=Custom_theme().dark_colors()["primary"]
 									)),
@@ -576,7 +576,7 @@ def orders() -> rx.Component:
 										color="white",
 										width="48%",
 										height="36px",
-										font_size="0.85rem",
+										font_size="0.85em",
 										on_click=lambda: rx.redirect("/order_details")
 									),
 									rx.button(
@@ -585,7 +585,7 @@ def orders() -> rx.Component:
 										variant="outline",
 										width="48%",
 										height="36px",
-										font_size="0.85rem"
+										font_size="0.85em"
 									),
 									width="100%",
 									justify="between"
@@ -599,16 +599,16 @@ def orders() -> rx.Component:
 								dark=Custom_theme().dark_colors()["tertiary"]
 							),
 							border_radius="12px",
-							padding="1rem",
+							padding="1em",
 							width="100%",
-							margin_bottom="0.8rem"
+							margin_bottom="0.8em"
 						),
 						
 						# Orden 3 móvil
 						rx.box(
 							rx.vstack(
 								rx.hstack(
-									rx.text("#11121", font_weight="bold", font_size="1.1rem"),
+									rx.text("#11121", font_weight="bold", font_size="1.1em"),
 									rx.spacer(),
 									rx.badge("Cancelado", color_scheme="red", size="1")
 								),
@@ -616,17 +616,17 @@ def orders() -> rx.Component:
 								rx.vstack(
 									rx.hstack(
 										rx.icon("map-pin", size=14, color=rx.color("gray", 11)),
-										rx.text("Guadalajara, JAL", font_size="0.85rem", color=rx.color("gray", 11)),
+										rx.text("Guadalajara, JAL", font_size="0.85em", color=rx.color("gray", 11)),
 										spacing="1"
 									),
 									rx.hstack(
 										rx.icon("calendar", size=14, color=rx.color("gray", 11)),
-										rx.text("07/06/2025", font_size="0.85rem", color=rx.color("gray", 11)),
+										rx.text("07/06/2025", font_size="0.85em", color=rx.color("gray", 11)),
 										spacing="1"
 									),
 									rx.hstack(
 										rx.icon("credit-card", size=14, color=rx.color("gray", 11)),
-										rx.text("Tarjeta débito", font_size="0.85rem", color=rx.color("gray", 11)),
+										rx.text("Tarjeta débito", font_size="0.85em", color=rx.color("gray", 11)),
 										spacing="1"
 									),
 									spacing="1",
@@ -635,8 +635,8 @@ def orders() -> rx.Component:
 								),
 								
 								rx.hstack(
-									rx.text("Total:", font_size="0.9rem"),
-									rx.text("$349.30", font_weight="bold", font_size="1.1rem", color=rx.color_mode_cond(
+									rx.text("Total:", font_size="0.9em"),
+									rx.text("$349.30", font_weight="bold", font_size="1.1em", color=rx.color_mode_cond(
 										light=Custom_theme().light_colors()["primary"],
 										dark=Custom_theme().dark_colors()["primary"]
 									)),
@@ -653,7 +653,7 @@ def orders() -> rx.Component:
 										color="white",
 										width="48%",
 										height="36px",
-										font_size="0.85rem",
+										font_size="0.85em",
 										on_click=lambda: rx.redirect("/order_details")
 									),
 									rx.button(
@@ -662,7 +662,7 @@ def orders() -> rx.Component:
 										variant="outline",
 										width="48%",
 										height="36px",
-										font_size="0.85rem"
+										font_size="0.85em"
 									),
 									width="100%",
 									justify="between"
@@ -676,9 +676,9 @@ def orders() -> rx.Component:
 								dark=Custom_theme().dark_colors()["tertiary"]
 							),
 							border_radius="12px",
-							padding="1rem",
+							padding="1em",
 							width="100%",
-							margin_bottom="0.8rem"
+							margin_bottom="0.8em"
 						),
 						
 						width="100%"
@@ -692,7 +692,7 @@ def orders() -> rx.Component:
 							disabled=True,
 							size="2"
 						),
-						rx.text("1 de 4", font_size="0.9rem"),
+						rx.text("1 de 4", font_size="0.9em"),
 						rx.button(
 							rx.icon("chevron-right", size=14),
 							variant="soft",
@@ -700,25 +700,23 @@ def orders() -> rx.Component:
 						),
 						justify="center",
 						width="100%",
-						margin_top="1.5rem"
+						margin_top="1.5em"
 					),
-					
-					spacing="3",
+					spacing="4",
 					width="100%",
-					padding="1rem",
+					#padding="1em",
 					margin_top="80px",
-					margin_bottom="2rem"
+					margin_bottom="0.2em"
 				),
-				
-				width="100%",
-				min_height="100vh",
 				bg=rx.color_mode_cond(
 					light=Custom_theme().light_colors()["background"],
 					dark=Custom_theme().dark_colors()["background"]
-				)
-			)
+				),
+				width="100%",
+				min_height="100vh"
+			),
 		),
-		
+		# Propiedades del contenedor principal.
 		bg=rx.color_mode_cond(
 			light=Custom_theme().light_colors()["background"],
 			dark=Custom_theme().dark_colors()["background"]
