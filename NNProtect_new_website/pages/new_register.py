@@ -449,17 +449,10 @@ def register() -> rx.Component:
                         rx.hstack(
                             rx.checkbox(),
                             rx.text(
-                                "He leído los términos y condiciones.",
+                                "He leído los ", rx.link("terminos y condiciones.", href="#"),
                                 font_size="0.85em"  # --- Propiedades rx.text ---
                             ),
-                            rx.link(
-                                "Leer términos y condiciones",
-                                href="#",
-                                font_size="0.85em",  # --- Propiedades rx.link ---
-                                color="#0039F2",
-                                margin_left="0.2em",
-                                underline="always"
-                            ),
+                            margin_bottom="1.5rem",
                             spacing="1"  # --- Propiedades rx.hstack ---
                         ),
                         
@@ -470,7 +463,7 @@ def register() -> rx.Component:
                                 dark=Custom_theme().dark_colors()["primary"]
                             ),
                             color="white",
-                            border_radius="29px",
+                            border_radius="24px",
                             width="100%",
                             height="64px",
                             font_size="1.1rem",
@@ -482,9 +475,9 @@ def register() -> rx.Component:
                         width="100%"
                     ),
                     width="100%",
-                    padding="1em",
+                    padding="10px",
                     margin_top="80px",
-                    margin_bottom="0.2em"
+                    margin_bottom="1em"
                 ),
                 
                 width="100%",
