@@ -283,71 +283,70 @@ def register() -> rx.Component:
                     rx.vstack(
                         rx.text(
                             "Referido por Bryan Núñez",
-                            font_size="0.9rem",
+                            font_size="1em",
                             color=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["primary"],
                                 dark=Custom_theme().dark_colors()["primary"]
                             ),
                             font_weight="bold",
-                            margin_bottom="1rem"
+                            margin_bottom="1em"
                         ),
                         
                         # Información personal
-                        rx.text("Información Personal", font_weight="bold", font_size="1.1rem", margin_bottom="0.5rem"),
+                        rx.text("Información Personal", font_weight="bold", font_size="1.1rem", margin_bottom="0.5em"),
                         
                         rx.text("Nombre completo*", font_weight="medium", font_size="0.9rem"),
                         rx.input(
                             placeholder="Escribe el nombre completo...",
-                            border_radius="8px",
+                            border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            height="45px",
+                            height="48px",
                             width="100%",
-                            margin_bottom="0.5rem"
                         ),
                         
                         rx.text("Sexo*", font_weight="medium", font_size="0.9rem"),
                         rx.select(
-                            ["Masculino", "Femenino"],
+                            ["Seleccionar una opción", "Masculino", "Femenino"],
                             placeholder="Seleccionar una opción",
-                            border_radius="8px",
+                            radius="large",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
                             width="100%",
-                            margin_bottom="0.5rem"
+                            size="3",
+                            required=True,
                         ),
                         
                         rx.text("Celular*", font_weight="medium", font_size="0.9rem"),
                         rx.input(
                             placeholder="Ejemplo: 3121234567",
-                            border_radius="8px",
+                            border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            height="45px",
+                            height="48px",
                             width="100%",
                             margin_bottom="1rem"
                         ),
                         
                         # Dirección
-                        rx.text("Dirección", font_weight="bold", font_size="1.1rem", margin_bottom="0.5rem"),
+                        rx.text("Dirección", font_weight="bold", font_size="1.1rem", margin_bottom="0.5em"),
                         
                         rx.text("Calle y número*", font_weight="medium", font_size="0.9rem"),
                         rx.input(
                             placeholder="Ejemplo: Av. Siempre Viva #742",
-                            border_radius="8px",
+                            border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            height="45px",
+                            height="48px",
                             width="100%",
-                            margin_bottom="0.5rem"
                         ),
                         
                         rx.hstack(
@@ -355,12 +354,12 @@ def register() -> rx.Component:
                                 rx.text("Ciudad*", font_weight="medium", font_size="0.9rem"),
                                 rx.input(
                                     placeholder="Ciudad",
-                                    border_radius="8px",
+                                    border_radius="15px",
                                     bg=rx.color_mode_cond(
                                         light=Custom_theme().light_colors()["tertiary"],
                                         dark=Custom_theme().dark_colors()["tertiary"]
                                     ),
-                                    height="45px",
+                                    height="48px",
                                     width="100%",
                                 ),
                                 width="48%"
@@ -369,19 +368,19 @@ def register() -> rx.Component:
                                 rx.text("C.P.*", font_weight="medium", font_size="0.9rem"),
                                 rx.input(
                                     placeholder="28000",
-                                    border_radius="8px",
+                                    border_radius="15px",
                                     bg=rx.color_mode_cond(
                                         light=Custom_theme().light_colors()["tertiary"],
                                         dark=Custom_theme().dark_colors()["tertiary"]
                                     ),
-                                    height="45px",
+                                    height="48px",
                                     width="100%",
                                 ),
-                                width="48%"
+                                width="50%"
                             ),
                             justify="between",
                             width="100%",
-                            margin_bottom="1rem"
+                            margin_bottom="1.5rem"
                         ),
                         
                         # Acceso al sistema
@@ -390,67 +389,78 @@ def register() -> rx.Component:
                         rx.text("Usuario*", font_weight="medium", font_size="0.9rem"),
                         rx.input(
                             placeholder="Usuario único",
-                            border_radius="8px",
+                            border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            height="45px",
+                            height="48px",
                             width="100%",
-                            margin_bottom="0.5rem"
                         ),
                         
                         rx.text("Correo electrónico*", font_weight="medium", font_size="0.9rem"),
                         rx.input(
                             type="email",
                             placeholder="Correo electrónico",
-                            border_radius="8px",
+                            border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            height="45px",
+                            height="48px",
                             width="100%",
-                            margin_bottom="0.5rem"
                         ),
                         
                         rx.text("Contraseña*", font_weight="medium", font_size="0.9rem"),
                         rx.input(
                             type="password",
                             placeholder="Crea una contraseña",
-                            border_radius="8px",
+                            border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            height="45px",
+                            height="48px",
                             width="100%",
-                            margin_bottom="0.5rem"
                         ),
-                        
+                        rx.form(
+                            rx.list_item("Debe contener mínimo 8 caracteres."),
+                            rx.list_item("Debe incluir mínimo 1 letra mayúscula."),
+                            rx.list_item("Debe incluir mínimo 1 letra minúscula."),
+                            rx.list_item("Debe incluir mínimo 1 número."),
+                            rx.list_item("Debe incluir mínimo 1 carácter/símbolo especial."),
+                            font_size="0.85rem",  # --- Propiedades rx.form ---
+                            style={"margin-left": "1em", "color": "#333"},
+                        ),
                         rx.text("Confirmar contraseña*", font_weight="medium", font_size="0.9rem"),
                         rx.input(
                             type="password",
                             placeholder="Confirma la contraseña",
-                            border_radius="8px",
+                            border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            height="45px",
+                            height="48px",
                             width="100%",
-                            margin_bottom="1rem"
                         ),
                         
                         # Términos y condiciones
                         rx.hstack(
                             rx.checkbox(),
                             rx.text(
-                                "Acepto términos y condiciones",
-                                font_size="0.8rem"
+                                "He leído los términos y condiciones.",
+                                font_size="0.85em"  # --- Propiedades rx.text ---
                             ),
-                            spacing="2",
-                            margin_bottom="1.5rem"
+                            rx.link(
+                                "Leer términos y condiciones",
+                                href="#",
+                                font_size="0.85em",  # --- Propiedades rx.link ---
+                                color="#0039F2",
+                                margin_left="0.2em",
+                                underline="always"
+                            ),
+                            spacing="1"  # --- Propiedades rx.hstack ---
                         ),
                         
                         rx.button(
