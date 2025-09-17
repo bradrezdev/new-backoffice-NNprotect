@@ -5,7 +5,27 @@ from ..theme import Custom_theme
 from rxconfig import config
 from ..layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 
-def shopping_cart() -> rx.Component:
+def cart_data():
+    """
+    Método reutilizable que contiene todos los datos del carrito de compras.
+
+    Retorna un diccionario con:
+    - cart_items: Lista de productos en el carrito
+    - total_products: Número total de productos
+    - subtotal_products: Subtotal de productos
+    - total_volume_points: Total de puntos de volumen
+    - shipping_cost: Costo de envío
+    - final_total: Total final del pedido
+
+    Este método puede ser importado y usado en cualquier página que necesite
+    acceder a la información del carrito, como payment.py, order_summary.py, etc.
+
+    Ejemplo de uso:
+        from .shopping_cart import cart_data
+        cart_info = cart_data()
+        items = cart_info["cart_items"]
+        total = cart_info["final_total"]
+    """
     # Datos de ejemplo para productos en el carrito
     cart_items = [
         {
@@ -46,6 +66,26 @@ def shopping_cart() -> rx.Component:
     total_volume_points = sum(item["volume_subtotal"] for item in cart_items)
     shipping_cost = 99.00 if subtotal_products < 1000 else 0.00
     final_total = subtotal_products + shipping_cost
+
+    # Retornar todos los datos necesarios
+    return {
+        "cart_items": cart_items,
+        "total_products": total_products,
+        "subtotal_products": subtotal_products,
+        "total_volume_points": total_volume_points,
+        "shipping_cost": shipping_cost,
+        "final_total": final_total
+    }
+
+def shopping_cart() -> rx.Component:
+    # Obtener datos del carrito usando el método reutilizable
+    cart_info = cart_data()
+    cart_items = cart_info["cart_items"]
+    total_products = cart_info["total_products"]
+    subtotal_products = cart_info["subtotal_products"]
+    total_volume_points = cart_info["total_volume_points"]
+    shipping_cost = cart_info["shipping_cost"]
+    final_total = cart_info["final_total"]
 
     return rx.center(
         # Versión desktop - dejada en blanco según requerimiento

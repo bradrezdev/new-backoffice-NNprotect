@@ -163,9 +163,9 @@ def shipment_method() -> rx.Component:
                         rx.vstack(
                             rx.text(
                                 "Selecciona una dirección de envío",
-                                font_size="1rem",
+                                size="3",
                                 font_weight="semibold",
-                                margin_bottom="1em"
+                                margin_bottom="0.5em"
                             ),
                             rx.vstack(
                                 *[rx.box(
@@ -210,14 +210,14 @@ def shipment_method() -> rx.Component:
                                         dark="rgba(59, 130, 246, 0.1)"
                                     ),
                                     border=f"1px solid rgba(59, 130, 246, 0.2)",
-                                    border_radius="12px",
+                                    border_radius="29px",
                                     padding="16px",
                                     margin_bottom="12px",
                                     width="100%"
                                 ) for address in saved_addresses],
                                 spacing="0",
                                 width="100%",
-                                margin_bottom="1.5em"
+                                margin_bottom="1em"
                             ),
 
                             # Botón para agregar nueva dirección
@@ -230,8 +230,7 @@ def shipment_method() -> rx.Component:
                                 ),
                                 variant="outline",
                                 size="2",
-                                border_radius="12px",
-                                padding="12px",
+                                border_radius="15px",
                                 width="100%",
                                 _hover={"bg": "rgba(59, 130, 246, 0.05)"}
                             ),
@@ -348,22 +347,20 @@ def shipment_method() -> rx.Component:
                     ),
 
                     # Botón de continuar
-                    rx.button(
-                        rx.hstack(
-                            rx.text("Continuar con el pago"),
-                            rx.icon("arrow-right", size=16),
-                            spacing="2",
-                            align="center"
+                    rx.link(
+                        rx.button(
+                            "Continuar con el pago",
+                            bg=Custom_theme().light_colors()["primary"],
+                            color="white",
+                            size="4",
+                            border_radius="15px",
+                            width="100%",
+                            _hover={"opacity": 0.9, "transform": "translateY(-1px)"},
+                            transition="all 0.2s ease",
+                            margin_top="2em"
                         ),
-                        bg=Custom_theme().light_colors()["primary"],
-                        color="white",
-                        size="3",
-                        border_radius="12px",
-                        padding="16px",
-                        width="100%",
-                        _hover={"opacity": 0.9, "transform": "translateY(-1px)"},
-                        transition="all 0.2s ease",
-                        margin_top="2em"
+                        href="/payment",
+                        width="100%"
                     ),
                     # Propiedades del vstack principal móvil
                     margin="80px 0 20px 0",  # Espacio para el header fijo
