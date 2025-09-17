@@ -13,6 +13,8 @@ from .pages.orders import orders
 from .pages.order_details import order_details
 from .pages.withdrawals import withdrawals
 from .pages.new_withdrawal import new_withdrawal
+from .pages.shipment_method import shipment_method
+from .pages.shopping_cart import shopping_cart
 
 # --- Components ---
 from .layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
@@ -613,3 +615,5 @@ app.add_page(orders, title="NN Protect | Órdenes", route="/orders")
 app.add_page(order_details, title="NN Protect | Detalles de Orden", route="/order_details")
 app.add_page(withdrawals, title="NN Protect | Retiros", route="/withdrawals")
 app.add_page(new_withdrawal, title="NN Protect | Nuevo Retiro", route="/new_withdrawal")
+app.add_page(shipment_method, title="NN Protect | Método de Envío", route="/shipment_method")
+app.add_page(shopping_cart, title="NN Protect | Carrito de Compras", route="/shopping_cart")

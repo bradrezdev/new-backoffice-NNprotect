@@ -292,7 +292,8 @@ def store() -> rx.Component:
                         rx.button(
                             rx.hstack(
                                 rx.icon("shopping-cart", size=20),
-                                rx.text("(0)", font_size="0.9rem"),
+                                rx.text("(6)", font_size="0.9rem"),
+                                on_click=lambda: rx.redirect("/shopping_cart"),
                                 spacing="1"
                             ),
                             bg=rx.color_mode_cond(
@@ -687,7 +688,6 @@ def store() -> rx.Component:
                         width="100%",
                         padding_x="1em"
                     ),
-                    
                     spacing="4",
                     width="100%",
                     margin="80px 0 20px 0",
