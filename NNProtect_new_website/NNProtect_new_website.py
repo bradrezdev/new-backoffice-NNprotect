@@ -596,7 +596,7 @@ pwa_meta = rx.el.meta(
     content="black-translucent"
 )
 app = rx.App(
-    theme=rx.theme(appearance="inherit"),
+    theme=rx.theme(appearance="light"),
     head_components=[
         pwa_meta
     ]
