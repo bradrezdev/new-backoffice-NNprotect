@@ -319,13 +319,22 @@ def mobile_header():
         rx.drawer.root(
             rx.drawer.trigger(
                 rx.button(
-                    rx.icon("menu", size=24, color="black"),
-                    bg="rgba(0, 0, 0, 0.05)",
-                    variant="soft",
+                    rx.icon(
+                        "menu",
+                        color=rx.color_mode_cond(
+                            light=Custom_theme().light_colors()["text"],
+                            dark=Custom_theme().dark_colors()["text"]
+                        ),
+                        size=24
+                        ),
                     radius="full",
                     height="48px",
                     backdrop_filter="blur(30px)",
-                    color=rx.color_mode_cond(
+                    box_shadow=rx.color_mode_cond(
+                        light=Custom_theme().light_colors()["box_shadow"],
+                        dark=Custom_theme().dark_colors()["box_shadow"],
+                    ),
+                    bg=rx.color_mode_cond(
                         light=Custom_theme().light_colors()["traslucid-background"],
                         dark=Custom_theme().dark_colors()["traslucid-background"]
                     ),
