@@ -289,21 +289,23 @@ def store() -> rx.Component:
                     # Título y carrito
                     rx.hstack(
                         rx.text("Tienda", size="8", font_weight="bold"),
-                        rx.button(
-                            rx.hstack(
-                                rx.icon("shopping-cart", size=20),
-                                rx.text("(6)", font_size="0.9rem"),
-                                on_click=lambda: rx.redirect("/shopping_cart"),
-                                spacing="1"
+                        rx.link(
+                            rx.button(
+                                rx.hstack(
+                                    rx.icon("shopping-cart", size=20),
+                                    rx.text("(6)", font_size="0.9rem"),
+                                    spacing="1"
+                                ),
+                                bg=rx.color_mode_cond(
+                                    light=Custom_theme().light_colors()["secondary"],
+                                    dark=Custom_theme().dark_colors()["secondary"]
+                                ),
+                                color="white",
+                                border_radius="15px",
+                                variant="soft",
+                                size="2"
                             ),
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["secondary"],
-                                dark=Custom_theme().dark_colors()["secondary"]
-                            ),
-                            color="white",
-                            border_radius="15px",
-                            variant="soft",
-                            size="2"
+                            href="/shopping_cart",
                         ),
                         align="center",
                         justify="between",

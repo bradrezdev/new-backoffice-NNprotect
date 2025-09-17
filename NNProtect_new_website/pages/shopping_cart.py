@@ -283,18 +283,21 @@ def shopping_cart() -> rx.Component:
 
                         # Botones de acción
                         rx.vstack(
-                            rx.button(
-                                "Proceder al envío",
-                                align="center",
-                                bg=Custom_theme().light_colors()["primary"],
-                                color="white",
-                                size="4",
-                                border_radius="15px",
-                                padding="16px",
+                            rx.link(
+                                rx.button(
+                                    "Proceder al envío",
+                                    align="center",
+                                    bg=Custom_theme().light_colors()["primary"],
+                                    color="white",
+                                    size="4",
+                                    border_radius="15px",
+                                    padding="16px",
+                                    width="100%",
+                                    _hover={"opacity": 0.9, "transform": "translateY(-1px)"},
+                                    transition="all 0.2s ease",
+                                ),
                                 width="100%",
-                                _hover={"opacity": 0.9, "transform": "translateY(-1px)"},
-                                transition="all 0.2s ease",
-                                on_click=lambda: rx.redirect("/shipment_method")
+                                href="/shipment_method",
                             ),
 
                             spacing="2",
