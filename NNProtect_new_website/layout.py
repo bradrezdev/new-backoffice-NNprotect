@@ -119,6 +119,27 @@ def logged_in_user() -> rx.Component:
         #align="end",
     )
 
+def mobile_logged_in_user() -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.image(src="/user_avatar.png", width="40px", border_radius="full", margin_right="8px"),
+            rx.text("Bryan Núñez", font_size="1rem", font_weight="medium", margin_right="16px"),
+            rx.icon("ellipsis-vertical", size=20, margin_left="4px"),
+            align="center",
+            padding="12px 24px 12px 24px",
+        ),
+        border_radius="32px",
+        bg=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["traslucid-background"],
+            dark=Custom_theme().dark_colors()["traslucid-background"]
+        ),
+        box_shadow=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["box_shadow"],
+            dark=Custom_theme().dark_colors()["box_shadow"],
+        ),
+        backdrop_filter="blur(8px)",
+    )
+
 #######################################
 # --- Componentes para el sidebar --- #
 #######################################
@@ -298,11 +319,15 @@ def mobile_header():
         rx.drawer.root(
             rx.drawer.trigger(
                 rx.button(
-                    rx.icon("menu", size=20),
-                    variant="ghost",
+                    rx.icon("menu", size=24, color="black"),
+                    bg="rgba(0, 0, 0, 0.05)",
+                    variant="soft",
+                    radius="full",
+                    height="48px",
+                    backdrop_filter="blur(30px)",
                     color=rx.color_mode_cond(
-                        light=Custom_theme().light_colors()["primary"],
-                        dark=Custom_theme().dark_colors()["text"]
+                        light=Custom_theme().light_colors()["traslucid-background"],
+                        dark=Custom_theme().dark_colors()["traslucid-background"]
                     ),
                 ),
             ),
@@ -314,24 +339,30 @@ def mobile_header():
             ),
             direction="left",
         ),
-        rx.spacer(),
-        rx.heading("Dashboard", size="5"),
-        rx.spacer(),
-        rx.button(
-            rx.icon("user", size=20),
-            variant="ghost",
-            color=rx.color_mode_cond(
-                light=Custom_theme().light_colors()["primary"],
-                dark=Custom_theme().dark_colors()["text"]
-            )
+        rx.box(
+            rx.hstack(
+                rx.image(src="/user_avatar.png", height="40px", border_radius="full", margin_right="4px"),
+                rx.text("Bryan Núñez", font_size="1rem", font_weight="medium", margin_right="8px"),
+                rx.icon("ellipsis-vertical", size=20, margin_left="4px"),
+                align="center",
+                padding="4px 8px 4px 8px",
+            ),
+            border_radius="32px",
+            bg=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["traslucid-background"],
+                dark=Custom_theme().dark_colors()["traslucid-background"]
+            ),
+            box_shadow=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["box_shadow"],
+                dark=Custom_theme().dark_colors()["box_shadow"],
+            ),
+            height="48px",
+            backdrop_filter="blur(8px)",
         ),
         width="100%",
         padding="1rem",
-        bg=rx.color_mode_cond(
-            light=Custom_theme().light_colors()["traslucid-background"],
-            dark=Custom_theme().dark_colors()["traslucid-background"]
-        ),
-        backdrop_filter="blur(30px)",
+        justify="between",
+        
         position="fixed",
         top="0",
         z_index="1"
