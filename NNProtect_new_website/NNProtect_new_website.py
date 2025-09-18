@@ -3,23 +3,23 @@
 import reflex as rx
 
 # --- Pages ---
-from .pages.network import network
-from .pages.network_reports import network_reports
-from .pages.login import login
-from .pages.new_register import register
-from .pages.store import store
-from .pages.income_reports import income_reports
-from .pages.orders import orders
-from .pages.order_details import order_details
-from .pages.withdrawals import withdrawals
-from .pages.new_withdrawal import new_withdrawal
-from .pages.shipment import shipment_method
-from .pages.shopping_cart import shopping_cart
-from .pages.payment import payment
+from .business.network import network
+from .business.network_reports import network_reports
+from .auth.login import login
+from .business.new_register import register
+from .shop.store import store
+from .business.income_reports import income_reports
+from .shop.orders import orders
+from .shop.order_details import order_details
+from .finance.withdrawals import withdrawals
+from .finance.new_withdrawal import new_withdrawal
+from .shop.shipment import shipment_method
+from .shop.shopping_cart import shopping_cart
+from .shop.payment import payment
 
 # --- Components ---
-from .layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
-from .theme import Custom_theme
+from .shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
+from .shared_ui.theme import Custom_theme
 from .status_bar import pwa_meta_tags, wrap_page_with_statusbar  # ← NUEVO IMPORT
 from rxconfig import config
 
