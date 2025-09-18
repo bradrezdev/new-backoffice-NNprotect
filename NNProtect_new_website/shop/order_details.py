@@ -103,7 +103,7 @@ def order_details() -> rx.Component:
                                 rx.flex(
                                     rx.vstack(
                                         rx.box(
-                                            rx.icon("clipboard-clock", size=24, color="#FFFFFF"),
+                                            rx.icon("clipboard-check", size=24, color="#FFFFFF"),
                                             bg="#6B7280" + "70",
                                             border_radius="50%",
                                             padding="10px",
