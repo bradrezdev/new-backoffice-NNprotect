@@ -79,18 +79,6 @@ def login() -> rx.Component:
                                 ),
                                 border_radius="8px",
                             ),
-
-                            rx.hstack(
-                                rx.spacer(),
-                                rx.text("¿No tienes una cuenta?", size="1"),
-                                rx.link("Crear una cuenta", href="/sign_up", color=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["primary"],
-                                dark=Custom_theme().dark_colors()["primary"]
-                            ), size="1"),
-                                rx.spacer(),
-                                spacing="1",
-                                width="100%",
-                            ),
                         ),
 
                         # Propiedades del formulario
@@ -197,24 +185,6 @@ def login() -> rx.Component:
                                 border_radius="8px",
                                 font_weight="bold",
                                 margin_bottom="1rem"
-                            ),
-                            
-                            rx.center(
-                                rx.hstack(
-                                    rx.text("¿No tienes una cuenta?", size="1"),
-                                    rx.link(
-                                        "Crear una cuenta", 
-                                        href="/sign_up", 
-                                        color=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["primary"],
-                                            dark=Custom_theme().dark_colors()["primary"]
-                                        ), 
-                                        size="1",
-                                        font_weight="bold"
-                                    ),
-                                    spacing="1"
-                                ),
-                                width="100%"
                             ),
                             
                             spacing="3",
