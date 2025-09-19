@@ -47,6 +47,12 @@ class Role(Enum):
     MODERATOR = "moderator"               # Moderador con permisos especiales
     SUPPORT = "support"                   # Soporte técnico
 
+class SocialNetwork(Enum):
+    """Redes sociales soportadas para autenticación"""
+    FACEBOOK = "facebook"                 # Facebook
+    INSTAGRAM = "instagram"               # Instagram
+    X = "x"                               # Twitter (X)
+
 class OrderStatus(Enum):
     """Estados posibles de una orden"""
     PENDING = "pending"      # Orden creada pero pendiente de pago
@@ -183,20 +189,20 @@ class UserProfiles(rx.Model, table=True):
     #photo_url: Optional[str] = Field(default=None, max_length=500)
 
 
-class SocialAccount(rx.Model, table=True):
+class SocialAccounts(rx.Model, table=True):
     """
     Cuentas sociales vinculadas a usuarios.
     Permite integración con redes sociales y otros proveedores de identidad.
     """
     # Clave primaria
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    socialaccount_id: int = Field(primary_key=True, index=True)
 
     # Vinculación con usuario
     user_id: int = Field(foreign_key="users.id")
 
     # Información de la cuenta social
-    provider: str = Field(max_length=50)  # google, facebook, twitter, etc.
-    url: str = Field(max_length=500)
+    provider: SocialNetwork = Field(index=True)
+    url: str = Field(default=None)
 
 
 # ============================================================================
