@@ -6,7 +6,7 @@ import reflex as rx
 from .business.network import network
 from .business.network_reports import network_reports
 from .auth.login import login
-from .business.new_register import register
+from .auth.new_register import register
 from .shop.store import store
 from .business.income_reports import income_reports
 from .shop.orders import orders
