@@ -304,7 +304,7 @@ def store() -> rx.Component:
                             variant="soft" if i == 0 else "outline",
                             size="2",
                             border_radius="15px",
-                        ) for i, categoria in enumerate(["Todo", "Suplementos", "Belleza"])],
+                        ) for i, categoria in enumerate(["Todo", "Suplementos", "Cuidado de la piel"])],
                         spacing="2",
                         width="100%",
                         margin_bottom="1.5em",
@@ -630,25 +630,93 @@ def store() -> rx.Component:
                     ),
 
                     # Grid de productos móvil
-                    rx.text("Todos los productos", size="5", font_weight="bold", padding_x="1em"),
+                    rx.text("Suplementos", size="5", font_weight="bold", padding_x="1em"),
                     rx.grid(
                         *[rx.box(
                             rx.vstack(
-                                rx.image(src=f"/product_{i}.png", height="100px", width="100%", object_fit="contain"),
-                                rx.text(f"Producto {i}", font_weight="bold", font_size="0.9rem", text_align="center"),
-                                rx.text("$999.00", font_weight="600", font_size="0.9rem", color=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["primary"],
-                                    dark=Custom_theme().dark_colors()["primary"]
-                                )),
-                                rx.hstack(
-                                    rx.button("-", size="1", variant="soft"),
-                                    rx.text("0", font_size="0.9rem"),
-                                    rx.button("+", size="1", variant="soft"),
-                                    justify="center",
-                                    spacing="2"
+                                # Imagen del producto
+                                rx.image(
+                                    src=f"/product_{i}.jpg",
+                                    height="100%",
+                                    width="100%",
+                                    object_fit="cover",
+                                    border_radius="19px",
+                                    bg="rgba(0,0,0,0.05)",
+                                    margin_bottom="0.5em"
                                 ),
-                                rx.button("Agregar", size="2", width="100%", variant="solid"),
-                                spacing="2",
+
+                                # Información del producto
+                                rx.vstack(
+                                    rx.text(
+                                        f"Producto {i}",
+                                        font_weight="bold",
+                                        font_size="0.9rem",
+                                        text_align="center",
+                                        no_of_lines=2
+                                    ),
+                                    rx.text(
+                                        "$999.00",
+                                        font_weight="600",
+                                        font_size="0.9rem",
+                                        color=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["primary"],
+                                            dark=Custom_theme().dark_colors()["primary"]
+                                        ),
+                                        text_align="center"
+                                    ),
+                                    z_index=1,
+                                    spacing="1",
+                                    align="center",
+                                    width="100%"
+                                ),
+
+                                # Controles de cantidad
+                                rx.hstack(
+                                    rx.button(
+                                        "-",
+                                        size="1",
+                                        variant="soft",
+                                        border_radius="8px",
+                                        min_width="32px",
+                                        height="32px"
+                                    ),
+                                    rx.text(
+                                        "0",
+                                        font_size="0.9rem",
+                                        font_weight="medium",
+                                        min_width="40px",
+                                        text_align="center"
+                                    ),
+                                    rx.button(
+                                        "+",
+                                        size="1",
+                                        variant="soft",
+                                        border_radius="8px",
+                                        min_width="32px",
+                                        height="32px"
+                                    ),
+                                    justify="center",
+                                    spacing="2",
+                                    align="center",
+                                    margin_bottom="0.5em"
+                                ),
+
+                                # Botón agregar
+                                rx.button(
+                                    "Agregar",
+                                    size="3",
+                                    width="100%",
+                                    variant="solid",
+                                    border_radius="19px",
+                                    bg=rx.color_mode_cond(
+                                        light=Custom_theme().light_colors()["primary"],
+                                        dark=Custom_theme().dark_colors()["primary"]
+                                    ),
+                                    color="white",
+                                    _hover={"opacity": 0.9}
+                                ),
+
+                                spacing="3",
                                 align="center",
                                 width="100%"
                             ),
@@ -656,14 +724,130 @@ def store() -> rx.Component:
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            border_radius="12px",
-                            padding="1rem",
-                            width="100%"
-                        ) for i in range(1, 7)],
+                            border_radius="29px",
+                            padding="10px",
+                            width="45vw",  # Ancho fijo para consistencia
+                            #_hover={
+                            #    "transform": "translateY(-2px)",
+                            #    "box_shadow": "0 4px 12px rgba(0, 0, 0, 0.15)"
+                            #},
+                            #transition="all 0.2s ease"
+                        ) for i in range(1, 11)], # 10 productos en total
                         columns="2",
                         spacing="3",
                         width="100%",
-                        padding_x="1em"
+                        padding="0 1em",
+                        margin_bottom="1em",
+                    ),
+
+                    # Grid de productos skin care móvil
+                    rx.text("Cuidado de la piel", size="5", font_weight="bold", padding_x="1em"),
+                    rx.grid(
+                        *[rx.box(
+                            rx.vstack(
+                                # Imagen del producto
+                                rx.image(
+                                    src=f"/product_{i}.jpg",
+                                    height="100%",
+                                    width="100%",
+                                    object_fit="cover",
+                                    border_radius="19px",
+                                    bg="rgba(0,0,0,0.05)",
+                                    margin_bottom="0.5em"
+                                ),
+
+                                # Información del producto
+                                rx.vstack(
+                                    rx.text(
+                                        f"Producto {i}",
+                                        font_weight="bold",
+                                        font_size="0.9rem",
+                                        text_align="center",
+                                        no_of_lines=2
+                                    ),
+                                    rx.text(
+                                        "$999.00",
+                                        font_weight="600",
+                                        font_size="0.9rem",
+                                        color=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["primary"],
+                                            dark=Custom_theme().dark_colors()["primary"]
+                                        ),
+                                        text_align="center"
+                                    ),
+                                    z_index=1,
+                                    spacing="1",
+                                    align="center",
+                                    width="100%"
+                                ),
+
+                                # Controles de cantidad
+                                rx.hstack(
+                                    rx.button(
+                                        "-",
+                                        size="1",
+                                        variant="soft",
+                                        border_radius="8px",
+                                        min_width="32px",
+                                        height="32px"
+                                    ),
+                                    rx.text(
+                                        "0",
+                                        font_size="0.9rem",
+                                        font_weight="medium",
+                                        min_width="40px",
+                                        text_align="center"
+                                    ),
+                                    rx.button(
+                                        "+",
+                                        size="1",
+                                        variant="soft",
+                                        border_radius="8px",
+                                        min_width="32px",
+                                        height="32px"
+                                    ),
+                                    justify="center",
+                                    spacing="2",
+                                    align="center",
+                                    margin_bottom="0.5em"
+                                ),
+
+                                # Botón agregar
+                                rx.button(
+                                    "Agregar",
+                                    size="3",
+                                    width="100%",
+                                    variant="solid",
+                                    border_radius="19px",
+                                    bg=rx.color_mode_cond(
+                                        light=Custom_theme().light_colors()["primary"],
+                                        dark=Custom_theme().dark_colors()["primary"]
+                                    ),
+                                    color="white",
+                                    _hover={"opacity": 0.9}
+                                ),
+
+                                spacing="3",
+                                align="center",
+                                width="100%"
+                            ),
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["tertiary"],
+                                dark=Custom_theme().dark_colors()["tertiary"]
+                            ),
+                            border_radius="29px",
+                            padding="10px",
+                            width="45vw",  # Ancho fijo para consistencia
+                            #_hover={
+                            #    "transform": "translateY(-2px)",
+                            #    "box_shadow": "0 4px 12px rgba(0, 0, 0, 0.15)"
+                            #},
+                            #transition="all 0.2s ease"
+                        ) for i in range(1, 10)], # 9 productos en total
+                        columns="2",
+                        spacing="3",
+                        width="100%",
+                        padding="0 1em",
                     ),
                     spacing="4",
                     width="100%",
@@ -680,4 +864,5 @@ def store() -> rx.Component:
         ),
         position="absolute",
         width="100%",
+        height="max-content",
     )
