@@ -40,6 +40,12 @@ class UserStatus(Enum):
     QUALIFIED = "calificado"             # Usuario calificado
     SUSPENDED = "suspendido"             # Usuario suspendido
 
+class Role(Enum):
+    """Roles posibles para un usuario"""
+    ADMIN = "admin"                       # Administrador del sistema
+    USER = "user"                         # Usuario estándar
+    MODERATOR = "moderator"               # Moderador con permisos especiales
+    SUPPORT = "support"                   # Soporte técnico
 
 class OrderStatus(Enum):
     """Estados posibles de una orden"""
@@ -149,16 +155,16 @@ class AuthCredentials(rx.Model, table=True):
         )
 
 
-class Role(rx.Model, table=True):
+class Roles(rx.Model, table=True):
     """
     Roles asignados a usuarios.
     Permite un sistema de permisos flexible basado en roles.
     """
     # Clave primaria
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    role_id: int = Field(primary_key=True, index=True)
 
     # Información del rol
-    role_name: str = Field(max_length=50)
+    role_name: Role = Field(default=Role.USER)
     user_id: int = Field(foreign_key="users.id")
 
 
