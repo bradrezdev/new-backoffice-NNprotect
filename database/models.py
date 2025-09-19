@@ -11,16 +11,23 @@ Fecha: Septiembre 2025
 Versión: 1.0
 
 Tecnologías:
-- Reflex Framework (SQLModel + SQLAlchemy)
+- Reflex Framework (rx.Model + SQLAlchemy)
 - PostgreSQL (via Supabase)
 - Alembic para migraciones
 """
 
 import reflex as rx
-from datetime import datetime, date
-from typing import Optional, List
+
+# Permite encriptar la contraseña del usuario
+import bcrypt
+
+# Librerías de rx.Model para definir modelos y relaciones
+from sqlmodel import Field, func
+from typing import Optional
 from enum import Enum
-from sqlmodel import Field, SQLModel, Relationship
+
+# Manejo de fechas y horas con zona horaria
+from datetime import datetime, date, timezone
 
 
 # ============================================================================
@@ -29,10 +36,9 @@ from sqlmodel import Field, SQLModel, Relationship
 
 class UserStatus(Enum):
     """Estados posibles de un usuario en el sistema"""
-    PENDING = "pending"      # Usuario registrado pero pendiente de activación
-    ACTIVE = "active"        # Usuario activo
-    SUSPENDED = "suspended"  # Usuario suspendido
-    CANCELLED = "cancelled"  # Usuario cancelado
+    NO_QUALIFIED = "no calificado"       # Usuario no calificado
+    QUALIFIED = "calificado"             # Usuario calificado
+    SUSPENDED = "suspendido"             # Usuario suspendido
 
 
 class OrderStatus(Enum):
@@ -79,7 +85,7 @@ class PayoutProvider(Enum):
 # MODELOS DE USUARIOS Y AUTENTICACIÓN
 # ============================================================================
 
-class User(SQLModel, table=True):
+class Users(rx.Model, table=True):
     """
     Modelo principal de usuarios del sistema.
     Contiene información básica de identificación y estado del usuario.
@@ -93,22 +99,37 @@ class User(SQLModel, table=True):
     - Forma parte de estructura de enrolamiento (user_tree_paths)
     """
     # Clave primaria
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    user_id: int = Field(default=None, primary_key=True, index=True)
 
     # Identificadores únicos
     member_id: str = Field(max_length=20, unique=True, index=True)
     username: str = Field(max_length=50, unique=True, index=True)
-    email: str = Field(max_length=100, unique=True, index=True)
+    email: str = Field(unique=True, index=True)
 
     # Estado y estructura de red
-    status: UserStatus = Field(default=UserStatus.PENDING)
+    status: UserStatus = Field(default=UserStatus.NO_QUALIFIED)
     sponsor_id: Optional[int] = Field(default=None, foreign_key="users.id")
-    referral_code: str = Field(max_length=20, unique=True)
+    referral_code: str = Field(max_length=20, unique=True, default="")
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-class AuthCredential(SQLModel, table=True):
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
+                                 sa_column_kwargs={"server_default": func.now()})
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
+                                 sa_column_kwargs={"server_default": func.now()})
+    
+    @classmethod
+    def create_user(cls, id, member_id, username, user_email, status, sponsor_id, referral_code):
+        return cls(
+            user_id=id,
+            member_id=member_id,
+            username=username,
+            email=user_email,
+            status=status,
+            sponsor_id=sponsor_id,
+            referral_code=referral_code,
+        )
+
+class AuthCredential(rx.Model, table=True):
     """
     Credenciales de autenticación de usuarios.
     Almacena información sensible de autenticación de forma segura.
@@ -121,7 +142,7 @@ class AuthCredential(SQLModel, table=True):
     last_login_at: Optional[datetime] = Field(default=None)
 
 
-class Role(SQLModel, table=True):
+class Role(rx.Model, table=True):
     """
     Roles asignados a usuarios.
     Permite un sistema de permisos flexible basado en roles.
@@ -134,7 +155,7 @@ class Role(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id")
 
 
-class UserProfile(SQLModel, table=True):
+class UserProfile(rx.Model, table=True):
     """
     Perfiles extendidos de usuarios.
     Contiene información personal y de contacto adicional.
@@ -149,7 +170,7 @@ class UserProfile(SQLModel, table=True):
     photo_url: Optional[str] = Field(default=None, max_length=500)
 
 
-class SocialAccount(SQLModel, table=True):
+class SocialAccount(rx.Model, table=True):
     """
     Cuentas sociales vinculadas a usuarios.
     Permite integración con redes sociales y otros proveedores de identidad.
@@ -169,7 +190,7 @@ class SocialAccount(SQLModel, table=True):
 # MODELO DE DIRECCIONES
 # ============================================================================
 
-class Address(SQLModel, table=True):
+class Address(rx.Model, table=True):
     """
     Direcciones físicas reutilizables.
     Almacena direcciones que pueden ser usadas para envío o facturación.
@@ -187,7 +208,7 @@ class Address(SQLModel, table=True):
     note: Optional[str] = Field(default=None)
 
 
-class UserAddress(SQLModel, table=True):
+class UserAddress(rx.Model, table=True):
     """
     Relación muchos-a-muchos entre usuarios y direcciones.
     Permite que un usuario tenga múltiples direcciones con diferentes propósitos.
@@ -205,7 +226,7 @@ class UserAddress(SQLModel, table=True):
 # SISTEMA DE ENROLAMIENTO (MLM TREE)
 # ============================================================================
 
-class UserTreePath(SQLModel, table=True):
+class UserTreePath(rx.Model, table=True):
     """
     Estructura de árbol genealógico para el sistema MLM.
     Implementa el patrón "Path Enumeration" para consultas eficientes de jerarquía.
@@ -225,7 +246,7 @@ class UserTreePath(SQLModel, table=True):
 # SISTEMA DE RANGOS Y VOLÚMENES
 # ============================================================================
 
-class Period(SQLModel, table=True):
+class Period(rx.Model, table=True):
     """
     Períodos de tiempo para cálculo de comisiones y rangos.
     Define ventanas temporales para evaluación de performance.
@@ -238,7 +259,7 @@ class Period(SQLModel, table=True):
     ends_on: date = Field()
 
 
-class UserVolume(SQLModel, table=True):
+class UserVolume(rx.Model, table=True):
     """
     Volúmenes de puntos por usuario y período.
     Almacena PV (Personal Volume) y GV (Group Volume) para cálculos de comisiones.
@@ -255,7 +276,7 @@ class UserVolume(SQLModel, table=True):
     gv: float = Field(default=0.00)  # Group Volume
 
 
-class Rank(SQLModel, table=True):
+class Rank(rx.Model, table=True):
     """
     Definición de rangos disponibles en el sistema.
     Establece los requisitos mínimos de volumen para cada rango.
@@ -269,7 +290,7 @@ class Rank(SQLModel, table=True):
     min_gv: float = Field(default=0.00)  # GV mínimo requerido
 
 
-class UserRankHistory(SQLModel, table=True):
+class UserRankHistory(rx.Model, table=True):
     """
     Historial de rangos alcanzados por usuarios.
     Mantiene un registro temporal de todos los rangos obtenidos.
@@ -290,7 +311,7 @@ class UserRankHistory(SQLModel, table=True):
 # SISTEMA DE PRODUCTOS Y ÓRDENES
 # ============================================================================
 
-class Product(SQLModel, table=True):
+class Product(rx.Model, table=True):
     """
     Catálogo de productos disponibles para venta.
     Define los productos que pueden ser ordenados en el sistema.
@@ -305,7 +326,7 @@ class Product(SQLModel, table=True):
     pv: float = Field(default=0.00)  # Puntos de volumen del producto
 
 
-class Order(SQLModel, table=True):
+class Order(rx.Model, table=True):
     """
     Órdenes de compra realizadas por usuarios.
     Almacena toda la información relacionada con una transacción.
@@ -340,7 +361,7 @@ class Order(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class OrderItem(SQLModel, table=True):
+class OrderItem(rx.Model, table=True):
     """
     Items individuales dentro de una orden.
     Almacena información snapshot del producto al momento de la compra.
@@ -366,7 +387,7 @@ class OrderItem(SQLModel, table=True):
 # SISTEMA DE BILLETERAS Y PAGOS
 # ============================================================================
 
-class Wallet(SQLModel, table=True):
+class Wallet(rx.Model, table=True):
     """
     Billeteras virtuales de usuarios.
     Cada usuario puede tener múltiples billeteras para diferentes propósitos.
@@ -386,7 +407,7 @@ class Wallet(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class WalletLedger(SQLModel, table=True):
+class WalletLedger(rx.Model, table=True):
     """
     Libro mayor de transacciones de billeteras.
     Registra todos los movimientos financieros con trazabilidad completa.
@@ -405,7 +426,7 @@ class WalletLedger(SQLModel, table=True):
     note: Optional[str] = Field(default=None)
 
 
-class PayoutMethod(SQLModel, table=True):
+class PayoutMethod(rx.Model, table=True):
     """
     Métodos de pago configurados por usuarios.
     Almacena información de cuentas bancarias, PayPal, crypto, etc.
@@ -429,7 +450,7 @@ class PayoutMethod(SQLModel, table=True):
     is_default: bool = Field(default=False)
 
 
-class Withdrawal(SQLModel, table=True):
+class Withdrawal(rx.Model, table=True):
     """
     Solicitudes de retiro de fondos.
     Gestiona el proceso completo desde solicitud hasta pago.
@@ -451,7 +472,7 @@ class Withdrawal(SQLModel, table=True):
     processed_at: Optional[datetime] = Field(default=None)
 
 
-class Transfer(SQLModel, table=True):
+class Transfer(rx.Model, table=True):
     """
     Transferencias entre billeteras.
     Permite movimiento de fondos entre diferentes billeteras del sistema.
