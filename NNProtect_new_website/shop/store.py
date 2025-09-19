@@ -5,6 +5,9 @@ from ..shared_ui.theme import Custom_theme
 from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
 
+# Import de estados
+from .store_state import SlideToAnyWhere
+
 """
 # Función para crear tarjetas de productos
 def popular_product_card(product_id: int, price: float, is_popular: bool = False):
@@ -153,7 +156,13 @@ def popular_product_card(product_id: int, price: float, is_popular: bool = False
         position="relative"
     )
 """
-    
+
+categorias_data = [
+    {"name": "Todo", "action": None},
+    {"name": "Suplementos", "action": SlideToAnyWhere.scroll_to_suplements},
+    {"name": "Cuidado de la piel", "action": SlideToAnyWhere.scroll_to_skin_care},
+]
+
 
 def store() -> rx.Component:
     # Welcome Page (Index)
@@ -292,7 +301,7 @@ def store() -> rx.Component:
                     # Categorías móvil
                     rx.hstack(
                         *[rx.button(
-                            categoria,
+                            categoria["name"],
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["secondary"] if i == 0 else "transparent",
                                 dark=Custom_theme().dark_colors()["secondary"] if i == 0 else "transparent"
@@ -304,7 +313,8 @@ def store() -> rx.Component:
                             variant="soft" if i == 0 else "outline",
                             size="2",
                             border_radius="15px",
-                        ) for i, categoria in enumerate(["Todo", "Suplementos", "Cuidado de la piel"])],
+                            on_click=categoria["action"] if categoria["action"] else None
+                        ) for i, categoria in enumerate(categorias_data)],
                         spacing="2",
                         width="100%",
                         margin_bottom="1.5em",
@@ -626,9 +636,8 @@ def store() -> rx.Component:
                         ),
                         padding="0 0 0 1em",
                         width="100%",
-                        margin_bottom="1em"
                     ),
-
+                    rx.spacer(id="suplementos", margin_bottom="4em"),  # Espaciador para el scroll
                     # Grid de productos móvil
                     rx.text("Suplementos", size="5", font_weight="bold", padding_x="1em"),
                     rx.grid(
@@ -737,9 +746,8 @@ def store() -> rx.Component:
                         spacing="3",
                         width="100%",
                         padding="0 1em",
-                        margin_bottom="1em",
                     ),
-
+                    rx.spacer(id="cuidado_piel", margin_bottom="4em"),  # Espaciador para el scroll
                     # Grid de productos skin care móvil
                     rx.text("Cuidado de la piel", size="5", font_weight="bold", padding_x="1em"),
                     rx.grid(
