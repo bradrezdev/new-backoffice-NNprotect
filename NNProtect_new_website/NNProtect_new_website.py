@@ -49,7 +49,7 @@ def index() -> rx.Component:
                                     object_fit="cover",  # Ajuste de imagen
                                     border_radius="64px" # Bordes redondeados
                                 ),
-                                height="260px",         # Alto del banner
+                                height="380px",         # Alto del banner
                                 width="100%",           # Ancho completo
                                 margin_bottom="0.5em",  # Espacio inferior
                             ),
@@ -305,7 +305,7 @@ def index() -> rx.Component:
                             object_fit="cover",
                             border_radius="16px"
                         ),
-                        height="160px",
+                        height="200px",
                         width="100%",
                         margin_bottom="1.5rem"
                     ),

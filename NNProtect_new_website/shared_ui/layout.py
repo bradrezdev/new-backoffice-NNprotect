@@ -121,13 +121,7 @@ def logged_in_user() -> rx.Component:
 
 def mobile_logged_in_user() -> rx.Component:
     return rx.box(
-        rx.hstack(
-            rx.image(src="/user_avatar.png", width="40px", border_radius="full", margin_right="8px"),
-            rx.text("Bryan Núñez", font_size="1rem", font_weight="medium", margin_right="16px"),
-            rx.icon("ellipsis-vertical", size=20, margin_left="4px"),
-            align="center",
-            padding="12px 24px 12px 24px",
-        ),
+        rx.text("Bryan Núñez", font_size="1rem", font_weight="medium", margin_right="16px"),
         border_radius="32px",
         bg=rx.color_mode_cond(
             light=Custom_theme().light_colors()["traslucid-background"],
@@ -348,25 +342,65 @@ def mobile_header():
             ),
             direction="left",
         ),
-        rx.box(
-            rx.hstack(
-                rx.image(src="/user_avatar.png", height="40px", border_radius="full", margin_right="4px"),
-                rx.text("Bryan Núñez", font_size="1rem", font_weight="medium", margin_right="8px"),
-                rx.icon("ellipsis-vertical", size=20, margin_left="4px"),
+        rx.hstack(
+            rx.flex(
+                rx.button(
+                    rx.icon(
+                    "bell",
+                    color=rx.color_mode_cond(
+                        light=Custom_theme().light_colors()["text"],
+                        dark=Custom_theme().dark_colors()["text"]
+                    ),
+                    size=24
+                    ),
+                    variant="ghost",
+                    radius="full",
+                ),
+                rx.link(
+                    rx.button(
+                        rx.icon(
+                        "shopping-cart",
+                        color=rx.color_mode_cond(
+                            light=Custom_theme().light_colors()["text"],
+                            dark=Custom_theme().dark_colors()["text"]
+                        ),
+                        size=24
+                        ),
+                        variant="ghost",
+                        radius="full",
+                    ),
+                    href="/shopping_cart",
+                ),
+                padding="0 16px",
+                spacing="4",
+                direction="row",
+                height="48px",
                 align="center",
-                padding="4px 8px 4px 8px",
+                border_radius="32px",
+                bg=rx.color_mode_cond(
+                    light=Custom_theme().light_colors()["traslucid-background"],
+                    dark=Custom_theme().dark_colors()["traslucid-background"]
+                ),
+                box_shadow=rx.color_mode_cond(
+                    light=Custom_theme().light_colors()["box_shadow"],
+                    dark=Custom_theme().dark_colors()["box_shadow"],
+                ),
+                backdrop_filter="blur(8px)",
             ),
-            border_radius="32px",
-            bg=rx.color_mode_cond(
-                light=Custom_theme().light_colors()["traslucid-background"],
-                dark=Custom_theme().dark_colors()["traslucid-background"]
+            rx.center(
+                rx.text("Bryan Núñez", font_size="1rem", font_weight="bold", margin="0 16px 0 16px"),
+                border_radius="32px",
+                bg=rx.color_mode_cond(
+                    light=Custom_theme().light_colors()["traslucid-background"],
+                    dark=Custom_theme().dark_colors()["traslucid-background"]
+                ),
+                box_shadow=rx.color_mode_cond(
+                    light=Custom_theme().light_colors()["box_shadow"],
+                    dark=Custom_theme().dark_colors()["box_shadow"],
+                ),
+                height="48px",
+                backdrop_filter="blur(8px)",
             ),
-            box_shadow=rx.color_mode_cond(
-                light=Custom_theme().light_colors()["box_shadow"],
-                dark=Custom_theme().dark_colors()["box_shadow"],
-            ),
-            height="48px",
-            backdrop_filter="blur(8px)",
         ),
         width="100%",
         padding="1rem",
