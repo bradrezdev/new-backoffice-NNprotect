@@ -481,7 +481,7 @@ def store() -> rx.Component:
                     ),
 
                     # Productos tendencia móvil
-                    rx.text("Productos tendencia", size="5", font_weight="bold", padding_x="1em"),
+                    rx.text("Productos más pedidos", size="5", font_weight="bold", padding_x="1em"),
                     rx.box(
                         rx.scroll_area(
                             # Contenedor horizontal de las tarjetas
