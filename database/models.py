@@ -183,8 +183,7 @@ class UserProfiles(rx.Model, table=True):
     user_id: int = Field(primary_key=True, foreign_key="users.id")
 
     # Información personal
-    first_name: str = Field(index=True)
-    last_name: str = Field(index=True)
+    fullname: str = Field(index=True)
     phone_number: int = Field(index=True)
     #photo_url: Optional[str] = Field(default=None, max_length=500)
 
