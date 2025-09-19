@@ -158,7 +158,6 @@ def popular_product_card(product_id: int, price: float, is_popular: bool = False
 """
 
 categorias_data = [
-    {"name": "Todo", "action": None},
     {"name": "Suplementos", "action": SlideToAnyWhere.scroll_to_suplements},
     {"name": "Cuidado de la piel", "action": SlideToAnyWhere.scroll_to_skin_care},
 ]
@@ -302,15 +301,8 @@ def store() -> rx.Component:
                     rx.hstack(
                         *[rx.button(
                             categoria["name"],
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["secondary"] if i == 0 else "transparent",
-                                dark=Custom_theme().dark_colors()["secondary"] if i == 0 else "transparent"
-                            ),
-                            color=rx.color_mode_cond(
-                                light="white" if i == 0 else Custom_theme().light_colors()["secondary"],
-                                dark="white"
-                            ),
-                            variant="soft" if i == 0 else "outline",
+                            _hover={"border": f"2px solid {Custom_theme().light_colors()['primary']}"},  # Cambia el borde al pasar el mouse
+                            variant="outline",
                             size="2",
                             border_radius="15px",
                             on_click=categoria["action"] if categoria["action"] else None
