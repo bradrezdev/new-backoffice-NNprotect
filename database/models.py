@@ -168,7 +168,7 @@ class Roles(rx.Model, table=True):
     user_id: int = Field(foreign_key="users.id")
 
 
-class UserProfile(rx.Model, table=True):
+class UserProfiles(rx.Model, table=True):
     """
     Perfiles extendidos de usuarios.
     Contiene información personal y de contacto adicional.
@@ -177,10 +177,10 @@ class UserProfile(rx.Model, table=True):
     user_id: int = Field(primary_key=True, foreign_key="users.id")
 
     # Información personal
-    first_name: str = Field(max_length=100)
-    last_name: str = Field(max_length=100)
-    phone_number: Optional[str] = Field(default=None, max_length=20)
-    photo_url: Optional[str] = Field(default=None, max_length=500)
+    first_name: str = Field(index=True)
+    last_name: str = Field(index=True)
+    phone_number: int = Field(index=True)
+    #photo_url: Optional[str] = Field(default=None, max_length=500)
 
 
 class SocialAccount(rx.Model, table=True):
