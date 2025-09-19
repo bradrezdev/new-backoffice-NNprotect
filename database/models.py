@@ -129,7 +129,7 @@ class Users(rx.Model, table=True):
             referral_code=referral_code,
         )
 
-class AuthCredential(rx.Model, table=True):
+class AuthCredentials(rx.Model, table=True):
     """
     Credenciales de autenticación de usuarios.
     Almacena información sensible de autenticación de forma segura.
@@ -140,6 +140,13 @@ class AuthCredential(rx.Model, table=True):
     # Datos de autenticación
     password_hash: str = Field(max_length=255)
     last_login_at: Optional[datetime] = Field(default=None)
+
+    @classmethod
+    def create_credentials(cls, password_hash):
+        return cls(
+            user_id=Users.user_id,
+            password_hash=password_hash,
+        )
 
 
 class Role(rx.Model, table=True):
