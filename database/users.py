@@ -18,14 +18,6 @@ class UserStatus(Enum):
     QUALIFIED = "calificado"             # Usuario calificado
     SUSPENDED = "suspendido"             # Usuario suspendido
 
-
-class UserGender(Enum):
-    """Género del usuario"""
-    MALE = "masculino"                  # Masculino
-    FEMALE = "femenino"                  # Femenino
-    OTHER = "otro"                       # Otro
-
-
 class Users(rx.Model, table=True):
     """
     Modelo principal de usuarios del sistema.

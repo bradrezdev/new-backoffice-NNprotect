@@ -3,10 +3,10 @@ import bcrypt
 import jwt
 import datetime
 import sqlmodel
-from database.users import Users, UserStatus, UserGender
+from database.users import Users, UserStatus
 from database.auth_credentials import AuthCredentials
 from database.roles import Roles
-from database.userprofiles import UserProfiles
+from database.userprofiles import UserProfiles, UserGender
 from database.social_accounts import SocialAccounts
 from database.roles_users import RolesUsers
 
@@ -185,23 +185,52 @@ class AuthState(rx.State):
             created_at=datetime.datetime.utcnow(),
             updated_at=datetime.datetime.utcnow()
         )
-        with rx.session() as session:
-            session.add(new_user)
-            session.commit()  # Commit intermedio para obtener el ID
-            session.refresh(new_user)  # Obtener el ID autogenerado
+        session.add(new_user)  # Usar la sesión recibida
+        session.commit()  # Commit intermedio para obtener el ID
+        session.refresh(new_user)  # Obtener el ID autogenerado
         return new_user
+
+    def _create_user_profile(self, session, user_id: int):
+        """Crea el perfil detallado del usuario."""
+        # Convertir gender string a enum con valores exactos del select
+        if self.gender == "Masculino":  # Valor exacto del select
+            gender_enum = UserGender.MALE
+        elif self.gender == "Femenino":  # Valor exacto del select
+            gender_enum = UserGender.FEMALE
+        else:
+            # Valor por defecto para casos no contemplados (vacío, "Seleccionar...", etc.)
+            gender_enum = UserGender.MALE
+            print(f"DEBUG: Género no reconocido '{self.gender}', usando MALE por defecto")
+            
+        new_profile = UserProfiles(
+            user_id=user_id,
+            fullname=self.user_fullname,
+            gender=gender_enum,
+            phone_number=self.phone_number
+        )
+        session.add(new_profile)
+        print(f"DEBUG: Perfil creado con género: {gender_enum} (valor original: '{self.gender}')")
 
     def _create_auth_credentials(self, session, user_id: int):
         """Crea las credenciales de autenticación con contraseña hasheada."""
-        # Hashear la contraseña (usando bcrypt como en el ejemplo anterior)
         hashed_password = bcrypt.hashpw(self.password.encode('utf-8'), bcrypt.gensalt())
         
         new_credentials = AuthCredentials(
             user_id=user_id,
-            password_hash=hashed_password.decode('utf-8')
+            password_hash=hashed_password.decode('utf-8'),
+            terms_accepted=self.terms_accepted
         )
-        with rx.session() as session:
-            session.add(new_credentials)
+        session.add(new_credentials)
+
+    def _create_social_accounts(self, session, user_id: int):
+        """Crea un registro de cuentas sociales con valores por defecto."""
+        social_accounts = SocialAccounts(
+            user_id=user_id,
+            provider="none",  # Valor por defecto para campo requerido
+            url=""  # URL vacía por defecto
+        )
+        session.add(social_accounts)
+        print("DEBUG: Cuentas sociales creadas con provider='none'")
 
     def _assign_default_role(self, session, user_id: int):
         """Asigna el rol por defecto al usuario."""
@@ -215,41 +244,10 @@ class AuthState(rx.State):
                 user_id=user_id,
                 role_id=default_role.role_id
             )
-            with rx.session() as session:
-                session.add(user_role)
-                print(f"DEBUG: Rol {user_role.role_id} agregado al usuario {user_role.user_id}")
+            session.add(user_role)
+            print(f"DEBUG: Rol {user_role.role_id} agregado al usuario {user_role.user_id}")
         else:
-            raise Exception("Rol por defecto 'user' no encontrado en la base de datos.")
-
-    def _create_user_profile(self, session, user_id: int):
-        """Crea el perfil detallado del usuario."""
-        # Convertir gender string a enum
-        if self.gender.lower() == "masculino":
-            gender_enum = UserGender.MALE
-        elif self.gender.lower() == "femenino":
-            gender_enum = UserGender.FEMALE
-        else:
-            gender_enum = UserGender.OTHER
-            
-        new_profile = UserProfiles(
-            user_id=user_id,
-            fullname=self.user_fullname,
-            gender=gender_enum,
-            phone_number=self.phone_number
-        )
-        with rx.session() as session:
-            session.add(new_profile)
-
-    def _create_social_accounts(self, session, user_id: int):
-        """Crea un registro vacío de cuentas sociales."""
-        # Por defecto, sin cuentas sociales conectadas
-        social_accounts = SocialAccounts(
-            user_id=user_id,
-            # Los campos específicos (facebook_id, google_id, etc.) quedan None
-        )
-        with rx.session() as session:
-            session.add(social_accounts)
-            session.commit()
+            raise Exception("Rol por defecto 'USER' no encontrado en la base de datos.")
 
     def _clear_registration_form(self):
         """Limpia el formulario después del registro exitoso."""
@@ -261,3 +259,4 @@ class AuthState(rx.State):
         self.gender = ""
         self.phone_number = ""
         self.terms_accepted = False
+        rx.redirect("/dashboard", replace=True)

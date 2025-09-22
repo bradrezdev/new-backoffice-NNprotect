@@ -4,9 +4,8 @@ from enum import Enum
 
 class UserGender(Enum):
     """Género del usuario"""
-    MALE = "masculino"                  # Masculino
-    FEMALE = "femenino"                  # Femenino
-    OTHER = "otro"                       # Otro
+    MALE = "MALE"                  # Masculino
+    FEMALE = "FEMALE"                  # Femenino
 
 class UserProfiles(rx.Model, table=True):
     """

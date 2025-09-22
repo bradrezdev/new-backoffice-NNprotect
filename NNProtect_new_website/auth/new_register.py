@@ -319,7 +319,7 @@ def register() -> rx.Component:
                         
                         rx.text("Sexo*", font_weight="medium", font_size="0.9rem"),
                         rx.select(
-                            ["Seleccionar una opción", "Masculino", "Femenino"],
+                            ["Masculino", "Femenino"],
                             placeholder="Seleccionar una opción",
                             radius="large",
                             bg=rx.color_mode_cond(
@@ -329,6 +329,8 @@ def register() -> rx.Component:
                             width="100%",
                             size="3",
                             required=True,
+                            value=AuthState.gender,
+                            on_change=AuthState.set_gender,
                         ),
                         
                         rx.text("Celular*", font_weight="medium", font_size="0.9rem"),
