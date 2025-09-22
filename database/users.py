@@ -14,9 +14,9 @@ from datetime import datetime, date, timezone
 
 class UserStatus(Enum):
     """Estados posibles de un usuario en el sistema"""
-    NO_QUALIFIED = "no calificado"       # Usuario no calificado
-    QUALIFIED = "calificado"             # Usuario calificado
-    SUSPENDED = "suspendido"             # Usuario suspendido
+    NO_QUALIFIED = "NO_QUALIFIED"       # Usuario no calificado
+    QUALIFIED = "QUALIFIED"             # Usuario calificado
+    SUSPENDED = "SUSPENDED"             # Usuario suspendido
 
 class Users(rx.Model, table=True):
     """
@@ -32,7 +32,7 @@ class Users(rx.Model, table=True):
     - Forma parte de estructura de enrolamiento (user_tree_paths)
     """
     # Clave primaria
-    id: int = Field(default=None, primary_key=True, index=True)
+    id: int | None = Field(default=None, primary_key=True, index=True)
 
     # Identificadores únicos
     member_id: int = Field(unique=True, index=True)

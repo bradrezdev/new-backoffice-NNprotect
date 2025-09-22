@@ -3,45 +3,113 @@ import bcrypt
 import jwt
 import datetime
 import sqlmodel
+import os
+from dotenv import load_dotenv
 from database.users import Users, UserStatus
 from database.auth_credentials import AuthCredentials
 from database.roles import Roles
 from database.userprofiles import UserProfiles, UserGender
-from database.social_accounts import SocialAccounts
+from database.social_accounts import SocialAccounts, SocialNetwork
 from database.roles_users import RolesUsers
+from database.addresses import Countries, Addresses
+from database.users_addresses import UserAddresses
 
 class AuthState(rx.State):
-    """State para manejar la autenticación del usuario."""
+    """State para manejar la autenticación del usuario, registro y sesión."""
     is_loading: bool = False
     error_message: str = ""
     
-    """State para manejar la autenticación del usuario."""
-    
-    # Datos del perfil
-    user_id: int = 0
-    user_fullname: str = ""
-    gender: str = ""
-    phone_number: str = ""
-
-    # Datos de autenticación
+    # --- Campos de Registro ---
     username: str = ""
     email: str = ""
     password: str = ""
     confirmed_password: str = ""
+    user_firstname: str = ""
+    user_lastname: str = ""
+    phone_number: str = ""
+    gender: str = ""
     terms_accepted: bool = False
+    
+    # Nuevos campos de dirección
+    street_number: str = ""
+    neighborhood: str = ""
+    city: str = ""
+    zip_code: str = ""
+    country: str = ""
+    state: str = ""
 
-    # Sesión
+    # --- Campos de Sesión (fusionados desde la clase Login) ---
     auth_token: str = rx.Cookie(name="auth_token", secure=False, same_site="Lax")
     logged_user_data: dict = {}
     is_logged_in: bool = False
+    
+    # Setters para campos de dirección
+    def set_street_number(self, value: str):
+        self.street_number = value
+    
+    def set_neighborhood(self, value: str):
+        self.neighborhood = value
+    
+    def set_city(self, value: str):
+        self.city = value
+    
+    def set_zip_code(self, value: str):
+        self.zip_code = value
+    
+    def set_country(self, value: str):
+        self.country = value
+        self.state = ""  # Resetear estado cuando cambie país
+    
+    def set_state(self, value: str):
+        self.state = value
+    
+    COUNTRY_MAP = {
+        "USA": "United States",
+        "COLOMBIA": "Colombia",
+        "MEXICO": "Mexico",
+        "PUERTO_RICO": "Puerto Rico",
+    }
+    
+    # Computed var para obtener lista de países amigables
+    @rx.var
+    def country_options(self) -> list[str]:
+        """Lista de países disponibles para el usuario."""
+        return list(self.COUNTRY_MAP.values())
+    
+    # Computed var para obtener estados del país seleccionado
+    @rx.var
+    def state_options(self) -> list[str]:
+        """Lista de estados basada en el país seleccionado."""
+        if not self.country:
+            return []
+        
+        try:
+            # Encontrar la clave del país a partir del valor amigable
+            country_key = None
+            for key, value in self.COUNTRY_MAP.items():
+                if value == self.country:
+                    country_key = key
+                    break
+            
+            if country_key:
+                selected_country = Countries[country_key]
+                states = selected_country.states()
+                return states if states is not None else []
+            return []
+        except:
+            return []
 
     profile_data: dict = {}
     social_accounts: list = []
 
     # Setters y getters
     @rx.event
-    def set_fullname(self, fullname: str):
-        self.user_fullname = fullname
+    def set_firstname(self, firstname: str):
+        self.user_firstname = firstname
+
+    @rx.event
+    def set_lastname(self, lastname: str):
+        self.user_lastname = lastname
 
     @rx.event
     def set_gender(self, gender: str):
@@ -126,6 +194,14 @@ class AuthState(rx.State):
                 self._create_social_accounts(session, new_user.id)
                 print("DEBUG: Cuentas sociales creadas")
 
+                # 4f. Crear dirección del usuario (si se proporcionaron datos)
+                if self.street_number and self.city and self.country:
+                    print("DEBUG: Creando dirección del usuario...")
+                    self._create_user_address(session, new_user.id)
+                    print("DEBUG: Dirección procesada")
+                else:
+                    print("DEBUG: Saltando creación de dirección - datos incompletos")
+
                 # --- 5. Confirmar todos los cambios ---
                 session.commit()
                 print("DEBUG: Todos los cambios confirmados en la base de datos")
@@ -141,7 +217,7 @@ class AuthState(rx.State):
         print("DEBUG: Registro exitoso, limpiando formulario y redirigiendo...")
         self._clear_registration_form()
         self.is_loading = False
-        return rx.redirect("/dashboard", replace=True)
+        return rx.redirect("/", replace=True)
 
     # --- Métodos auxiliares para mantener el código organizado ---
 
@@ -152,10 +228,17 @@ class AuthState(rx.State):
             return False
         
         required_fields = [self.username, self.email, self.password, 
-                          self.user_fullname, self.terms_accepted]
+                          self.user_firstname, self.user_lastname, self.terms_accepted]
         if not all(required_fields):
             self.error_message = "Faltan campos obligatorios."
             return False
+        
+        # Validar campos de dirección si se proporcionaron
+        if self.street_number or self.city or self.country:
+            address_fields = [self.street_number, self.city, self.country]
+            if not all(address_fields):
+                self.error_message = "Si proporciona dirección, complete todos los campos obligatorios."
+                return False
         
         return True
 
@@ -180,7 +263,7 @@ class AuthState(rx.State):
             member_id=member_id,
             username=self.username,
             email=self.email,
-            status="NO_QUALIFIED",
+            status=UserStatus.NO_QUALIFIED,  # Usar el enum correcto
             referral_code=f"{member_id:05d}",
             created_at=datetime.datetime.utcnow(),
             updated_at=datetime.datetime.utcnow()
@@ -204,7 +287,8 @@ class AuthState(rx.State):
             
         new_profile = UserProfiles(
             user_id=user_id,
-            fullname=self.user_fullname,
+            first_name=self.user_firstname,
+            last_name=self.user_lastname,
             gender=gender_enum,
             phone_number=self.phone_number
         )
@@ -226,11 +310,11 @@ class AuthState(rx.State):
         """Crea un registro de cuentas sociales con valores por defecto."""
         social_accounts = SocialAccounts(
             user_id=user_id,
-            provider="none",  # Valor por defecto para campo requerido
+            provider="none",
             url=""  # URL vacía por defecto
         )
         session.add(social_accounts)
-        print("DEBUG: Cuentas sociales creadas con provider='none'")
+        print("DEBUG: Cuentas sociales creadas.")
 
     def _assign_default_role(self, session, user_id: int):
         """Asigna el rol por defecto al usuario."""
@@ -249,14 +333,205 @@ class AuthState(rx.State):
         else:
             raise Exception("Rol por defecto 'USER' no encontrado en la base de datos.")
 
+    def _create_user_address(self, session, user_id: int):
+        """Crea la dirección del usuario si se proporcionaron datos."""
+        if not (self.street_number and self.city and self.country):
+            print("DEBUG: No se proporcionaron datos de dirección, saltando creación")
+            return
+        
+        try:
+            # Encontrar la clave del país a partir del valor amigable
+            country_key = None
+            for key, value in self.COUNTRY_MAP.items():
+                if value == self.country:
+                    country_key = key
+                    break
+            
+            if not country_key:
+                raise ValueError(f"País '{self.country}' no es válido")
+            
+            country_enum = Countries[country_key]
+            
+            # Crear registro de dirección
+            new_address = Addresses(
+                street=self.street_number,
+                number="",
+                neighborhood=self.neighborhood or "",
+                city=self.city,
+                state=self.state or "",
+                country=country_enum,
+                zip_code=self.zip_code or ""
+            )
+            session.add(new_address)
+            session.flush()  # Flush para verificar errores antes del commit final
+            
+            # Crear relación usuario-dirección
+            user_address = UserAddresses(
+                user_id=user_id,
+                address_id=new_address.id,
+                address_name="Principal",
+                is_default=True,
+                created_at=datetime.datetime.utcnow().isoformat(),
+                updated_at=datetime.datetime.utcnow().isoformat()
+            )
+            session.add(user_address)
+            
+            print(f"DEBUG: Dirección creada exitosamente para usuario {user_id}")
+            
+        except Exception as e:
+            print(f"DEBUG: Error al crear dirección: {str(e)}")
+            session.rollback()
+            print("DEBUG: Rollback realizado, continuando registro sin dirección")
+
+
     def _clear_registration_form(self):
         """Limpia el formulario después del registro exitoso."""
         self.username = ""
         self.email = ""
         self.password = ""
         self.confirmed_password = ""
-        self.user_fullname = ""
+        self.user_firstname = ""
+        self.user_lastname = ""
         self.gender = ""
         self.phone_number = ""
         self.terms_accepted = False
-        rx.redirect("/dashboard", replace=True)
+        # Limpiar campos de dirección
+        self.street_number = ""
+        self.neighborhood = ""
+        self.city = ""
+        self.zip_code = ""
+        self.country = ""
+        self.state = ""
+
+    # --- Métodos de Sesión (fusionados desde la clase Login) ---
+
+    def _create_jwt_token(self, user: Users) -> str:
+        """Crea un JWT token para el usuario autenticado."""
+        load_dotenv()  # Cargar variables de entorno desde .env
+        jwt_secret_key = os.environ.get("JWT_SECRET_KEY")
+
+        login_token = {
+            "id": user.id,
+            "username": user.username,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=60)  # Token válido por 60 minutos
+        }
+        token = jwt.encode(login_token, jwt_secret_key, algorithm="HS256")
+        return token.decode('utf-8') if isinstance(token, bytes) else token
+        
+    def _decode_jwt_token(self, token: str) -> dict:
+        """Decodifica el JWT token para obtener los datos del usuario."""
+        load_dotenv()  # Cargar variables de entorno desde .env
+        jwt_secret_key = os.environ.get("JWT_SECRET_KEY")
+        if not token:
+            return {}
+        try:
+            decoded = jwt.decode(token, jwt_secret_key, algorithms=["HS256"])
+            return decoded
+        except jwt.ExpiredSignatureError:
+            self.is_logged_in = False
+            self.logged_user_data = {}
+            self.auth_token = ""
+            print("DEBUG: Token expirado")
+            return {}
+        except jwt.InvalidTokenError:
+            self.is_logged_in = False
+            self.logged_user_data = {}
+            self.auth_token = ""
+            print("DEBUG: Token inválido")
+            return {}
+        
+    @rx.event
+    def login_user(self):
+        """Iniciar sesión del usuario y establecer el token de autenticación."""
+        self.is_loading = True
+        self.error_message = ""
+        
+        try:
+            with rx.session() as session:
+                user = session.exec(
+                    sqlmodel.select(Users).where(Users.username == self.username)
+                ).first()
+                
+                if not user:
+                    self.error_message = "Usuario no encontrado."
+                    self.is_loading = False
+                    return
+                
+                credentials = session.exec(
+                    sqlmodel.select(AuthCredentials).where(AuthCredentials.user_id == user.id)
+                ).first()
+                
+                if not credentials or not bcrypt.checkpw(self.password.encode('utf-8'), credentials.password_hash.encode('utf-8')):
+                    self.error_message = "Contraseña incorrecta."
+                    self.is_loading = False
+                    return
+                
+                # Generar y almacenar el token JWT
+                token = self._create_jwt_token(user)
+                self.auth_token = token
+                self.is_logged_in = True
+                self.logged_user_data = {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "member_id": user.member_id,
+                    "status": user.status.value
+                }
+        
+        except Exception as e:
+            print(f"DEBUG: Error inesperado durante el login: {str(e)}")
+            self.error_message = "Ocurrió un error inesperado. Inténtalo de nuevo."
+            self.is_loading = False
+            return
+
+        print(f"DEBUG: Usuario {self.username} ha iniciado sesión exitosamente")
+        self.is_loading = False
+        return rx.redirect("/dashboard", replace=True)
+
+    @rx.event
+    def load_user_from_token(self):
+        """Carga los datos del usuario desde el token almacenado en cookies."""
+        payload = self._decode_jwt_token(self.auth_token)
+        if not payload:
+            self.is_logged_in = False
+            self.logged_user_data = {}
+            return
+        
+        user_id = payload.get("id")
+        with rx.session() as session:
+            user = session.exec(
+                sqlmodel.select(Users).where(Users.id == user_id)
+            ).first()
+            if user:
+                self.is_logged_in = True
+                self.logged_user_data = {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "member_id": user.member_id,
+                    "status": user.status.value
+                }
+            else:
+                self.is_logged_in = False
+                self.logged_user_data = {}
+
+        print(f"DEBUG: Datos del usuario cargados desde token: {self.logged_user_data}")
+
+    @rx.event
+    def check_login(self):
+        """Verifica si el usuario está logueado basado en el token."""
+        if self.auth_token:
+            self.load_user_from_token()
+        else:
+            self.is_logged_in = False
+            self.logged_user_data = {}
+        print(f"DEBUG: Estado de login verificado: {self.is_logged_in}")
+
+    @rx.event
+    def logout_user(self):
+        """Cierra la sesión del usuario y limpia el estado."""
+        self.auth_token = ""
+        self.is_logged_in = False
+        self.logged_user_data = {}
+        print("DEBUG: Usuario ha cerrado sesión")
+        return rx.redirect("/login", replace=True)

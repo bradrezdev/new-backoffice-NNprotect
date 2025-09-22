@@ -1,5 +1,6 @@
 __pycache__/
 .states
+.env
 assets/external/
 *.py[cod]
 *.db

@@ -4,6 +4,7 @@ import reflex as rx
 from rxconfig import config
 #from ..state import Login
 from ..shared_ui.theme import Custom_theme
+from .auth_state import AuthState
 
 def login() -> rx.Component:
     # Contenedor principal
@@ -29,12 +30,12 @@ def login() -> rx.Component:
                             
                             rx.spacer(),
 
-                            rx.text("Correo electrónico"),
+                            rx.text("Usuario"),
                             rx.input(
-                                placeholder="Escribe tu correo electrónico",
-                                type="email",
-                                #value=Login.email,
-                                #on_change=Login.setEmail,
+                                placeholder="Escribe tu usuario",
+                                type="text",
+                                value=AuthState.username,
+                                on_change=AuthState.set_username,
                                 required=True,
                                 style={"border": "1px solid black"},
                                 border_color=rx.color_mode_cond(
@@ -50,8 +51,8 @@ def login() -> rx.Component:
                             rx.input(
                                 placeholder="Escribe tu contraseña",
                                 type="password",
-                                #value=Login.password,
-                                #on_change=Login.setPassword,
+                                value=AuthState.password,
+                                on_change=AuthState.set_password,
                                 required=True,
                                 style={"border": "1px solid black"},
                                 border_color=rx.color_mode_cond(
@@ -82,7 +83,7 @@ def login() -> rx.Component:
                         ),
 
                         # Propiedades del formulario
-                        #on_submit=Login.login_user,
+                        on_submit=AuthState.login_user,
                         padding="20%",
                         width="100%",
                     ),
@@ -129,10 +130,12 @@ def login() -> rx.Component:
                                 margin_bottom="1rem"
                             ),
                             
-                            rx.text("Correo electrónico", font_weight="bold", font_size="0.9rem"),
+                            rx.text("Usuario", font_weight="bold", font_size="0.9rem"),
                             rx.input(
-                                placeholder="Escribe tu correo electrónico",
-                                type="email",
+                                placeholder="Escribe tu usuario",
+                                type="text",
+                                value=AuthState.username,
+                                on_change=AuthState.set_username,
                                 required=True,
                                 border_color=rx.color_mode_cond(
                                     light=Custom_theme().light_colors()["primary"],
@@ -148,6 +151,8 @@ def login() -> rx.Component:
                             rx.input(
                                 placeholder="Escribe tu contraseña",
                                 type="password",
+                                value=AuthState.password,
+                                on_change=AuthState.set_password,
                                 required=True,
                                 border_color=rx.color_mode_cond(
                                     light=Custom_theme().light_colors()["primary"],
@@ -184,12 +189,13 @@ def login() -> rx.Component:
                                 color="white",
                                 border_radius="8px",
                                 font_weight="bold",
-                                margin_bottom="1rem"
+                                margin_bottom="1rem",
                             ),
                             
                             spacing="3",
                             width="100%"
                         ),
+                        on_submit=AuthState.login_user,
                         width="100%",
                         padding="1rem"
                     ),

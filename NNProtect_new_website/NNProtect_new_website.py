@@ -608,7 +608,7 @@ app = rx.App(
 )
 
 app.add_page(index, title="NN Protect | Dashboard", route="/dashboard")
-app.add_page(login, title="NN Protect | Iniciar sesión", route="/login")
+app.add_page(login, title="NN Protect | Iniciar sesión", route="/")
 app.add_page(register, title="NN Protect | Nuevo registro", route="/new_register")
 app.add_page(network, title="NN Protect | Red", route="/network")
 app.add_page(network_reports, title="NN Protect | Reportes de Red", route="/network_reports")
