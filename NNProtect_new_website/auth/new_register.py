@@ -5,6 +5,8 @@ from ..shared_ui.theme import Custom_theme
 from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 
+from .auth_state import AuthState
+
 def register() -> rx.Component:
     # Welcome Page (Index)
     return rx.center(
@@ -295,9 +297,17 @@ def register() -> rx.Component:
                         # Información personal
                         rx.text("Información Personal", font_weight="bold", font_size="1.1rem", margin_bottom="0.5em"),
                         
-                        rx.text("Nombre completo*", font_weight="medium", font_size="0.9rem"),
+                        rx.text(
+                            "Nombre completo*",
+                            font_weight="medium",
+                            font_size="0.9rem",
+                            ),
                         rx.input(
                             placeholder="Escribe el nombre completo...",
+                            value=AuthState.user_fullname,
+                            on_change=AuthState.set_fullname,
+                            required=True,
+                            reset_on_submit=True,
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -324,6 +334,8 @@ def register() -> rx.Component:
                         rx.text("Celular*", font_weight="medium", font_size="0.9rem"),
                         rx.input(
                             placeholder="Ejemplo: 3121234567",
+                            value=AuthState.phone_number,
+                            on_change=AuthState.set_phone_number,
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -333,7 +345,7 @@ def register() -> rx.Component:
                             width="100%",
                             margin_bottom="1rem"
                         ),
-                        
+                        """
                         # Dirección
                         rx.text("Dirección", font_weight="bold", font_size="1.1rem", margin_bottom="0.5em"),
                         
@@ -348,7 +360,7 @@ def register() -> rx.Component:
                             height="48px",
                             width="100%",
                         ),
-                        
+
                         rx.hstack(
                             rx.vstack(
                                 rx.text("Ciudad*", font_weight="medium", font_size="0.9rem"),
@@ -382,13 +394,17 @@ def register() -> rx.Component:
                             width="100%",
                             margin_bottom="1.5rem"
                         ),
-                        
+                        """,
                         # Acceso al sistema
                         rx.text("Acceso al Sistema", font_weight="bold", font_size="1.1rem", margin_bottom="0.5rem"),
                         
                         rx.text("Usuario*", font_weight="medium", font_size="0.9rem"),
                         rx.input(
                             placeholder="Usuario único",
+                            value=AuthState.username,
+                            on_change=AuthState.set_username,
+                            required=True,
+                            reset_on_submit=True,
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -402,6 +418,10 @@ def register() -> rx.Component:
                         rx.input(
                             type="email",
                             placeholder="Correo electrónico",
+                            value=AuthState.email,
+                            on_change=AuthState.set_email,
+                            required=True,
+                            reset_on_submit=True,
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -415,6 +435,10 @@ def register() -> rx.Component:
                         rx.input(
                             type="password",
                             placeholder="Crea una contraseña",
+                            value=AuthState.password,
+                            on_change=AuthState.set_password,
+                            required=True,
+                            reset_on_submit=True,
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -436,6 +460,10 @@ def register() -> rx.Component:
                         rx.input(
                             type="password",
                             placeholder="Confirma la contraseña",
+                            value=AuthState.confirmed_password,
+                            on_change=AuthState.set_confirmed_password,
+                            required=True,
+                            reset_on_submit=True,
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -447,7 +475,11 @@ def register() -> rx.Component:
                         
                         # Términos y condiciones
                         rx.hstack(
-                            rx.checkbox(),
+                            rx.checkbox(
+                                is_checked=AuthState.terms_accepted,
+                                on_change=AuthState.set_terms_accepted,
+                                required=True,
+                            ),
                             rx.text(
                                 "He leído los ", rx.link("terminos y condiciones.", href="#"),
                                 font_size="0.85em"  # --- Propiedades rx.text ---
@@ -468,7 +500,8 @@ def register() -> rx.Component:
                             height="64px",
                             font_size="1.1rem",
                             font_weight="bold",
-                            type="submit"
+                            type="submit",
+                            on_click=AuthState.new_register,
                         ),
                         
                         spacing="3",
