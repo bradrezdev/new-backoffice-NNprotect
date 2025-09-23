@@ -34,8 +34,8 @@ def login() -> rx.Component:
                             rx.input(
                                 placeholder="Escribe tu correo electrónico",
                                 type="text",
-                                value=AuthState.email,
-                                on_change=AuthState.set_email,
+                                value=AuthState.username,
+                                on_change=AuthState.set_username,
                                 required=True,
                                 style={"border": "1px solid black"},
                                 border_color=rx.color_mode_cond(
@@ -134,8 +134,8 @@ def login() -> rx.Component:
                             rx.input(
                                 placeholder="Escribe tu correo electrónico",
                                 type="text",
-                                value=AuthState.email,
-                                on_change=AuthState.set_email,
+                                value=AuthState.username,
+                                on_change=AuthState.set_username,
                                 required=True,
                                 border_color=rx.color_mode_cond(
                                     light=Custom_theme().light_colors()["primary"],

@@ -39,7 +39,7 @@ class AuthState(rx.State):
     state: str = ""
 
     # --- Campos de Sesión (fusionados desde la clase Login) ---
-    auth_token: str = rx.Cookie(name="auth_token", secure=False, same_site="Lax")
+    auth_token: str = rx.Cookie(name="auth_token", secure=True, same_site="Lax")
     logged_user_data: dict = {}
     is_logged_in: bool = False
     
@@ -405,88 +405,252 @@ class AuthState(rx.State):
 
     # --- Métodos de Sesión (fusionados desde la clase Login) ---
 
+    def _get_jwt_secret(self) -> str:
+        """Obtiene la clave JWT con detección robusta de entorno."""
+        # Detectar si estamos en producción
+        is_production = (
+            os.environ.get("REFLEX_ENV") == "prod" or 
+            not os.path.exists(".env") or
+            "reflex.dev" in os.environ.get("HOSTNAME", "")
+        )
+        
+        if is_production:
+            # En producción, usar clave hardcodeada
+            jwt_secret = "cd3de0d6ca1fe14e1d1893137218613d76d63f88902412c204882deec8681d7b"
+            print("DEBUG: Usando JWT secret de PRODUCCIÓN (hardcodeado)")
+            return jwt_secret
+        else:
+            # En desarrollo, usar .env
+            load_dotenv()
+            jwt_secret = os.environ.get("JWT_SECRET_KEY")
+            if not jwt_secret:
+                print("DEBUG: JWT_SECRET_KEY no encontrada en .env, usando fallback")
+                jwt_secret = "cd3de0d6ca1fe14e1d1893137218613d76d63f88902412c204882deec8681d7b"
+            else:
+                print("DEBUG: Usando JWT secret desde .env (desarrollo)")
+            return jwt_secret
+
     def _create_jwt_token(self, user: Users) -> str:
         """Crea un JWT token para el usuario autenticado."""
-        load_dotenv()  # Cargar variables de entorno desde .env
-        jwt_secret_key = os.environ.get("JWT_SECRET_KEY")
+        try:
+            jwt_secret_key = self._get_jwt_secret()  # ✅ Ahora el método existe
+            print(f"DEBUG: JWT Secret configurado correctamente")
+            
+            # Validar y convertir campos del usuario
+            print(f"DEBUG: Datos del usuario para token - ID: {user.id} (tipo: {type(user.id)})")
+            print(f"DEBUG: Username: {user.username} (tipo: {type(user.username)})")
+            
+            # Asegurar que todos los valores sean del tipo correcto
+            user_id = int(user.id) if user.id is not None else 0
+            username = str(user.username) if user.username is not None else "unknown"
+            
+            print(f"DEBUG: Valores convertidos - ID: {user_id}, Username: '{username}'")
+            
+            # Crear payload con tipos seguros
+            login_token = {
+                "id": user_id,  # int es compatible con JSON
+                "username": username,  # string
+                "exp": int((datetime.datetime.utcnow() + datetime.timedelta(minutes=5)).timestamp())  # timestamp como int
+            }
+            
+            print(f"DEBUG: Payload del token: {login_token}")
+            
+            # Generar el token
+            token = jwt.encode(login_token, jwt_secret_key, algorithm="HS256")
+            
+            # Manejar diferentes versiones de PyJWT
+            if isinstance(token, bytes):
+                token_str = token.decode('utf-8')
+            else:
+                token_str = str(token)
+                
+            print(f"DEBUG: Token generado exitosamente (longitud: {len(token_str)})")
+            return token_str
+            
+        except Exception as e:
+            print(f"DEBUG: Error detallado creando JWT token:")
+            print(f"DEBUG: - Tipo de error: {type(e).__name__}")
+            print(f"DEBUG: - Mensaje: {str(e)}")
+            print(f"DEBUG: - user.id: {user.id} (tipo: {type(user.id)})")
+            print(f"DEBUG: - user.username: {user.username} (tipo: {type(user.username)})")
+            
+            import traceback
+            print(f"DEBUG: - Traceback: {traceback.format_exc()}")
+            raise Exception(f"Error generando token JWT: {str(e)}")
 
-        login_token = {
-            "id": user.id,
-            "username": user.username,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=60)  # Token válido por 60 minutos
-        }
-        token = jwt.encode(login_token, jwt_secret_key, algorithm="HS256")
-        return token.decode('utf-8') if isinstance(token, bytes) else token
-        
     def _decode_jwt_token(self, token: str) -> dict:
         """Decodifica el JWT token para obtener los datos del usuario."""
-        load_dotenv()  # Cargar variables de entorno desde .env
-        jwt_secret_key = os.environ.get("JWT_SECRET_KEY")
         if not token:
+            print("DEBUG: Token vacío para decodificar")
             return {}
+            
         try:
+            jwt_secret_key = self._get_jwt_secret()  # ✅ Usar el mismo método
+            print(f"DEBUG: Decodificando token (longitud: {len(token)})")
+            
             decoded = jwt.decode(token, jwt_secret_key, algorithms=["HS256"])
+            print(f"DEBUG: Token decodificado exitosamente: {decoded}")
             return decoded
+            
         except jwt.ExpiredSignatureError:
-            self.is_logged_in = False
-            self.logged_user_data = {}
-            self.auth_token = ""
             print("DEBUG: Token expirado")
-            return {}
-        except jwt.InvalidTokenError:
             self.is_logged_in = False
             self.logged_user_data = {}
             self.auth_token = ""
-            print("DEBUG: Token inválido")
             return {}
-        
+        except jwt.InvalidTokenError as e:
+            print(f"DEBUG: Token inválido: {str(e)}")
+            self.is_logged_in = False
+            self.logged_user_data = {}
+            self.auth_token = ""
+            return {}
+        except Exception as e:
+            print(f"DEBUG: Error inesperado decodificando token: {str(e)}")
+            return {}
+
     @rx.event
     def login_user(self):
         """Iniciar sesión del usuario y establecer el token de autenticación."""
         self.is_loading = True
         self.error_message = ""
         
+        print("DEBUG: Iniciando login_user...")
+        print(f"DEBUG: Username: '{self.username}' (tipo: {type(self.username)})")
+        print(f"DEBUG: Password length: {len(self.password) if self.password else 'None'}")
+        
+        # Validar que tenemos datos básicos
+        if not self.username or not self.password:
+            print("DEBUG: Username o password vacíos")
+            self.error_message = "Por favor completa todos los campos."
+            self.is_loading = False
+            return
+        
+        # Convertir username a string explícitamente
+        username_str = str(self.username).strip()
+        password_str = str(self.password)
+        
         try:
+            print("DEBUG: Intentando abrir sesión de BD...")
             with rx.session() as session:
+                print("DEBUG: Sesión de BD abierta exitosamente")
+                
+                print(f"DEBUG: Buscando usuario con username: '{username_str}'")
                 user = session.exec(
-                    sqlmodel.select(Users).where(Users.email == self.email)
+                    sqlmodel.select(Users).where(Users.username == username_str)
                 ).first()
                 
                 if not user:
-                    print("DEBUG: Usuario no encontrado")
+                    print("DEBUG: Usuario no encontrado en la base de datos")
                     self.error_message = "Usuario no encontrado."
                     self.is_loading = False
                     return
+                    
+                print(f"DEBUG: Usuario encontrado - ID: {user.id}, Username: {user.username}")
                 
+                # Verificar que el usuario tenga los campos necesarios
+                if not hasattr(user, 'id') or user.id is None:
+                    print("DEBUG: Usuario sin ID válido")
+                    self.error_message = "Error en datos del usuario."
+                    self.is_loading = False
+                    return
+                
+                print("DEBUG: Buscando credenciales del usuario...")
                 credentials = session.exec(
                     sqlmodel.select(AuthCredentials).where(AuthCredentials.user_id == user.id)
                 ).first()
                 
-                if not credentials or not bcrypt.checkpw(self.password.encode('utf-8'), credentials.password_hash.encode('utf-8')):
-                    print("DEBUG: Contraseña incorrecta")
-                    self.error_message = "Usuario o contraseña incorrectos."
+                if not credentials:
+                    print("DEBUG: No se encontraron credenciales para el usuario")
+                    self.error_message = "Error de autenticación."
                     self.is_loading = False
                     return
                 
-                # Generar y almacenar el token JWT
-                token = self._create_jwt_token(user)
-                self.auth_token = token
-                self.is_logged_in = True
-                self.logged_user_data = {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "member_id": user.member_id,
-                    "status": user.status.value
-                }
+                # Verificar que las credenciales tengan hash válido
+                if not credentials.password_hash or not isinstance(credentials.password_hash, str):
+                    print(f"DEBUG: Hash de contraseña inválido - tipo: {type(credentials.password_hash)}, valor: {credentials.password_hash}")
+                    self.error_message = "Error en credenciales."
+                    self.is_loading = False
+                    return
+                    
+                print("DEBUG: Verificando contraseña...")
+                try:
+                    # Asegurar que ambos valores sean strings
+                    password_bytes = password_str.encode('utf-8')
+                    hash_bytes = credentials.password_hash.encode('utf-8')
+                    
+                    password_match = bcrypt.checkpw(password_bytes, hash_bytes)
+                    print(f"DEBUG: Resultado verificación contraseña: {password_match}")
+                    
+                except Exception as bcrypt_error:
+                    print(f"DEBUG: Error en bcrypt.checkpw: {str(bcrypt_error)}")
+                    print(f"DEBUG: Tipo password_hash: {type(credentials.password_hash)}")
+                    print(f"DEBUG: Contenido password_hash: {repr(credentials.password_hash)}")
+                    self.error_message = "Error al verificar contraseña."
+                    self.is_loading = False
+                    return
+                
+                if not password_match:
+                    print("DEBUG: Contraseña incorrecta")
+                    self.error_message = "Contraseña incorrecta."
+                    self.is_loading = False
+                    return
+                
+                print("DEBUG: Contraseña correcta, generando token...")
+                
+                # Generar token con validaciones
+                try:
+                    token = self._create_jwt_token(user)
+                    if not token or not isinstance(token, str):
+                        print(f"DEBUG: Token generado inválido - tipo: {type(token)}, valor: {token}")
+                        raise Exception("Token inválido generado")
+                        
+                except Exception as token_error:
+                    print(f"DEBUG: Error generando token: {str(token_error)}")
+                    self.error_message = "Error generando sesión."
+                    self.is_loading = False
+                    return
+                
+                # Establecer datos de sesión con validaciones
+                try:
+                    self.auth_token = token
+                    self.is_logged_in = True
+                    
+                    # Construir datos del usuario con validaciones
+                    user_data = {
+                        "id": int(user.id) if user.id is not None else 0,
+                        "username": str(user.username) if user.username else "",
+                        "email": str(user.email) if user.email else "",
+                        "member_id": int(user.member_id) if user.member_id is not None else 0,
+                    }
+                    
+                    # Manejar status que puede ser enum o string
+                    if hasattr(user, 'status') and user.status is not None:
+                        if hasattr(user.status, 'value'):
+                            user_data["status"] = str(user.status.value)
+                        else:
+                            user_data["status"] = str(user.status)
+                    else:
+                        user_data["status"] = "UNKNOWN"
+                    
+                    self.logged_user_data = user_data
+                    print(f"DEBUG: Datos de usuario establecidos: {user_data}")
+                    
+                except Exception as data_error:
+                    print(f"DEBUG: Error estableciendo datos de usuario: {str(data_error)}")
+                    self.error_message = "Error configurando sesión."
+                    self.is_loading = False
+                    return
         
         except Exception as e:
-            print(f"DEBUG: Error inesperado durante el login: {str(e)}")
-            self.error_message = "Ocurrió un error inesperado. Inténtalo de nuevo."
+            print(f"DEBUG: Error completo durante el login: {str(e)}")
+            print(f"DEBUG: Tipo de error: {type(e).__name__}")
+            import traceback
+            print(f"DEBUG: Traceback completo: {traceback.format_exc()}")
+            self.error_message = f"Error de conexión: {str(e)}"
             self.is_loading = False
             return
 
-        print(f"DEBUG: Usuario {self.username} ha iniciado sesión exitosamente")
+        print(f"DEBUG: Login exitoso para usuario {username_str}")
         self.is_loading = False
         return rx.redirect("/dashboard", replace=True)
 
