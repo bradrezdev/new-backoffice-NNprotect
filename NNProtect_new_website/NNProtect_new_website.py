@@ -596,6 +596,7 @@ def index() -> rx.Component:
         ),                              # Fondo según modo
         position="absolute",            # Posición absoluta
         width="100%",                  # Ancho de la ventana
+        on_mount=[AuthState.load_user_from_token],
     )
 
 pwa_meta = rx.el.meta(

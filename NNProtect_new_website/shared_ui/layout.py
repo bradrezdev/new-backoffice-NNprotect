@@ -406,9 +406,7 @@ def mobile_header():
         width="100%",
         padding="1rem",
         justify="between",
-        
         position="fixed",
         top="0",
         z_index="1",
-        on_mount=[AuthState.load_user_from_token],
     )
