@@ -113,24 +113,23 @@ def login() -> rx.Component:
                 rx.vstack(
                     # Logo centrado
                     rx.center(
-                        rx.image(src="/logotipo.png", width="150px", height="auto"),
+                        rx.image(src="/logo_login.png", width="100%", height="auto"),
                         width="100%",
-                        margin_bottom="2rem"
+                        top="0",
                     ),
                     
                     # Formulario móvil
                     rx.form(
                         rx.vstack(
-                            rx.heading("Bienvenido de vuelta", size="6", text_align="center"),
+                            rx.heading("Bienvenido de vuelta", size="6"),
                             
                             rx.text(
                                 "Qué gusto volverte a ver. Por favor, ingresa los datos de tu cuenta:",
-                                text_align="center",
                                 font_size="0.9rem",
                                 margin_bottom="1rem"
                             ),
                             
-                            rx.text("Nombre de usuario", font_weight="bold", font_size="0.9rem"),
+                            rx.text("Nombre de usuario", font_weight="bold", font_size="16px"),
                             rx.input(
                                 placeholder="Escribe tu nombre de usuario",
                                 type="text",
@@ -141,13 +140,13 @@ def login() -> rx.Component:
                                     light=Custom_theme().light_colors()["primary"],
                                     dark=Custom_theme().dark_colors()["primary"]
                                 ),
-                                border_radius="8px",
+                                border_radius="15px",
                                 height="45px",
                                 width="100%",
-                                margin_bottom="1rem"
+                                font_size="16px",
                             ),
-                            
-                            rx.text("Contraseña", font_weight="bold", font_size="0.9rem"),
+
+                            rx.text("Contraseña", font_weight="bold", font_size="16px"),
                             rx.input(
                                 placeholder="Escribe tu contraseña",
                                 type="password",
@@ -158,10 +157,11 @@ def login() -> rx.Component:
                                     light=Custom_theme().light_colors()["primary"],
                                     dark=Custom_theme().dark_colors()["primary"]
                                 ),
-                                border_radius="8px",
+                                border_radius="15px",
                                 height="45px",
                                 width="100%",
-                                margin_bottom="0.5rem"
+                                font_size="16px",
+                                #margin_bottom="0.5rem"
                             ),
                             
                             rx.link(
@@ -174,22 +174,22 @@ def login() -> rx.Component:
                                 size="1",
                                 text_align="center",
                                 width="100%",
-                                margin_bottom="1.5rem"
+                                margin_bottom="2em"
                             ),
                             
                             rx.button(
                                 "Iniciar sesión",
-                                height="50px",
-                                width="100%",
-                                type="submit",
                                 bg=rx.color_mode_cond(
                                     light=Custom_theme().light_colors()["primary"],
                                     dark=Custom_theme().dark_colors()["primary"]
                                 ),
                                 color="white",
-                                border_radius="8px",
-                                font_weight="bold",
-                                margin_bottom="1rem",
+                                size="4",
+                                border_radius="15px",
+                                padding="16px",
+                                width="100%",
+                                _hover={"opacity": 0.9, "transform": "translateY(-1px)"},
+                                transition="all 0.2s ease",
                             ),
                             
                             spacing="3",
@@ -199,18 +199,8 @@ def login() -> rx.Component:
                         width="100%",
                         padding="1rem"
                     ),
-                    
-                    # Imagen decorativa pequeña para móvil
-                    rx.center(
-                        rx.image(src="/image_login.png", width="200px", height="auto", opacity="0.3"),
-                        width="100%",
-                        margin_top="2rem"
-                    ),
-                    
-                    spacing="4",
                     width="100%",
-                    max_width="400px",
-                    padding="2rem"
+                    padding="0 1em"
                 ),
                 height="100vh",
                 bg=rx.color_mode_cond(

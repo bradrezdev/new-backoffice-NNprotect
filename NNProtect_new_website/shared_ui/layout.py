@@ -192,7 +192,7 @@ def desktop_sidebar() -> rx.Component:
             rx.spacer(),
             rx.spacer(),
             rx.spacer(),
-            sidebar_item("Dashboard", "layout-dashboard", "/"),
+            sidebar_item("Dashboard", "layout-dashboard", "/dashboard"),
             sidebar_item("Nuevo registro", "circle-plus", "/new_register"),
             rx.accordion.root(
                 rx.accordion.item(
@@ -245,7 +245,7 @@ def mobile_sidebar() -> rx.Component:
             rx.spacer(),
             rx.spacer(),
             rx.spacer(),
-            sidebar_item("Dashboard", "layout-dashboard", "/"),
+            sidebar_item("Dashboard", "layout-dashboard", "/dashboard"),
             sidebar_item("Nuevo registro", "circle-plus", "/new_register"),
             rx.accordion.root(
                 rx.accordion.item(

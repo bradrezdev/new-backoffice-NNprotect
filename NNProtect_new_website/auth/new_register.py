@@ -328,12 +328,12 @@ def register() -> rx.Component:
                         ),
                         
                         # Información personal
-                        rx.text("Información Personal", font_weight="bold", font_size="1.1rem", margin_bottom="0.5em"),
+                        rx.text("Información Personal", font_weight="bold", font_size="1.1em", margin_bottom="0.5em"),
                         
                         rx.text(
                             "Nombre(s)*",
                             font_weight="medium",
-                            font_size="0.9rem",
+                            font_size="1em",
                             ),
                         rx.input(
                             placeholder="Escribe tu(s) nombre(s)...",
@@ -348,12 +348,13 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            font_size="1em",
                         ),
 
                         rx.text(
                             "Apellido(s)*",
                             font_weight="medium",
-                            font_size="0.9rem",
+                            font_size="1em",
                             ),
                         rx.input(
                             placeholder="Escribe tu(s) apellido(s)...",
@@ -368,9 +369,10 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            font_size="1em",
                         ),
-                        
-                        rx.text("Sexo*", font_weight="medium", font_size="0.9rem"),
+
+                        rx.text("Sexo*", font_weight="medium", font_size="1em"),
                         rx.select(
                             ["Masculino", "Femenino"],
                             placeholder="Seleccionar una opción",
@@ -385,8 +387,8 @@ def register() -> rx.Component:
                             value=AuthState.gender,
                             on_change=AuthState.set_gender,
                         ),
-                        
-                        rx.text("Celular*", font_weight="medium", font_size="0.9rem"),
+
+                        rx.text("Celular*", font_weight="medium", font_size="1em"),
                         rx.input(
                             placeholder="Ejemplo: 3121234567",
                             value=AuthState.phone_number,
@@ -398,13 +400,14 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            font_size="1em",
                             margin_bottom="1rem"
                         ),
 
                         # Dirección
-                        rx.text("Dirección", font_weight="bold", font_size="1.1rem", margin_bottom="0.5em"),
-                        
-                        rx.text("Calle y número*", font_weight="medium", font_size="0.9rem"),
+                        rx.text("Dirección", font_weight="bold", font_size="1.1em", margin_bottom="0.5em"),
+
+                        rx.text("Calle y número*", font_weight="medium", font_size="1em"),
                         rx.input(
                             placeholder="Ejemplo: Av. Siempre Viva #742",
                             value=AuthState.street_number,
@@ -416,9 +419,10 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            font_size="1em",
                         ),
-                        
-                        rx.text("Colonia*", font_weight="medium", font_size="0.9rem"),
+
+                        rx.text("Colonia*", font_weight="medium", font_size="1em"),
                         rx.input(
                             placeholder="Ejemplo: Centro",
                             value=AuthState.neighborhood,
@@ -430,11 +434,12 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            font_size="1em",
                         ),
 
                         rx.hstack(
                             rx.vstack(
-                                rx.text("Ciudad*", font_weight="medium", font_size="0.9rem"),
+                                rx.text("Ciudad*", font_weight="medium", font_size="1em"),
                                 rx.input(
                                     placeholder="Ciudad",
                                     value=AuthState.city,
@@ -446,11 +451,12 @@ def register() -> rx.Component:
                                     ),
                                     height="48px",
                                     width="100%",
+                                    font_size="1em",
                                 ),
                                 width="48%"
                             ),
                             rx.vstack(
-                                rx.text("C.P.*", font_weight="medium", font_size="0.9rem"),
+                                rx.text("C.P.*", font_weight="medium", font_size="1em"),
                                 rx.input(
                                     placeholder="28000",
                                     value=AuthState.zip_code,
@@ -462,6 +468,7 @@ def register() -> rx.Component:
                                     ),
                                     height="48px",
                                     width="100%",
+                                    font_size="1em",
                                 ),
                                 width="50%"
                             ),
@@ -469,7 +476,7 @@ def register() -> rx.Component:
                             width="100%",
                         ),
 
-                        rx.text("País*", font_weight="medium", font_size="0.9rem"),
+                        rx.text("País*", font_weight="medium", font_size="1em"),
                         rx.select(
                             AuthState.country_options,
                             placeholder="Seleccionar país",
@@ -485,7 +492,7 @@ def register() -> rx.Component:
                             required=True,
                         ),
 
-                        rx.text("Estado*", font_weight="medium", font_size="0.9rem"),
+                        rx.text("Estado*", font_weight="medium", font_size="1em"),
                         rx.select(
                             AuthState.state_options,
                             placeholder="Seleccionar estado",
@@ -503,9 +510,9 @@ def register() -> rx.Component:
                         ),
 
                         # Acceso al sistema
-                        rx.text("Acceso al Sistema", font_weight="bold", font_size="1.1rem", margin_bottom="0.5rem"),
-                        
-                        rx.text("Usuario*", font_weight="medium", font_size="0.9rem"),
+                        rx.text("Acceso al Sistema", font_weight="bold", font_size="1.1em", margin_bottom="0.5rem"),
+
+                        rx.text("Usuario*", font_weight="medium", font_size="1em"),
                         rx.input(
                             placeholder="Usuario único",
                             value=AuthState.username,
@@ -519,9 +526,10 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            font_size="1em",
                         ),
-                        
-                        rx.text("Correo electrónico*", font_weight="medium", font_size="0.9rem"),
+
+                        rx.text("Correo electrónico*", font_weight="medium", font_size="1em"),
                         rx.input(
                             type="email",
                             placeholder="Correo electrónico",
@@ -536,9 +544,10 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            font_size="1em",
                         ),
-                        
-                        rx.text("Contraseña*", font_weight="medium", font_size="0.9rem"),
+
+                        rx.text("Contraseña*", font_weight="medium", font_size="1em"),
                         rx.input(
                             type="password",
                             placeholder="Crea una contraseña",
@@ -553,6 +562,7 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            font_size="1em",
                         ),
                         rx.form(
                             rx.list_item("Debe contener mínimo 8 caracteres."),
@@ -563,7 +573,7 @@ def register() -> rx.Component:
                             font_size="0.85rem",  # --- Propiedades rx.form ---
                             style={"margin-left": "1em", "color": "#333"},
                         ),
-                        rx.text("Confirmar contraseña*", font_weight="medium", font_size="0.9rem"),
+                        rx.text("Confirmar contraseña*", font_weight="medium", font_size="1em"),
                         rx.input(
                             type="password",
                             placeholder="Confirma la contraseña",
@@ -578,6 +588,7 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            font_size="1em",
                         ),
                         
                         # Términos y condiciones
