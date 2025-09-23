@@ -449,10 +449,11 @@ class AuthState(rx.State):
         try:
             with rx.session() as session:
                 user = session.exec(
-                    sqlmodel.select(Users).where(Users.username == self.username)
+                    sqlmodel.select(Users).where(Users.email == self.email)
                 ).first()
                 
                 if not user:
+                    print("DEBUG: Usuario no encontrado")
                     self.error_message = "Usuario no encontrado."
                     self.is_loading = False
                     return
@@ -462,7 +463,8 @@ class AuthState(rx.State):
                 ).first()
                 
                 if not credentials or not bcrypt.checkpw(self.password.encode('utf-8'), credentials.password_hash.encode('utf-8')):
-                    self.error_message = "Contraseña incorrecta."
+                    print("DEBUG: Contraseña incorrecta")
+                    self.error_message = "Usuario o contraseña incorrectos."
                     self.is_loading = False
                     return
                 
