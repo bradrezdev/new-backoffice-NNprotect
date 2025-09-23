@@ -42,6 +42,7 @@ class AuthState(rx.State):
     auth_token: str = rx.Cookie(name="auth_token", secure=True, same_site="Lax")
     logged_user_data: dict = {}
     is_logged_in: bool = False
+    profile_data: dict = {}
     
     # Setters para campos de dirección
     def set_street_number(self, value: str):
@@ -98,8 +99,7 @@ class AuthState(rx.State):
             return []
         except:
             return []
-
-    profile_data: dict = {}
+        
     social_accounts: list = []
 
     # Setters y getters
@@ -355,7 +355,6 @@ class AuthState(rx.State):
             # Crear registro de dirección
             new_address = Addresses(
                 street=self.street_number,
-                number="",
                 neighborhood=self.neighborhood or "",
                 city=self.city,
                 state=self.state or "",
@@ -448,9 +447,9 @@ class AuthState(rx.State):
             
             # Crear payload con tipos seguros
             login_token = {
-                "id": user_id,  # int es compatible con JSON
-                "username": username,  # string
-                "exp": int((datetime.datetime.utcnow() + datetime.timedelta(minutes=5)).timestamp())  # timestamp como int
+                "id": user_id,
+                "username": username,
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=60),  # ✅ ÚNICO CAMBIO: quitar int() y .timestamp()
             }
             
             print(f"DEBUG: Payload del token: {login_token}")
@@ -480,32 +479,25 @@ class AuthState(rx.State):
 
     def _decode_jwt_token(self, token: str) -> dict:
         """Decodifica el JWT token para obtener los datos del usuario."""
-        if not token:
-            print("DEBUG: Token vacío para decodificar")
+        print(f"DEBUG _decode_jwt_token: Llamado con token longitud: {len(token) if token else 0}")
+        
+        if not token or "." not in token:
+            print("DEBUG _decode_jwt_token: Token vacío o inválido")
             return {}
             
         try:
-            jwt_secret_key = self._get_jwt_secret()  # ✅ Usar el mismo método
-            print(f"DEBUG: Decodificando token (longitud: {len(token)})")
-            
+            jwt_secret_key = self._get_jwt_secret()
             decoded = jwt.decode(token, jwt_secret_key, algorithms=["HS256"])
-            print(f"DEBUG: Token decodificado exitosamente: {decoded}")
+            print(f"DEBUG _decode_jwt_token: Token decodificado exitosamente")
             return decoded
             
         except jwt.ExpiredSignatureError:
-            print("DEBUG: Token expirado")
-            self.is_logged_in = False
-            self.logged_user_data = {}
-            self.auth_token = ""
-            return {}
-        except jwt.InvalidTokenError as e:
-            print(f"DEBUG: Token inválido: {str(e)}")
-            self.is_logged_in = False
-            self.logged_user_data = {}
-            self.auth_token = ""
+            print("DEBUG _decode_jwt_token: Token expirado - MANTENIENDO ESTADO")
+            self.auth_token = ""  # Solo limpiar token
+            # ✅ NO limpiar is_logged_in ni profile_data
             return {}
         except Exception as e:
-            print(f"DEBUG: Error inesperado decodificando token: {str(e)}")
+            print(f"DEBUG _decode_jwt_token: Error: {e}")
             return {}
 
     @rx.event
@@ -618,8 +610,8 @@ class AuthState(rx.State):
                     # Construir datos del usuario con validaciones
                     user_data = {
                         "id": int(user.id) if user.id is not None else 0,
-                        "username": str(user.username) if user.username else "",
-                        "email": str(user.email) if user.email else "",
+                        "username": str(user.username) if user.username is not None else "",
+                        "email": str(user.email) if user.email is not None else "",
                         "member_id": int(user.member_id) if user.member_id is not None else 0,
                     }
                     
@@ -654,34 +646,127 @@ class AuthState(rx.State):
         self.is_loading = False
         return rx.redirect("/dashboard", replace=True)
 
+    def _extract_first_word(self, text: str) -> str:
+        """Extrae la primera palabra de un texto, manejando casos edge."""
+        if not text:
+            return ""
+        
+        # Limpiar espacios extra y convertir a string
+        clean_text = str(text).strip()
+        if not clean_text:
+            return ""
+        
+        # Dividir por espacios y tomar la primera palabra
+        words = clean_text.split()
+        return words[0] if words else ""
+
+    def _build_profile_name(self, first_name: str, last_name: str, username: str) -> str:
+        """Construye el nombre de perfil usando solo las primeras palabras."""
+        first_word = self._extract_first_word(first_name)
+        last_word = self._extract_first_word(last_name)
+        
+        # Construir nombre según disponibilidad
+        if first_word and last_word:
+            return f"{first_word} {last_word}"
+        elif first_word:
+            return first_word
+        elif last_word:
+            return last_word
+        else:
+            return username  # Fallback final
+
     @rx.event
     def load_user_from_token(self):
-        """Carga los datos del usuario desde el token almacenado en cookies."""
+        """Carga los datos completos del usuario desde el token almacenado en cookies."""
         payload = self._decode_jwt_token(self.auth_token)
         if not payload:
-            self.is_logged_in = False
-            self.logged_user_data = {}
+            #self.is_logged_in = False
+            #self.logged_user_data = {}
+            #self.profile_data = {}
             return
         
         user_id = payload.get("id")
         with rx.session() as session:
+            # Obtener datos del usuario
             user = session.exec(
                 sqlmodel.select(Users).where(Users.id == user_id)
             ).first()
-            if user:
-                self.is_logged_in = True
-                self.logged_user_data = {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "member_id": user.member_id,
-                    "status": user.status.value
-                }
-            else:
+            
+            if not user:
                 self.is_logged_in = False
                 self.logged_user_data = {}
+                self.profile_data = {}
+                return
+            
+            # Obtener datos del perfil
+            user_profile = session.exec(
+                sqlmodel.select(UserProfiles).where(UserProfiles.user_id == user_id)
+            ).first()
+            
+            # Construir profile_name usando la función helper
+            profile_name = self._build_profile_name(
+                user_profile.first_name if user_profile else "",
+                user_profile.last_name if user_profile else "",
+                user.username
+            )
+            
+            print(f"DEBUG: Profile name construido: '{profile_name}'")
+            print(f"DEBUG: - De '{user_profile.first_name if user_profile else 'N/A'}' y '{user_profile.last_name if user_profile else 'N/A'}'")
+            
+            # Establecer datos básicos de sesión
+            self.is_logged_in = True
+            self.logged_user_data = {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "member_id": user.member_id,
+                "status": user.status.value if hasattr(user.status, 'value') else str(user.status)
+            }
+            
+            # Establecer datos extendidos del perfil
+            self.profile_data = {
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "member_id": user.member_id,
+                "firstname": user_profile.first_name if user_profile else "",
+                "lastname": user_profile.last_name if user_profile else "",
+                "phone": user_profile.phone_number if user_profile else "",
+                "gender": user_profile.gender.value if user_profile and hasattr(user_profile.gender, 'value') else "",
+                "created_at": user.created_at.strftime("%d/%m/%Y") if user.created_at else "",
+                "profile_name": profile_name  # ✅ Cambio: ahora se llama profile_name y solo primeras palabras
+            }
 
-        print(f"DEBUG: Datos del usuario cargados desde token: {self.logged_user_data}")
+        print(f"DEBUG: Datos completos del usuario cargados: {self.profile_data}")
+
+    @rx.var
+    def get_user_display_name(self) -> str:
+        """Retorna el nombre a mostrar del usuario."""
+        # ✅ AGREGAR DEBUG para ver qué está pasando
+        print(f"DEBUG get_user_display_name: profile_data = {self.profile_data}")
+        print(f"DEBUG get_user_display_name: is_logged_in = {self.is_logged_in}")
+        
+        if not self.profile_data or not isinstance(self.profile_data, dict):
+            print("DEBUG get_user_display_name: Retornando 'Usuario' - no hay profile_data")
+            return "Usuario"
+        
+        profile_name = self.profile_data.get("profile_name", "")
+        if profile_name:
+            print(f"DEBUG get_user_display_name: Retornando profile_name: {profile_name}")
+            return profile_name
+        
+        username = self.profile_data.get("username", "")
+        if username:
+            print(f"DEBUG get_user_display_name: Retornando username: {username}")
+            return username
+            
+        print("DEBUG get_user_display_name: Retornando 'Usuario' - sin datos válidos")
+        return "Usuario"
+
+    @rx.event
+    def user_profile_data(self):
+        """Devuelve los datos del perfil del usuario."""
+        return self.user_profile_data
 
     @rx.event
     def check_login(self):

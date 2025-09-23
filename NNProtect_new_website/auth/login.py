@@ -30,9 +30,9 @@ def login() -> rx.Component:
                             
                             rx.spacer(),
 
-                            rx.text("Correo electrónico"),
+                            rx.text("Nombre de usuario"),
                             rx.input(
-                                placeholder="Escribe tu correo electrónico",
+                                placeholder="Escribe tu nombre de usuario",
                                 type="text",
                                 value=AuthState.username,
                                 on_change=AuthState.set_username,
@@ -130,9 +130,9 @@ def login() -> rx.Component:
                                 margin_bottom="1rem"
                             ),
                             
-                            rx.text("Correo electrónico", font_weight="bold", font_size="0.9rem"),
+                            rx.text("Nombre de usuario", font_weight="bold", font_size="0.9rem"),
                             rx.input(
-                                placeholder="Escribe tu correo electrónico",
+                                placeholder="Escribe tu nombre de usuario",
                                 type="text",
                                 value=AuthState.username,
                                 on_change=AuthState.set_username,

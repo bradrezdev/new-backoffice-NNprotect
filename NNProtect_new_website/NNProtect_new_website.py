@@ -23,6 +23,8 @@ from .shared_ui.theme import Custom_theme
 from .status_bar import pwa_meta_tags, wrap_page_with_statusbar  # ← NUEVO IMPORT
 from rxconfig import config
 
+from .auth.auth_state import AuthState
+
 from database import *
 
 def index() -> rx.Component:

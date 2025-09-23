@@ -317,7 +317,7 @@ def register() -> rx.Component:
                 rx.form(
                     rx.vstack(
                         rx.text(
-                            "Referido por Bryan Núñez",
+                            f"Referido por {AuthState.get_user_display_name}",
                             font_size="1em",
                             color=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["primary"],
@@ -636,4 +636,5 @@ def register() -> rx.Component:
         ),
         position="absolute",
         width="100%",
+        #on_mount=AuthState.load_user_from_token,
     )

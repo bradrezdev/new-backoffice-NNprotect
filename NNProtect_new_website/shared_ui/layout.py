@@ -1,5 +1,6 @@
 import reflex as rx
 from .theme import Custom_theme
+from ..auth.auth_state import AuthState
 
 ############################################
 # --- Componente links + cuenta activa --- #
@@ -118,10 +119,10 @@ def logged_in_user() -> rx.Component:
         backdrop_filter="blur(8px)",  # Efecto de desenfoque (blur)
         #align="end",
     )
-
+"""
 def mobile_logged_in_user() -> rx.Component:
     return rx.box(
-        rx.text("Bryan Núñez", font_size="1rem", font_weight="medium", margin_right="16px"),
+        rx.text(profile_data.get("firstname") + " " + profile_data.get("lastname"), font_size="1rem", font_weight="medium", margin_right="16px"),
         border_radius="32px",
         bg=rx.color_mode_cond(
             light=Custom_theme().light_colors()["traslucid-background"],
@@ -133,7 +134,7 @@ def mobile_logged_in_user() -> rx.Component:
         ),
         backdrop_filter="blur(8px)",
     )
-
+"""
 #######################################
 # --- Componentes para el sidebar --- #
 #######################################
@@ -388,7 +389,7 @@ def mobile_header():
                 backdrop_filter="blur(8px)",
             ),
             rx.center(
-                rx.text("Bryan Núñez", font_size="1rem", font_weight="bold", margin="0 16px 0 16px"),
+                rx.text(AuthState.get_user_display_name, font_size="1rem", font_weight="bold", margin="0 16px 0 16px"),
                 border_radius="32px",
                 bg=rx.color_mode_cond(
                     light=Custom_theme().light_colors()["traslucid-background"],
@@ -408,5 +409,6 @@ def mobile_header():
         
         position="fixed",
         top="0",
-        z_index="1"
+        z_index="1",
+        on_mount=[AuthState.load_user_from_token],
     )
