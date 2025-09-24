@@ -457,8 +457,8 @@ def register() -> rx.Component:
                                     rx.text("Usuario*", font_weight="medium", font_size="1em"),
                                     rx.input(
                                         placeholder="Usuario único",
-                                        value=AuthState.new_username,  # ✅ Cambiar
-                                        on_change=AuthState.set_new_username,  # ✅ Cambiar
+                                        value=AuthState.new_username,
+                                        on_change=AuthState.set_new_username,
                                         required=True,
                                         reset_on_submit=True,
                                         border_radius="15px",
@@ -475,8 +475,8 @@ def register() -> rx.Component:
                                     rx.input(
                                         type="email",
                                         placeholder="Correo electrónico",
-                                        value=AuthState.new_email,  # ✅ Cambiar
-                                        on_change=AuthState.set_new_email,  # ✅ Cambiar
+                                        value=AuthState.new_email,
+                                        on_change=AuthState.set_new_email,
                                         required=True,
                                         reset_on_submit=True,
                                         border_radius="15px",
@@ -506,15 +506,22 @@ def register() -> rx.Component:
                                         width="100%",
                                         font_size="1em",
                                     ),
-                                    rx.form(
-                                        rx.list_item("Debe contener mínimo 8 caracteres."),
-                                        rx.list_item("Debe incluir mínimo 1 letra mayúscula."),
-                                        rx.list_item("Debe incluir mínimo 1 letra minúscula."),
-                                        rx.list_item("Debe incluir mínimo 1 número."),
-                                        rx.list_item("Debe incluir mínimo 1 carácter/símbolo especial."),
-                                        font_size="0.85rem",  # --- Propiedades rx.form ---
-                                        style={"margin-left": "1em", "color": "#333"},
+                                    # Feedback de fortaleza de contraseña
+                                    password_strength_indicator(),
+                                    
+                                    # ✅ CORRECCIÓN: Eliminar el `rx.form` que envolvía este vstack.
+                                    rx.vstack(
+                                        requirement_item("Debe contener mínimo 8 caracteres.", AuthState.password_has_length),
+                                        requirement_item("Debe incluir mínimo 1 letra mayúscula.", AuthState.password_has_uppercase),
+                                        requirement_item("Debe incluir mínimo 1 letra minúscula.", AuthState.password_has_lowercase),
+                                        requirement_item("Debe incluir mínimo 1 número.", AuthState.password_has_number),
+                                        requirement_item("Debe incluir mínimo 1 carácter especial.", AuthState.password_has_special),
+                                        spacing="1",
+                                        align_items="flex-start",
+                                        width="100%",
+                                        padding_y="0.5rem"
                                     ),
+
                                     rx.text("Confirmar contraseña*", font_weight="medium", font_size="1em"),
                                     rx.input(
                                         type="password",
@@ -792,6 +799,13 @@ def register() -> rx.Component:
 
                         rx.text("Usuario*", font_weight="medium", font_size="1em"),
                         rx.input(
+                            rx.button(
+                                "Sugerir",
+                                size="3",
+                                border_radius="11px",
+                                variant="surface",
+                                on_click=AuthState.random_username,
+                            ),
                             placeholder="Usuario único",
                             value=AuthState.new_username,  # ✅ Cambiar
                             on_change=AuthState.set_new_username,  # ✅ Cambiar
@@ -805,8 +819,17 @@ def register() -> rx.Component:
                             height="48px",
                             width="100%",
                             font_size="1em",
+                            padding="4px",
                         ),
-
+                        rx.cond(
+                            AuthState.error_message != "",
+                            rx.callout(
+                                f"{AuthState.error_message}",
+                                icon="info",
+                                color="red",
+                                role="alert",
+                            ),
+                        ),
                         rx.text("Correo electrónico*", font_weight="medium", font_size="1em"),
                         rx.input(
                             type="email",
@@ -842,24 +865,23 @@ def register() -> rx.Component:
                             width="100%",
                             font_size="1em",
                         ),
-                        rx.cond(
-                            AuthState.error_message != "",
-                            rx.callout(
-                                f"{AuthState.error_message}",
-                                icon="info",
-                                color="red",
-                                role="alert",
-                            ),
+
+                        # Feedback de fortaleza de contraseña
+                        password_strength_indicator(),
+                        
+                        # ✅ REEMPLAZAR LA LISTA ESTÁTICA CON ESTE BLOQUE DINÁMICO
+                        rx.vstack(
+                            requirement_item("Debe contener mínimo 8 caracteres.", AuthState.password_has_length),
+                            requirement_item("Debe incluir mínimo 1 letra mayúscula.", AuthState.password_has_uppercase),
+                            requirement_item("Debe incluir mínimo 1 letra minúscula.", AuthState.password_has_lowercase),
+                            requirement_item("Debe incluir mínimo 1 número.", AuthState.password_has_number),
+                            requirement_item("Debe incluir mínimo 1 carácter especial.", AuthState.password_has_special),
+                            spacing="1",
+                            align_items="flex-start",
+                            width="100%",
+                            padding_y="0.5rem"
                         ),
-                        rx.form(
-                            rx.list_item("Debe contener mínimo 8 caracteres."),
-                            rx.list_item("Debe incluir mínimo 1 letra mayúscula."),
-                            rx.list_item("Debe incluir mínimo 1 letra minúscula."),
-                            rx.list_item("Debe incluir mínimo 1 número."),
-                            rx.list_item("Debe incluir mínimo 1 carácter/símbolo especial."),
-                            font_size="0.85rem",  # --- Propiedades rx.form ---
-                            style={"margin-left": "1em", "color": "#333"},
-                        ),
+
                         rx.text("Confirmar contraseña*", font_weight="medium", font_size="1em"),
                         rx.input(
                             type="password",
@@ -934,4 +956,52 @@ def register() -> rx.Component:
         ),
         position="absolute",
         width="100%",
+    )
+
+
+def password_strength_indicator() -> rx.Component:
+    """Componente visual para la fortaleza de la contraseña."""
+    return rx.vstack(
+        rx.progress(
+            value=AuthState.password_strength["score"], 
+            max=4, 
+            width="100%",
+            color_scheme=rx.match(
+                AuthState.password_strength["score"],
+                (0, "gray"),
+                (1, "red"),
+                (2, "orange"),
+                (3, "yellow"),
+                (4, "green"),
+                "gray" # Default
+            )
+        ),
+        rx.text(
+            AuthState.password_strength["feedback"],
+            font_size="0.8rem",
+            color=rx.color_mode_cond("gray.600", "gray.400"),
+            align_self="flex-start",
+            margin_top="0.25rem"
+        ),
+        spacing="1",
+        width="100%",
+        align_items="center"
+    )
+
+
+def requirement_item(text: str, is_met: rx.Var[bool]) -> rx.Component:
+    """Muestra un requisito de la checklist con un icono y color dinámicos."""
+    return rx.hstack(
+        rx.cond(
+            is_met,
+            rx.icon("circle-check", color="green", size=16),
+            rx.icon("circle", color=rx.color_mode_cond("gray.300", "gray.600"), size=16)
+        ),
+        rx.text(
+            text,
+            color=rx.cond(is_met, "green", rx.color_mode_cond("gray.500", "gray.400")),
+            font_size="0.85rem"
+        ),
+        spacing="2",
+        align="center"
     )

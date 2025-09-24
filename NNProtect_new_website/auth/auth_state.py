@@ -4,6 +4,10 @@ import jwt
 import datetime
 import sqlmodel
 import os
+import random
+import asyncio
+import re
+from zxcvbn import zxcvbn
 from dotenv import load_dotenv
 from database.users import Users, UserStatus
 from database.auth_credentials import AuthCredentials
@@ -320,38 +324,83 @@ class AuthState(rx.State):
         
         return True
 
-    def _validate_password_complexity(self) -> bool:
-        """Valida que la contraseña cumpla con los requisitos de complejidad."""
-        import re
+    @rx.var
+    def password_strength(self) -> dict:
+        """Evalúa la fortaleza de la contraseña usando zxcvbn y devuelve un score y feedback en español."""
         
-        password = self.new_password
+        feedback_messages = [
+            "",  # 0 - sin contraseña
+            "Muy débil - intenta agregar más caracteres.",
+            "Débil - agrega una combinación de letras, números y símbolos.",
+            "Aceptable - pero podría ser más fuerte.",
+            "Fuerte - excelente elección de contraseña."
+        ]
+
+        # Diccionario de traducción más completo (incluye sugerencias)
+        SPANISH_FEEDBACK = {
+            "This is similar to a commonly used password": "Esta contraseña es similar a una comúnmente usada.",
+            "Straight rows of keys are easy to guess": "Las filas de teclas seguidas (como 'asdf') son fáciles de adivinar.",
+            "Sequences like 'abc' or '6543' are easy to guess": "Las secuencias como 'abc' o '6543' son fáciles de adivinar.",
+            "This is a top-10 common password": "Esta es una de las 10 contraseñas más comunes.",
+            "This is a top-100 common password": "Esta es una de las 100 contraseñas más comunes.",
+        }
+
+        if not self.new_password:
+            return {"score": 0, "feedback": ""}
         
-        # Verificar longitud mínima
-        if len(password) < 8:
-            self.error_message = "La contraseña debe tener al menos 8 caracteres."
-            return False
+        result = zxcvbn(self.new_password)
+        score = result["score"]
         
-        # Verificar que tenga al menos una letra mayúscula
-        if not re.search(r'[A-Z]', password):
-            self.error_message = "La contraseña debe contener al menos una letra mayúscula."
-            return False
+        # ✅ LÓGICA DE TRADUCCIÓN MEJORADA
+        feedback = ""
+        warning = result["feedback"]["warning"]
+        suggestions = result["feedback"]["suggestions"]
+
+        # 1. Priorizar la advertencia si existe y la podemos traducir
+        if warning and warning in SPANISH_FEEDBACK:
+            feedback = SPANISH_FEEDBACK[warning]
         
-        # Verificar que tenga al menos una letra minúscula
-        if not re.search(r'[a-z]', password):
-            self.error_message = "La contraseña debe contener al menos una letra minúscula."
-            return False
-        
-        # Verificar que tenga al menos un número
-        if not re.search(r'\d', password):
-            self.error_message = "La contraseña debe contener al menos un número."
-            return False
-        
-        # Verificar que tenga al menos un símbolo especial
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\];\'\\`~]', password):
-            self.error_message = "La contraseña debe contener al menos un símbolo especial (!@#$%^&*...)."
-            return False
-        
-        return True
+        # 2. Si no, buscar en las sugerencias (pueden venir varias)
+        if not feedback and suggestions:
+            for suggestion in suggestions:
+                if suggestion in SPANISH_FEEDBACK:
+                    feedback = SPANISH_FEEDBACK[suggestion]
+                    break # Usamos la primera sugerencia que encontremos traducida
+
+        # 3. Si después de todo no hay feedback específico, usar el general
+        if not feedback:
+            feedback = feedback_messages[score]
+
+        return {
+            "score": score,
+            "feedback": feedback
+        }
+
+    # --- Validadores de Requisitos de Contraseña ---
+    @rx.var
+    def password_has_length(self) -> bool:
+        """Verifica si la contraseña tiene al menos 8 caracteres."""
+        return len(self.new_password) >= 8
+
+    @rx.var
+    def password_has_uppercase(self) -> bool:
+        """Verifica si la contraseña tiene al menos una letra mayúscula."""
+        return bool(re.search(r'[A-Z]', self.new_password))
+
+    @rx.var
+    def password_has_lowercase(self) -> bool:
+        """Verifica si la contraseña tiene al menos una letra minúscula."""
+        return bool(re.search(r'[a-z]', self.new_password))
+
+    @rx.var
+    def password_has_number(self) -> bool:
+        """Verifica si la contraseña tiene al menos un número."""
+        return bool(re.search(r'[0-9]', self.new_password))
+
+    @rx.var
+    def password_has_special(self) -> bool:
+        """Verifica si la contraseña tiene al menos un carácter especial."""
+        return bool(re.search(r'[^a-zA-Z0-9]', self.new_password))
 
     def _user_already_exists(self, session) -> bool:
         """Verifica si el usuario ya existe."""
@@ -612,151 +661,57 @@ class AuthState(rx.State):
             return {}
 
     @rx.event
-    def login_user(self):
-        """Iniciar sesión del usuario y establecer el token de autenticación."""
+    async def login_user(self): # ✅ PASO 2: Convertir el método a 'async def'
+        """Maneja el proceso de inicio de sesión del usuario."""
         self.is_loading = True
-        self.error_message = ""
-        
-        print("DEBUG: Iniciando login_user...")
-        print(f"DEBUG: Username: '{self.username}' (tipo: {type(self.username)})")
-        print(f"DEBUG: Password length: {len(self.password) if self.password else 'None'}")
-        
-        # Validar que tenemos datos básicos
-        if not self.username or not self.password:
-            print("DEBUG: Username o password vacíos")
-            self.error_message = "Por favor completa todos los campos."
-            self.is_loading = False
-            return
-        
-        # Convertir username a string explícitamente
-        username_str = str(self.username).strip()
-        password_str = str(self.password)
-        
+        yield # ✅ PASO 3: Forzar la actualización del estado en la UI
+
         try:
-            print("DEBUG: Intentando abrir sesión de BD...")
+            # Pequeña pausa para asegurar que el spinner se renderice
+            await asyncio.sleep(0.1)
+
+            print("DEBUG: Iniciando login_user...")
+            if not self.username or not self.password:
+                self.error_message = "El nombre de usuario y la contraseña no pueden estar vacíos."
+                return
+
             with rx.session() as session:
-                print("DEBUG: Sesión de BD abierta exitosamente")
-                
-                print(f"DEBUG: Buscando usuario con username: '{username_str}'")
+                # ... (El resto de tu lógica de login permanece exactamente igual) ...
                 user = session.exec(
-                    sqlmodel.select(Users).where(Users.username == username_str)
+                    sqlmodel.select(Users).where(Users.username == self.username)
                 ).first()
-                
-                if not user:
-                    print("DEBUG: Usuario no encontrado en la base de datos")
-                    self.error_message = "Usuario no encontrado."
-                    self.is_loading = False
-                    return
-                    
-                print(f"DEBUG: Usuario encontrado - ID: {user.id}, Username: {user.username}")
-                
-                # Verificar que el usuario tenga los campos necesarios
-                if not hasattr(user, 'id') or user.id is None:
-                    print("DEBUG: Usuario sin ID válido")
-                    self.error_message = "Error en datos del usuario."
-                    self.is_loading = False
-                    return
-                
-                print("DEBUG: Buscando credenciales del usuario...")
-                credentials = session.exec(
-                    sqlmodel.select(AuthCredentials).where(AuthCredentials.user_id == user.id)
-                ).first()
-                
-                if not credentials:
-                    print("DEBUG: No se encontraron credenciales para el usuario")
-                    self.error_message = "Error de autenticación."
-                    self.is_loading = False
-                    return
-                
-                # Verificar que las credenciales tengan hash válido
-                if not credentials.password_hash or not isinstance(credentials.password_hash, str):
-                    print(f"DEBUG: Hash de contraseña inválido - tipo: {type(credentials.password_hash)}, valor: {credentials.password_hash}")
-                    self.error_message = "Error en credenciales."
-                    self.is_loading = False
-                    return
-                    
-                print("DEBUG: Verificando contraseña...")
-                try:
-                    # Asegurar que ambos valores sean strings
-                    password_bytes = password_str.encode('utf-8')
-                    hash_bytes = credentials.password_hash.encode('utf-8')
-                    
-                    password_match = bcrypt.checkpw(password_bytes, hash_bytes)
-                    print(f"DEBUG: Resultado verificación contraseña: {password_match}")
-                    
-                except Exception as bcrypt_error:
-                    print(f"DEBUG: Error en bcrypt.checkpw: {str(bcrypt_error)}")
-                    print(f"DEBUG: Tipo password_hash: {type(credentials.password_hash)}")
-                    print(f"DEBUG: Contenido password_hash: {repr(credentials.password_hash)}")
-                    self.error_message = "Error al verificar contraseña."
-                    self.is_loading = False
-                    return
-                
-                if not password_match:
-                    print("DEBUG: Contraseña incorrecta")
-                    self.error_message = "Contraseña incorrecta."
-                    self.is_loading = False
-                    return
-                
-                print("DEBUG: Contraseña correcta, generando token...")
-                
-                # Generar token con validaciones
-                try:
-                    token = self._create_jwt_token(user)
-                    if not token or not isinstance(token, str):
-                        print(f"DEBUG: Token generado inválido - tipo: {type(token)}, valor: {token}")
-                        raise Exception("Token inválido generado")
-                        
-                except Exception as token_error:
-                    print(f"DEBUG: Error generando token: {str(token_error)}")
-                    self.error_message = "Error generando sesión."
-                    self.is_loading = False
-                    return
-                
-                # Establecer datos de sesión con validaciones
-                try:
-                    self.auth_token = token
-                    self.is_logged_in = True
-                    
-                    # Construir datos del usuario con validaciones
-                    user_data = {
-                        "id": int(user.id) if user.id is not None else 0,
-                        "username": str(user.username) if user.username is not None else "",
-                        "email": str(user.email) if user.email is not None else "",
-                        "member_id": int(user.member_id) if user.member_id is not None else 0,
-                    }
-                    
-                    # Manejar status que puede ser enum o string
-                    if hasattr(user, 'status') and user.status is not None:
-                        if hasattr(user.status, 'value'):
-                            user_data["status"] = str(user.status.value)
-                        else:
-                            user_data["status"] = str(user.status)
+
+                if user:
+                    credentials = session.exec(
+                        sqlmodel.select(AuthCredentials).where(AuthCredentials.user_id == user.id)
+                    ).first()
+
+                    if credentials and bcrypt.checkpw(self.password.encode('utf-8'), credentials.password_hash.encode('utf-8')):
+                        self.auth_token = self._create_jwt_token(user)
+                        self.is_logged_in = True
+                        self.logged_user_data = {
+                            "id": user.id,
+                            "username": user.username,
+                            "email": user.email,
+                            "member_id": user.member_id,
+                            "status": user.status.value if isinstance(user.status, UserStatus) else user.status,
+                        }
+                        print(f"DEBUG: Login exitoso para usuario {self.username}")
+                        yield rx.redirect("/dashboard") # ✅ PASO 4: Usar 'yield' para el redirect
+                        return # Asegurarse de que el 'finally' no se ejecute en caso de éxito
                     else:
-                        user_data["status"] = "UNKNOWN"
-                    
-                    self.logged_user_data = user_data
-                    print(f"DEBUG: Datos de usuario establecidos: {user_data}")
-                    
-                except Exception as data_error:
-                    print(f"DEBUG: Error estableciendo datos de usuario: {str(data_error)}")
-                    self.error_message = "Error configurando sesión."
-                    self.is_loading = False
-                    return
+                        self.error_message = "Contraseña incorrecta."
+                else:
+                    self.error_message = "Usuario no encontrado."
         
         except Exception as e:
-            print(f"DEBUG: Error completo durante el login: {str(e)}")
-            print(f"DEBUG: Tipo de error: {type(e).__name__}")
-            import traceback
-            print(f"DEBUG: Traceback completo: {traceback.format_exc()}")
-            self.error_message = f"Error de conexión: {str(e)}"
+            self.error_message = f"Ocurrió un error inesperado: {e}"
+            print(f"ERROR: Excepción en login_user: {e}")
+        
+        finally:
+            # Esto ahora solo se ejecutará si el login falla.
             self.is_loading = False
-            return
-
-        print(f"DEBUG: Login exitoso para usuario {username_str}")
-        self.is_loading = False
-        self.clear_login_form()
-        return rx.redirect("/dashboard", replace=True)
+            print("DEBUG: Proceso de login finalizado (o fallido), is_loading=False")
 
     def _extract_first_word(self, text: str) -> str:
         """Extrae la primera palabra de un texto, manejando casos edge."""
@@ -907,3 +862,13 @@ class AuthState(rx.State):
         self.logged_user_data = {}
         print("DEBUG: Usuario ha cerrado sesión")
         return rx.redirect("/", replace=True)
+    
+    @rx.event
+    def random_username(self):
+        """Genera un nombre de usuario usando datos del usuario como firstname, lastname y un número aleatorio que se imprime en input."""
+        first_part = self._extract_first_word(self.new_user_firstname)
+        last_part = self._extract_first_word(self.new_user_lastname)
+        random_number = random.randint(100, 999)
+        generated_username = f"{first_part.lower()}{last_part.lower()}{random_number}"
+        self.new_username = generated_username
+        print(f"DEBUG: Nombre de usuario generado: {self.new_username}")

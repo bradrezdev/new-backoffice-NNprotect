@@ -79,6 +79,7 @@ def login() -> rx.Component:
                                     dark=Custom_theme().dark_colors()["primary"]
                                 ),
                                 border_radius="8px",
+                                loading=AuthState.is_loading,
                             ),
                         ),
 
@@ -190,6 +191,7 @@ def login() -> rx.Component:
                                 width="100%",
                                 _hover={"opacity": 0.9, "transform": "translateY(-1px)"},
                                 transition="all 0.2s ease",
+                                loading=AuthState.is_loading,
                             ),
                             
                             spacing="3",
