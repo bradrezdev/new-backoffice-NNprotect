@@ -122,10 +122,10 @@ def login() -> rx.Component:
                     # Formulario móvil
                     rx.form(
                         rx.vstack(
-                            rx.heading("Bienvenido de vuelta", size="6"),
+                            rx.heading("Bienvenido de nuevo", size="6"),
                             
                             rx.text(
-                                "Qué gusto volverte a ver. Por favor, ingresa los datos de tu cuenta:",
+                                "Por favor, ingresa los datos de tu cuenta para iniciar sesión:",
                                 font_size="0.9rem",
                                 margin_bottom="1rem"
                             ),
@@ -166,16 +166,16 @@ def login() -> rx.Component:
                             ),
                             
                             rx.link(
-                                "Olvidé mi contraseña", 
-                                href="/reset-password", 
+                                "¿Olvidaste tu contraseña?", 
+                                href="/reset-password",
                                 color=rx.color_mode_cond(
                                     light=Custom_theme().light_colors()["primary"],
                                     dark=Custom_theme().dark_colors()["primary"]
                                 ), 
-                                size="1",
-                                text_align="center",
+                                size="2",
+                                #text_align="center",
                                 width="100%",
-                                margin_bottom="2em"
+                                margin_bottom="2.5em"
                             ),
                             
                             rx.button(
