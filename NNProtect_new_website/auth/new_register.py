@@ -37,8 +37,8 @@ def register() -> rx.Component:
                                     rx.text("Nombre(s)*", font_weight="medium"),
                                     rx.input(
                                         placeholder="Escribe tu(s) nombre(s)...",
-                                        value=AuthState.user_firstname,
-                                        on_change=AuthState.set_firstname,
+                                        value=AuthState.new_user_firstname,
+                                        on_change=AuthState.set_new_firstname,
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -50,8 +50,8 @@ def register() -> rx.Component:
                                     rx.text("Apellido(s)*", font_weight="medium"),
                                     rx.input(
                                         placeholder="Escribe tu(s) apellido(s)...",
-                                        value=AuthState.user_lastname,
-                                        on_change=AuthState.set_lastname,
+                                        value=AuthState.new_user_lastname,
+                                        on_change=AuthState.set_new_lastname,
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -64,8 +64,8 @@ def register() -> rx.Component:
                                     rx.select(
                                         ["Masculino", "Femenino"],
                                         placeholder="Seleccionar una opción",
-                                        value=AuthState.gender,
-                                        on_change=AuthState.set_gender,
+                                        value=AuthState.new_gender,
+                                        on_change=AuthState.set_new_gender,
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -78,8 +78,8 @@ def register() -> rx.Component:
                                     rx.text("Calle y número*", font_weight="medium"),
                                     rx.input(
                                         placeholder="Ejemplo: Av. Siempre Viva #742",
-                                        value=AuthState.street_number,
-                                        on_change=AuthState.set_street_number,
+                                        value=AuthState.new_street_number,
+                                        on_change=AuthState.set_new_street_number,
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -91,8 +91,8 @@ def register() -> rx.Component:
                                     rx.text("Colonia*", font_weight="medium"),
                                     rx.input(
                                         placeholder="Ejemplo: Centro",
-                                        value=AuthState.neighborhood,
-                                        on_change=AuthState.set_neighborhood,
+                                        value=AuthState.new_neighborhood,
+                                        on_change=AuthState.set_new_neighborhood,
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -104,8 +104,8 @@ def register() -> rx.Component:
                                     rx.text("Ciudad*", font_weight="medium"),
                                     rx.input(
                                         placeholder="Ejemplo: Colima",
-                                        value=AuthState.city,
-                                        on_change=AuthState.set_city,
+                                        value=AuthState.new_city,
+                                        on_change=AuthState.set_new_city,
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -118,8 +118,8 @@ def register() -> rx.Component:
                                     rx.select(
                                         AuthState.country_options,
                                         placeholder="Seleccionar país",
-                                        value=AuthState.country,
-                                        on_change=AuthState.set_country,
+                                        value=AuthState.new_country,
+                                        on_change=AuthState.set_new_country,
                                         border_radius="14px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -133,9 +133,9 @@ def register() -> rx.Component:
                                     rx.select(
                                         AuthState.state_options,
                                         placeholder="Seleccionar estado",
-                                        value=AuthState.state,
-                                        on_change=AuthState.set_state,
-                                        disabled=~(AuthState.country != ""),
+                                        value=AuthState.new_state,
+                                        on_change=AuthState.set_new_state,
+                                        disabled=(AuthState.new_country == ""),
                                         border_radius="14px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -147,8 +147,8 @@ def register() -> rx.Component:
                                     rx.text("Código postal*", font_weight="medium"),
                                     rx.input(
                                         placeholder="Ejemplo: 28000",
-                                        value=AuthState.zip_code,
-                                        on_change=AuthState.set_zip_code,
+                                        value=AuthState.new_zip_code,
+                                        on_change=AuthState.set_new_zip_code,
                                         border_radius="14px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -160,8 +160,8 @@ def register() -> rx.Component:
                                     rx.text("Celular*", font_weight="medium"),
                                     rx.input(
                                         placeholder="Ejemplo: 3121234567",
-                                        value=AuthState.phone_number,
-                                        on_change=AuthState.set_phone_number,
+                                        value=AuthState.new_phone_number,
+                                        on_change=AuthState.set_new_phone_number,
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -184,8 +184,8 @@ def register() -> rx.Component:
                                     rx.text("Usuario*", font_weight="medium"),
                                     rx.input(
                                         placeholder="Usuario único",
-                                        value=AuthState.username,
-                                        on_change=AuthState.set_username,
+                                        value=AuthState.new_username,
+                                        on_change=AuthState.set_new_username,
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -193,13 +193,14 @@ def register() -> rx.Component:
                                         ),
                                         height="40px",
                                         width="100%",
+                                        font_size="16px",
                                     ),
                                     rx.text("Correo electrónico*", font_weight="medium"),
                                     rx.input(
                                         type="email",
                                         placeholder="Correo electrónico",
-                                        value=AuthState.email,
-                                        on_change=AuthState.set_email,
+                                        value=AuthState.new_email,
+                                        on_change=AuthState.set_new_email,
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -207,13 +208,13 @@ def register() -> rx.Component:
                                         ),
                                         height="40px",
                                         width="100%",
+                                        font_size="16px",
                                     ),
-                                    rx.text("Contraseña*", font_weight="medium"),
                                     rx.input(
                                         type="password",
                                         placeholder="Crea una contraseña",
-                                        value=AuthState.password,
-                                        on_change=AuthState.set_password,
+                                        value=AuthState.new_password,  # ✅ Cambiar
+                                        on_change=AuthState.set_new_password,  # ✅ Cambiar
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -221,12 +222,289 @@ def register() -> rx.Component:
                                         ),
                                         height="40px",
                                         width="100%",
+                                        font_size="16px",
                                     ),
+                                    rx.input(
+                                        type="password",
+                                        placeholder="Confirmar contraseña",
+                                        value=AuthState.new_confirmed_password,  # ✅ Cambiar
+                                        on_change=AuthState.set_new_confirmed_password,  # ✅ Cambiar
+                                        border_radius="12px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="40px",
+                                        width="100%",
+                                        font_size="16px",
+                                    ),
+
+                                    # Continuar con todos los demás campos usando new_...
+                                    rx.text("Nombres*", font_weight="medium"),
+                                    rx.input(
+                                        placeholder="Nombres completos",
+                                        value=AuthState.new_user_firstname,
+                                        on_change=AuthState.set_new_firstname,
+                                        border_radius="12px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="40px",
+                                        width="100%",
+                                        font_size="16px",
+                                    ),
+                                    rx.text("Apellidos*", font_weight="medium"),
+                                    rx.input(
+                                        placeholder="Apellidos completos",
+                                        value=AuthState.new_user_lastname,
+                                        on_change=AuthState.set_new_lastname,
+                                        border_radius="12px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="40px",
+                                        width="100%",
+                                        font_size="16px",
+                                    ),
+
+                                    # Continuar actualizando TODOS los campos en la versión móvil también...
+                                    rx.text("Información Personal", font_weight="bold", font_size="1.1em", margin_bottom="0.5em"),
+                                    
                                     rx.text(
-                                        "Requisitos de la contraseña:",
-                                        font_size="0.95rem",
-                                        font_weight="bold",
-                                        margin_top="0.5em"
+                                        "Nombre(s)*",
+                                        font_weight="medium",
+                                        font_size="1em",
+                                        ),
+                                    rx.input(
+                                        placeholder="Escribe tu(s) nombre(s)...",
+                                        value=AuthState.new_user_firstname,
+                                        on_change=AuthState.set_new_firstname,
+                                        required=True,
+                                        reset_on_submit=True,
+                                        border_radius="15px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="48px",
+                                        width="100%",
+                                        font_size="1em",
+                                    ),
+
+                                    rx.text(
+                                        "Apellido(s)*",
+                                        font_weight="medium",
+                                        font_size="1em",
+                                        ),
+                                    rx.input(
+                                        placeholder="Escribe tu(s) apellido(s)...",
+                                        value=AuthState.new_user_lastname,
+                                        on_change=AuthState.set_new_lastname,
+                                        required=True,
+                                        reset_on_submit=True,
+                                        border_radius="15px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="48px",
+                                        width="100%",
+                                        font_size="1em",
+                                    ),
+
+                                    rx.text("Sexo*", font_weight="medium", font_size="1em"),
+                                    rx.select(
+                                        ["Masculino", "Femenino"],
+                                        placeholder="Seleccionar una opción",
+                                        radius="large",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],  # Corregido
+                                            dark=Custom_theme().dark_colors()["tertiary"]     # Corregido
+                                        ),
+                                        width="100%",
+                                        size="3",
+                                        required=True,
+                                        value=AuthState.new_gender,
+                                        on_change=AuthState.set_new_gender,
+                                    ),
+
+                                    rx.text("Celular*", font_weight="medium", font_size="1em"),
+                                    rx.input(
+                                        placeholder="Ejemplo: 3121234567",
+                                        value=AuthState.new_phone_number,
+                                        on_change=AuthState.set_new_phone_number,
+                                        border_radius="15px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],  # Corregido
+                                            dark=Custom_theme().dark_colors()["tertiary"]     # Corregido
+                                        ),
+                                        height="48px",
+                                        width="100%",
+                                        font_size="1em",
+                                        margin_bottom="1rem"
+                                    ),
+
+                                    # Dirección
+                                    rx.text("Dirección", font_weight="bold", font_size="1.1em", margin_bottom="0.5em"),
+
+                                    rx.text("Calle y número*", font_weight="medium", font_size="1em"),
+                                    rx.input(
+                                        placeholder="Ejemplo: Av. Siempre Viva #742",
+                                        value=AuthState.new_street_number,
+                                        on_change=AuthState.set_new_street_number,
+                                        border_radius="15px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="48px",
+                                        width="100%",
+                                        font_size="1em",
+                                    ),
+
+                                    rx.text("Colonia*", font_weight="medium", font_size="1em"),
+                                    rx.input(
+                                        placeholder="Ejemplo: Centro",
+                                        value=AuthState.new_neighborhood,
+                                        on_change=AuthState.set_new_neighborhood,
+                                        border_radius="15px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="48px",
+                                        width="100%",
+                                        font_size="1em",
+                                    ),
+
+                                    rx.hstack(
+                                        rx.vstack(
+                                            rx.text("Ciudad*", font_weight="medium", font_size="1em"),
+                                            rx.input(
+                                                placeholder="Ciudad",
+                                                value=AuthState.new_city,
+                                                on_change=AuthState.set_new_city,
+                                                border_radius="15px",
+                                                bg=rx.color_mode_cond(
+                                                    light=Custom_theme().light_colors()["tertiary"],
+                                                    dark=Custom_theme().dark_colors()["tertiary"]
+                                                ),
+                                                height="48px",
+                                                width="100%",
+                                                font_size="1em",
+                                            ),
+                                            width="48%"
+                                        ),
+                                        rx.vstack(
+                                            rx.text("C.P.*", font_weight="medium", font_size="1em"),
+                                            rx.input(
+                                                placeholder="28000",
+                                                value=AuthState.new_zip_code,
+                                                on_change=AuthState.set_new_zip_code,
+                                                border_radius="15px",
+                                                bg=rx.color_mode_cond(
+                                                    light=Custom_theme().light_colors()["tertiary"],
+                                                    dark=Custom_theme().dark_colors()["tertiary"]
+                                                ),
+                                                height="48px",
+                                                width="100%",
+                                                font_size="1em",
+                                            ),
+                                            width="50%"
+                                        ),
+                                        justify="between",
+                                        width="100%",
+                                    ),
+
+                                    rx.text("País*", font_weight="medium", font_size="1em"),
+                                    rx.select(
+                                        AuthState.country_options,
+                                        placeholder="Seleccionar país",
+                                        value=AuthState.new_country,
+                                        on_change=AuthState.set_new_country,
+                                        radius="large",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        width="100%",
+                                        size="3",
+                                        required=True,
+                                    ),
+
+                                    rx.text("Estado*", font_weight="medium", font_size="1em"),
+                                    rx.select(
+                                        AuthState.state_options,
+                                        placeholder="Seleccionar estado",
+                                        value=AuthState.new_state,
+                                        on_change=AuthState.set_new_state,
+                                        disabled=(AuthState.new_country == ""),
+                                        radius="large",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        width="100%",
+                                        size="3",
+                                        required=True,
+                                    ),
+
+                                    # Acceso al sistema
+                                    rx.text("Acceso al Sistema", font_weight="bold", font_size="1.1em", margin_bottom="0.5rem"),
+
+                                    rx.text("Usuario*", font_weight="medium", font_size="1em"),
+                                    rx.input(
+                                        placeholder="Usuario único",
+                                        value=AuthState.new_username,  # ✅ Cambiar
+                                        on_change=AuthState.set_new_username,  # ✅ Cambiar
+                                        required=True,
+                                        reset_on_submit=True,
+                                        border_radius="15px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="48px",
+                                        width="100%",
+                                        font_size="1em",
+                                    ),
+
+                                    rx.text("Correo electrónico*", font_weight="medium", font_size="1em"),
+                                    rx.input(
+                                        type="email",
+                                        placeholder="Correo electrónico",
+                                        value=AuthState.new_email,  # ✅ Cambiar
+                                        on_change=AuthState.set_new_email,  # ✅ Cambiar
+                                        required=True,
+                                        reset_on_submit=True,
+                                        border_radius="15px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="48px",
+                                        width="100%",
+                                        font_size="1em",
+                                    ),
+
+                                    rx.text("Contraseña*", font_weight="medium", font_size="1em"),
+                                    rx.input(
+                                        type="password",
+                                        placeholder="Crea una contraseña",
+                                        value=AuthState.new_password,  # ✅ Cambiar
+                                        on_change=AuthState.set_new_password,  # ✅ Cambiar
+                                        required=True,
+                                        reset_on_submit=True,
+                                        border_radius="15px",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        height="48px",
+                                        width="100%",
+                                        font_size="1em",
                                     ),
                                     rx.form(
                                         rx.list_item("Debe contener mínimo 8 caracteres."),
@@ -234,63 +512,63 @@ def register() -> rx.Component:
                                         rx.list_item("Debe incluir mínimo 1 letra minúscula."),
                                         rx.list_item("Debe incluir mínimo 1 número."),
                                         rx.list_item("Debe incluir mínimo 1 carácter/símbolo especial."),
-                                        font_size="0.85rem",
+                                        font_size="0.85rem",  # --- Propiedades rx.form ---
                                         style={"margin-left": "1em", "color": "#333"},
                                     ),
-                                    rx.text(
-                                        "Confirmar contraseña*",
-                                        font_weight="medium",
-                                        margin_top="0.7em"
-                                    ),
+                                    rx.text("Confirmar contraseña*", font_weight="medium", font_size="1em"),
                                     rx.input(
                                         type="password",
                                         placeholder="Confirma la contraseña",
-                                        value=AuthState.confirmed_password,
-                                        on_change=AuthState.set_confirmed_password,
-                                        border_radius="12px",
+                                        value=AuthState.new_confirmed_password,  # ✅ Cambiar
+                                        on_change=AuthState.set_new_confirmed_password,  # ✅ Cambiar
+                                        required=True,
+                                        reset_on_submit=True,
+                                        border_radius="15px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
                                             dark=Custom_theme().dark_colors()["tertiary"]
                                         ),
-                                        height="40px",
+                                        height="48px",
                                         width="100%",
+                                        font_size="1em",
                                     ),
+                                    
+                                    # Términos y condiciones
                                     rx.hstack(
                                         rx.checkbox(
-                                            checked=AuthState.terms_accepted,
-                                            on_change=AuthState.set_terms_accepted,
+                                            checked=AuthState.new_terms_accepted,
+                                            on_change=AuthState.set_new_terms_accepted,
+                                            required=True,
                                         ),
                                         rx.text(
-                                            "He leído los términos y condiciones.",
-                                            font_size="0.97rem"
+                                            "He leído los ", rx.link("terminos y condiciones.", href="#"),
+                                            font_size="0.85em"  # --- Propiedades rx.text ---
                                         ),
-                                        rx.link(
-                                            "Leer términos y condiciones",
-                                            href="#",
-                                            font_size="0.97rem",
-                                            color="#0039F2",
-                                            margin_left="0.2em",
-                                            underline="always"
-                                        ),
-                                        spacing="1"
+                                        margin_bottom="1.5rem",
+                                        spacing="1"  # --- Propiedades rx.hstack ---
                                     ),
+                                    
                                     rx.button(
                                         "Registrarse",
-                                        bg="#0039F2",
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["primary"],
+                                            dark=Custom_theme().dark_colors()["primary"]
+                                        ),
                                         color="white",
-                                        border_radius="12px",
+                                        border_radius="24px",
                                         width="100%",
-                                        height="48px",
-                                        margin_top="1.5em",
+                                        height="64px",
                                         font_size="1.1rem",
                                         font_weight="bold",
+                                        type="submit",
                                         on_click=AuthState.new_register,
                                     ),
-                                    width="48%",
+                                    
                                     spacing="3",
+                                    width="100%"
                                 ),
-                                spacing="9",  # --- Propiedades rx.hstack ---
-                                width="100%",
+                                width="48%",
+                                spacing="3",
                             ),
                             # Propiedades @Main container de la derecha
                             width="100%", # Ancho total del contenido de la página
@@ -337,8 +615,8 @@ def register() -> rx.Component:
                             ),
                         rx.input(
                             placeholder="Escribe tu(s) nombre(s)...",
-                            value=AuthState.user_firstname,
-                            on_change=AuthState.set_firstname,
+                            value=AuthState.new_user_firstname,
+                            on_change=AuthState.set_new_firstname,
                             required=True,
                             reset_on_submit=True,
                             border_radius="15px",
@@ -358,8 +636,8 @@ def register() -> rx.Component:
                             ),
                         rx.input(
                             placeholder="Escribe tu(s) apellido(s)...",
-                            value=AuthState.user_lastname,
-                            on_change=AuthState.set_lastname,
+                            value=AuthState.new_user_lastname,
+                            on_change=AuthState.set_new_lastname,
                             required=True,
                             reset_on_submit=True,
                             border_radius="15px",
@@ -384,15 +662,15 @@ def register() -> rx.Component:
                             width="100%",
                             size="3",
                             required=True,
-                            value=AuthState.gender,
-                            on_change=AuthState.set_gender,
+                            value=AuthState.new_gender,
+                            on_change=AuthState.set_new_gender,
                         ),
 
                         rx.text("Celular*", font_weight="medium", font_size="1em"),
                         rx.input(
                             placeholder="Ejemplo: 3121234567",
-                            value=AuthState.phone_number,
-                            on_change=AuthState.set_phone_number,
+                            value=AuthState.new_phone_number,
+                            on_change=AuthState.set_new_phone_number,
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],  # Corregido
@@ -410,8 +688,8 @@ def register() -> rx.Component:
                         rx.text("Calle y número*", font_weight="medium", font_size="1em"),
                         rx.input(
                             placeholder="Ejemplo: Av. Siempre Viva #742",
-                            value=AuthState.street_number,
-                            on_change=AuthState.set_street_number,
+                            value=AuthState.new_street_number,
+                            on_change=AuthState.set_new_street_number,
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -425,8 +703,8 @@ def register() -> rx.Component:
                         rx.text("Colonia*", font_weight="medium", font_size="1em"),
                         rx.input(
                             placeholder="Ejemplo: Centro",
-                            value=AuthState.neighborhood,
-                            on_change=AuthState.set_neighborhood,
+                            value=AuthState.new_neighborhood,
+                            on_change=AuthState.set_new_neighborhood,
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -442,8 +720,8 @@ def register() -> rx.Component:
                                 rx.text("Ciudad*", font_weight="medium", font_size="1em"),
                                 rx.input(
                                     placeholder="Ciudad",
-                                    value=AuthState.city,
-                                    on_change=AuthState.set_city,
+                                    value=AuthState.new_city,
+                                    on_change=AuthState.set_new_city,
                                     border_radius="15px",
                                     bg=rx.color_mode_cond(
                                         light=Custom_theme().light_colors()["tertiary"],
@@ -459,8 +737,8 @@ def register() -> rx.Component:
                                 rx.text("C.P.*", font_weight="medium", font_size="1em"),
                                 rx.input(
                                     placeholder="28000",
-                                    value=AuthState.zip_code,
-                                    on_change=AuthState.set_zip_code,
+                                    value=AuthState.new_zip_code,
+                                    on_change=AuthState.set_new_zip_code,
                                     border_radius="15px",
                                     bg=rx.color_mode_cond(
                                         light=Custom_theme().light_colors()["tertiary"],
@@ -480,8 +758,8 @@ def register() -> rx.Component:
                         rx.select(
                             AuthState.country_options,
                             placeholder="Seleccionar país",
-                            value=AuthState.country,
-                            on_change=AuthState.set_country,
+                            value=AuthState.new_country,
+                            on_change=AuthState.set_new_country,
                             radius="large",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -496,9 +774,9 @@ def register() -> rx.Component:
                         rx.select(
                             AuthState.state_options,
                             placeholder="Seleccionar estado",
-                            value=AuthState.state,
-                            on_change=AuthState.set_state,
-                            disabled=~(AuthState.country != ""),
+                            value=AuthState.new_state,
+                            on_change=AuthState.set_new_state,
+                            disabled=(AuthState.new_country == ""),
                             radius="large",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
@@ -515,8 +793,8 @@ def register() -> rx.Component:
                         rx.text("Usuario*", font_weight="medium", font_size="1em"),
                         rx.input(
                             placeholder="Usuario único",
-                            value=AuthState.username,
-                            on_change=AuthState.set_username,
+                            value=AuthState.new_username,  # ✅ Cambiar
+                            on_change=AuthState.set_new_username,  # ✅ Cambiar
                             required=True,
                             reset_on_submit=True,
                             border_radius="15px",
@@ -533,8 +811,8 @@ def register() -> rx.Component:
                         rx.input(
                             type="email",
                             placeholder="Correo electrónico",
-                            value=AuthState.email,
-                            on_change=AuthState.set_email,
+                            value=AuthState.new_email,  # ✅ Cambiar
+                            on_change=AuthState.set_new_email,  # ✅ Cambiar
                             required=True,
                             reset_on_submit=True,
                             border_radius="15px",
@@ -551,8 +829,8 @@ def register() -> rx.Component:
                         rx.input(
                             type="password",
                             placeholder="Crea una contraseña",
-                            value=AuthState.password,
-                            on_change=AuthState.set_password,
+                            value=AuthState.new_password,  # ✅ Cambiar
+                            on_change=AuthState.set_new_password,  # ✅ Cambiar
                             required=True,
                             reset_on_submit=True,
                             border_radius="15px",
@@ -563,6 +841,15 @@ def register() -> rx.Component:
                             height="48px",
                             width="100%",
                             font_size="1em",
+                        ),
+                        rx.cond(
+                            AuthState.error_message != "",
+                            rx.callout(
+                                f"{AuthState.error_message}",
+                                icon="info",
+                                color="red",
+                                role="alert",
+                            ),
                         ),
                         rx.form(
                             rx.list_item("Debe contener mínimo 8 caracteres."),
@@ -577,8 +864,8 @@ def register() -> rx.Component:
                         rx.input(
                             type="password",
                             placeholder="Confirma la contraseña",
-                            value=AuthState.confirmed_password,
-                            on_change=AuthState.set_confirmed_password,
+                            value=AuthState.new_confirmed_password,  # ✅ Cambiar
+                            on_change=AuthState.set_new_confirmed_password,  # ✅ Cambiar
                             required=True,
                             reset_on_submit=True,
                             border_radius="15px",
@@ -594,8 +881,8 @@ def register() -> rx.Component:
                         # Términos y condiciones
                         rx.hstack(
                             rx.checkbox(
-                                checked=AuthState.terms_accepted,  # Corregir prop obsoleto
-                                on_change=AuthState.set_terms_accepted,
+                                checked=AuthState.new_terms_accepted,
+                                on_change=AuthState.set_new_terms_accepted,
                                 required=True,
                             ),
                             rx.text(
@@ -626,11 +913,11 @@ def register() -> rx.Component:
                         width="100%"
                     ),
                     width="100%",
-                    padding="10px",
                     margin_top="80px",
                     margin_bottom="15px"
                 ),
-                
+                align="center",
+                padding="0 1em 2em 1em",
                 width="100%",
                 min_height="100vh",
                 bg=rx.color_mode_cond(
@@ -647,5 +934,4 @@ def register() -> rx.Component:
         ),
         position="absolute",
         width="100%",
-        #on_mount=AuthState.load_user_from_token,
     )

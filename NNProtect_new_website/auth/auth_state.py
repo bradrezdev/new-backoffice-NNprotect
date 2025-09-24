@@ -19,24 +19,29 @@ class AuthState(rx.State):
     is_loading: bool = False
     error_message: str = ""
     
-    # --- Campos de Registro ---
+    # --- Campos de Login ---
     username: str = ""
     email: str = ""
     password: str = ""
-    confirmed_password: str = ""
-    user_firstname: str = ""
-    user_lastname: str = ""
-    phone_number: str = ""
-    gender: str = ""
-    terms_accepted: bool = False
     
-    # Nuevos campos de dirección
-    street_number: str = ""
-    neighborhood: str = ""
-    city: str = ""
-    zip_code: str = ""
-    country: str = ""
-    state: str = ""
+    # --- Campos de Registro (prefijo new_) ---
+    new_username: str = ""
+    new_email: str = ""
+    new_password: str = ""
+    new_confirmed_password: str = ""
+    new_user_firstname: str = ""
+    new_user_lastname: str = ""
+    new_phone_number: str = ""
+    new_gender: str = ""
+    new_terms_accepted: bool = False
+    
+    # Campos de dirección para registro
+    new_street_number: str = ""
+    new_neighborhood: str = ""
+    new_city: str = ""
+    new_zip_code: str = ""
+    new_country: str = ""
+    new_state: str = ""
 
     # --- Campos de Sesión (fusionados desde la clase Login) ---
     auth_token: str = rx.Cookie(name="auth_token", secure=True, same_site="Lax")
@@ -81,14 +86,14 @@ class AuthState(rx.State):
     @rx.var
     def state_options(self) -> list[str]:
         """Lista de estados basada en el país seleccionado."""
-        if not self.country:
+        if not self.new_country:
             return []
         
         try:
             # Encontrar la clave del país a partir del valor amigable
             country_key = None
             for key, value in self.COUNTRY_MAP.items():
-                if value == self.country:
+                if value == self.new_country:
                     country_key = key
                     break
             
@@ -139,6 +144,68 @@ class AuthState(rx.State):
     def set_terms_accepted(self, terms_accepted: bool):
         self.terms_accepted = terms_accepted
 
+    # --- Setters para campos de registro (prefijo new_) ---
+    @rx.event
+    def set_new_username(self, new_username: str):
+        self.new_username = new_username
+
+    @rx.event
+    def set_new_email(self, new_email: str):
+        self.new_email = new_email
+
+    @rx.event
+    def set_new_password(self, new_password: str):
+        self.new_password = new_password
+
+    @rx.event
+    def set_new_confirmed_password(self, new_confirmed_password: str):
+        self.new_confirmed_password = new_confirmed_password
+
+    @rx.event
+    def set_new_firstname(self, new_user_firstname: str):
+        self.new_user_firstname = new_user_firstname
+
+    @rx.event
+    def set_new_lastname(self, new_user_lastname: str):
+        self.new_user_lastname = new_user_lastname
+
+    @rx.event
+    def set_new_phone_number(self, new_phone_number: str):
+        self.new_phone_number = new_phone_number
+
+    @rx.event
+    def set_new_gender(self, new_gender: str):
+        self.new_gender = new_gender
+
+    @rx.event
+    def set_new_terms_accepted(self, new_terms_accepted: bool):
+        self.new_terms_accepted = new_terms_accepted
+
+    @rx.event
+    def set_new_street_number(self, new_street_number: str):
+        self.new_street_number = new_street_number
+
+    @rx.event
+    def set_new_neighborhood(self, new_neighborhood: str):
+        self.new_neighborhood = new_neighborhood
+
+    @rx.event
+    def set_new_city(self, new_city: str):
+        self.new_city = new_city
+
+    @rx.event
+    def set_new_zip_code(self, new_zip_code: str):
+        self.new_zip_code = new_zip_code
+
+    @rx.event
+    def set_new_country(self, new_country: str):
+        self.new_country = new_country
+        self.new_state = ""  # Resetear estado cuando cambie país
+
+    @rx.event
+    def set_new_state(self, new_state: str):
+        self.new_state = new_state
+
     @rx.event
     def new_register(self):
         """Registrar un nuevo usuario con todos sus datos relacionados."""
@@ -172,35 +239,41 @@ class AuthState(rx.State):
                 # 4a. Crear el usuario base (primero, porque otros dependen de él)
                 print("DEBUG: Creando registro de usuario base...")
                 new_user = self._create_user_record(session, new_member_id)
-                print(f"DEBUG: Usuario creado con ID: {new_user.id}")
-                
-                # 4b. Crear las credenciales de autenticación
-                print("DEBUG: Creando credenciales de autenticación...")
-                self._create_auth_credentials(session, new_user.id)
-                print("DEBUG: Credenciales creadas")
-                
-                # 4c. Asignar el rol por defecto
-                print("DEBUG: Asignando rol por defecto...")
-                self._assign_default_role(session, new_user.id)
-                print("DEBUG: Rol asignado")
-                
-                # 4d. Crear el perfil del usuario
-                print("DEBUG: Creando perfil de usuario...")
-                self._create_user_profile(session, new_user.id)
-                print("DEBUG: Perfil creado")
-                
-                # 4e. Crear registro de cuentas sociales (vacío por defecto)
-                print("DEBUG: Creando registro de cuentas sociales...")
-                self._create_social_accounts(session, new_user.id)
-                print("DEBUG: Cuentas sociales creadas")
 
-                # 4f. Crear dirección del usuario (si se proporcionaron datos)
-                if self.street_number and self.city and self.country:
-                    print("DEBUG: Creando dirección del usuario...")
-                    self._create_user_address(session, new_user.id)
-                    print("DEBUG: Dirección procesada")
+                if new_user and new_user.id:
+                    print(f"DEBUG: Usuario creado con ID: {new_user.id}")
+                    
+                    # 4b. Crear las credenciales de autenticación
+                    print("DEBUG: Creando credenciales de autenticación...")
+                    self._create_auth_credentials(session, new_user.id)
+                    print("DEBUG: Credenciales creadas")
+                    
+                    # 4c. Asignar el rol por defecto
+                    print("DEBUG: Asignando rol por defecto...")
+                    self._assign_default_role(session, new_user.id)
+                    print("DEBUG: Rol asignado")
+                    
+                    # 4d. Crear el perfil del usuario
+                    print("DEBUG: Creando perfil de usuario...")
+                    self._create_user_profile(session, new_user.id)
+                    print("DEBUG: Perfil creado")
+                    
+                    # 4e. Crear registro de cuentas sociales (vacío por defecto)
+                    print("DEBUG: Creando registro de cuentas sociales...")
+                    self._create_social_accounts(session, new_user.id)
+                    print("DEBUG: Cuentas sociales creadas")
+
+                    # 4f. Crear dirección del usuario (si se proporcionaron datos)
+                    if self.new_street_number and self.new_city and self.new_country:
+                        print("DEBUG: Creando dirección del usuario...")
+                        self._create_user_address(session, new_user.id)
+                        print("DEBUG: Dirección procesada")
+                    else:
+                        print("DEBUG: Saltando creación de dirección - datos incompletos")
                 else:
-                    print("DEBUG: Saltando creación de dirección - datos incompletos")
+                    self.error_message = "No se pudo crear el usuario."
+                    self.is_loading = False
+                    return
 
                 # --- 5. Confirmar todos los cambios ---
                 session.commit()
@@ -217,28 +290,66 @@ class AuthState(rx.State):
         print("DEBUG: Registro exitoso, limpiando formulario y redirigiendo...")
         self._clear_registration_form()
         self.is_loading = False
-        return rx.redirect("/", replace=True)
+        return rx.redirect("/dashboard", replace=True)
 
     # --- Métodos auxiliares para mantener el código organizado ---
 
     def _validate_registration_data(self) -> bool:
         """Valida que todos los datos requeridos estén presentes."""
-        if self.password != self.confirmed_password:
+
+        # ✅ NUEVA VALIDACIÓN DE COMPLEJIDAD DE CONTRASEÑA
+        if not self._validate_password_complexity():
+            return False
+
+        if self.new_password != self.new_confirmed_password:
             self.error_message = "Las contraseñas no coinciden."
             return False
         
-        required_fields = [self.username, self.email, self.password, 
-                          self.user_firstname, self.user_lastname, self.terms_accepted]
+        required_fields = [self.new_username, self.new_email, self.new_password, 
+                          self.new_user_firstname, self.new_user_lastname, self.new_terms_accepted]
         if not all(required_fields):
             self.error_message = "Faltan campos obligatorios."
             return False
         
         # Validar campos de dirección si se proporcionaron
-        if self.street_number or self.city or self.country:
-            address_fields = [self.street_number, self.city, self.country]
+        if self.new_street_number or self.new_city or self.new_country:
+            address_fields = [self.new_street_number, self.new_city, self.new_country]
             if not all(address_fields):
                 self.error_message = "Si proporciona dirección, complete todos los campos obligatorios."
                 return False
+        
+        return True
+
+    def _validate_password_complexity(self) -> bool:
+        """Valida que la contraseña cumpla con los requisitos de complejidad."""
+        import re
+        
+        password = self.new_password
+        
+        # Verificar longitud mínima
+        if len(password) < 8:
+            self.error_message = "La contraseña debe tener al menos 8 caracteres."
+            return False
+        
+        # Verificar que tenga al menos una letra mayúscula
+        if not re.search(r'[A-Z]', password):
+            self.error_message = "La contraseña debe contener al menos una letra mayúscula."
+            return False
+        
+        # Verificar que tenga al menos una letra minúscula
+        if not re.search(r'[a-z]', password):
+            self.error_message = "La contraseña debe contener al menos una letra minúscula."
+            return False
+        
+        # Verificar que tenga al menos un número
+        if not re.search(r'\d', password):
+            self.error_message = "La contraseña debe contener al menos un número."
+            return False
+        
+        # Verificar que tenga al menos un símbolo especial
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\];\'\\`~]', password):
+            self.error_message = "La contraseña debe contener al menos un símbolo especial (!@#$%^&*...)."
+            return False
         
         return True
 
@@ -246,7 +357,7 @@ class AuthState(rx.State):
         """Verifica si el usuario ya existe."""
         return session.exec(
             sqlmodel.select(Users).where(
-                (Users.username == self.username) | (Users.email == self.email)
+                (Users.username == self.new_username) | (Users.email == self.new_email)
             )
         ).first() is not None
 
@@ -261,8 +372,8 @@ class AuthState(rx.State):
         """Crea el registro base del usuario."""
         new_user = Users(
             member_id=member_id,
-            username=self.username,
-            email=self.email,
+            username=self.new_username,
+            email=self.new_email,
             status=UserStatus.NO_QUALIFIED,  # Usar el enum correcto
             referral_code=f"{member_id:05d}",
             created_at=datetime.datetime.utcnow(),
@@ -276,33 +387,33 @@ class AuthState(rx.State):
     def _create_user_profile(self, session, user_id: int):
         """Crea el perfil detallado del usuario."""
         # Convertir gender string a enum con valores exactos del select
-        if self.gender == "Masculino":  # Valor exacto del select
+        if self.new_gender == "Masculino":  # Valor exacto del select
             gender_enum = UserGender.MALE
-        elif self.gender == "Femenino":  # Valor exacto del select
+        elif self.new_gender == "Femenino":  # Valor exacto del select
             gender_enum = UserGender.FEMALE
         else:
             # Valor por defecto para casos no contemplados (vacío, "Seleccionar...", etc.)
             gender_enum = UserGender.MALE
-            print(f"DEBUG: Género no reconocido '{self.gender}', usando MALE por defecto")
+            print(f"DEBUG: Género no reconocido '{self.new_gender}', usando MALE por defecto")
             
         new_profile = UserProfiles(
             user_id=user_id,
-            first_name=self.user_firstname,
-            last_name=self.user_lastname,
+            first_name=self.new_user_firstname,
+            last_name=self.new_user_lastname,
             gender=gender_enum,
-            phone_number=self.phone_number
+            phone_number=self.new_phone_number
         )
         session.add(new_profile)
-        print(f"DEBUG: Perfil creado con género: {gender_enum} (valor original: '{self.gender}')")
+        print(f"DEBUG: Perfil creado con género: {gender_enum} (valor original: '{self.new_gender}')")
 
     def _create_auth_credentials(self, session, user_id: int):
         """Crea las credenciales de autenticación con contraseña hasheada."""
-        hashed_password = bcrypt.hashpw(self.password.encode('utf-8'), bcrypt.gensalt())
+        hashed_password = bcrypt.hashpw(self.new_password.encode('utf-8'), bcrypt.gensalt())
         
         new_credentials = AuthCredentials(
             user_id=user_id,
             password_hash=hashed_password.decode('utf-8'),
-            terms_accepted=self.terms_accepted
+            terms_accepted=self.new_terms_accepted
         )
         session.add(new_credentials)
 
@@ -335,7 +446,7 @@ class AuthState(rx.State):
 
     def _create_user_address(self, session, user_id: int):
         """Crea la dirección del usuario si se proporcionaron datos."""
-        if not (self.street_number and self.city and self.country):
+        if not (self.new_street_number and self.new_city and self.new_country):
             print("DEBUG: No se proporcionaron datos de dirección, saltando creación")
             return
         
@@ -343,23 +454,23 @@ class AuthState(rx.State):
             # Encontrar la clave del país a partir del valor amigable
             country_key = None
             for key, value in self.COUNTRY_MAP.items():
-                if value == self.country:
+                if value == self.new_country:
                     country_key = key
                     break
             
             if not country_key:
-                raise ValueError(f"País '{self.country}' no es válido")
+                raise ValueError(f"País '{self.new_country}' no es válido")
             
             country_enum = Countries[country_key]
             
             # Crear registro de dirección
             new_address = Addresses(
-                street=self.street_number,
-                neighborhood=self.neighborhood or "",
-                city=self.city,
-                state=self.state or "",
+                street=self.new_street_number,
+                neighborhood=self.new_neighborhood or "",
+                city=self.new_city,
+                state=self.new_state or "",
                 country=country_enum,
-                zip_code=self.zip_code or ""
+                zip_code=self.new_zip_code or ""
             )
             session.add(new_address)
             session.flush()  # Flush para verificar errores antes del commit final
@@ -385,22 +496,22 @@ class AuthState(rx.State):
 
     def _clear_registration_form(self):
         """Limpia el formulario después del registro exitoso."""
-        self.username = ""
-        self.email = ""
-        self.password = ""
-        self.confirmed_password = ""
-        self.user_firstname = ""
-        self.user_lastname = ""
-        self.gender = ""
-        self.phone_number = ""
-        self.terms_accepted = False
+        self.new_username = ""
+        self.new_email = ""
+        self.new_password = ""
+        self.new_confirmed_password = ""
+        self.new_user_firstname = ""
+        self.new_user_lastname = ""
+        self.new_gender = ""
+        self.new_phone_number = ""
+        self.new_terms_accepted = False
         # Limpiar campos de dirección
-        self.street_number = ""
-        self.neighborhood = ""
-        self.city = ""
-        self.zip_code = ""
-        self.country = ""
-        self.state = ""
+        self.new_street_number = ""
+        self.new_neighborhood = ""
+        self.new_city = ""
+        self.new_zip_code = ""
+        self.new_country = ""
+        self.new_state = ""
 
     # --- Métodos de Sesión (fusionados desde la clase Login) ---
 
@@ -644,6 +755,7 @@ class AuthState(rx.State):
 
         print(f"DEBUG: Login exitoso para usuario {username_str}")
         self.is_loading = False
+        self.clear_login_form()
         return rx.redirect("/dashboard", replace=True)
 
     def _extract_first_word(self, text: str) -> str:
@@ -674,6 +786,15 @@ class AuthState(rx.State):
             return last_word
         else:
             return username  # Fallback final
+        
+    @rx.event
+    def clear_login_form(self):
+        """Limpia los campos del formulario de login."""
+        self.username = ""
+        self.email = ""
+        self.password = ""
+        self.error_message = ""
+        self.is_loading = False
 
     @rx.event
     def load_user_from_token(self):
@@ -785,4 +906,4 @@ class AuthState(rx.State):
         self.is_logged_in = False
         self.logged_user_data = {}
         print("DEBUG: Usuario ha cerrado sesión")
-        return rx.redirect("/login", replace=True)
+        return rx.redirect("/", replace=True)
