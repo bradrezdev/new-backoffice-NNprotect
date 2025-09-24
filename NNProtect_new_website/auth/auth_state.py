@@ -211,92 +211,94 @@ class AuthState(rx.State):
         self.new_state = new_state
 
     @rx.event
-    def new_register(self):
-        """Registrar un nuevo usuario con todos sus datos relacionados."""
+    async def new_register(self):
+        """Registra un nuevo usuario, genera su enlace de referido y guarda todo en una única transacción."""
         print("DEBUG: Iniciando proceso de registro...")
         self.is_loading = True
         self.error_message = ""
+        yield
 
-        # --- 1. Validaciones Previas ---
-        if not self._validate_registration_data():
-            print("DEBUG: Validación fallida")
-            self.is_loading = False
-            return
-
-        print("DEBUG: Validación exitosa, procediendo con el registro...")
         try:
+            await asyncio.sleep(0.1)
+            if not self._validate_registration_data():
+                print("DEBUG: Validación de datos de entrada fallida.")
+                self.is_loading = False
+                return
+
             with rx.session() as session:
-                print("DEBUG: Sesión de base de datos abierta")
-                # --- 2. Verificar duplicados ---
+                print("DEBUG: Sesión de base de datos abierta.")
                 if self._user_already_exists(session):
-                    print("DEBUG: Usuario ya existe")
-                    self.error_message = "El usuario ya existe."
+                    self.error_message = "El nombre de usuario o el correo electrónico ya están en uso."
+                    print("DEBUG: Conflicto de usuario o email existente.")
                     self.is_loading = False
                     return
 
-                # --- 3. Obtener el siguiente member_id ---
+                # --- Creación de Registros (sin commit aún) ---
                 new_member_id = self._get_next_member_id(session)
-                print(f"DEBUG: Nuevo member_id obtenido: {new_member_id}")
-
-                # --- 4. Crear TODOS los registros en orden de dependencia ---
                 
-                # 4a. Crear el usuario base (primero, porque otros dependen de él)
-                print("DEBUG: Creando registro de usuario base...")
-                new_user = self._create_user_record(session, new_member_id)
+                # 1. Crear el usuario base
+                new_user = Users(
+                    member_id=new_member_id,
+                    username=self.new_username,
+                    email=self.new_email,
+                    status=UserStatus.NO_QUALIFIED
+                )
+                session.add(new_user)
+                session.flush() # Flush para obtener el new_user.id sin hacer commit
+                
+                if not new_user.id:
+                    raise Exception("No se pudo obtener un ID para el nuevo usuario después de flush.")
+                
+                print(f"DEBUG: Usuario base preparado con ID provisional: {new_user.id}")
 
-                if new_user and new_user.id:
-                    print(f"DEBUG: Usuario creado con ID: {new_user.id}")
-                    
-                    # 4b. Crear las credenciales de autenticación
-                    print("DEBUG: Creando credenciales de autenticación...")
-                    self._create_auth_credentials(session, new_user.id)
-                    print("DEBUG: Credenciales creadas")
-                    
-                    # 4c. Asignar el rol por defecto
-                    print("DEBUG: Asignando rol por defecto...")
-                    self._assign_default_role(session, new_user.id)
-                    print("DEBUG: Rol asignado")
-                    
-                    # 4d. Crear el perfil del usuario
-                    print("DEBUG: Creando perfil de usuario...")
-                    self._create_user_profile(session, new_user.id)
-                    print("DEBUG: Perfil creado")
-                    
-                    # 4e. Crear registro de cuentas sociales (vacío por defecto)
-                    print("DEBUG: Creando registro de cuentas sociales...")
-                    self._create_social_accounts(session, new_user.id)
-                    print("DEBUG: Cuentas sociales creadas")
+                # 2. Generar y asignar el enlace de referido
+                base_url = self._get_base_url() # ✅ CAMBIO: Usar el método dinámico
+                new_user.referral_link = f"{base_url}?ref={new_user.id}"
+                print(f"DEBUG: Enlace de referido preparado: {new_user.referral_link}")
 
-                    # 4f. Crear dirección del usuario (si se proporcionaron datos)
-                    if self.new_street_number and self.new_city and self.new_country:
-                        print("DEBUG: Creando dirección del usuario...")
-                        self._create_user_address(session, new_user.id)
-                        print("DEBUG: Dirección procesada")
-                    else:
-                        print("DEBUG: Saltando creación de dirección - datos incompletos")
-                else:
-                    self.error_message = "No se pudo crear el usuario."
-                    self.is_loading = False
-                    return
+                # 3. Preparar todos los demás registros dependientes
+                self._create_auth_credentials(session, new_user.id)
+                self._assign_default_role(session, new_user.id)
+                self._create_user_profile(session, new_user.id)
+                self._create_social_accounts(session, new_user.id)
+                if self.new_street_number and self.new_city and self.new_country:
+                    self._create_user_address(session, new_user.id)
 
-                # --- 5. Confirmar todos los cambios ---
+                # --- Commit Atómico ---
+                # Si todo lo anterior tuvo éxito, guardar todos los cambios a la vez.
                 session.commit()
-                print("DEBUG: Todos los cambios confirmados en la base de datos")
+                print("DEBUG: Transacción completada. Todos los registros guardados.")
 
         except Exception as e:
-            # Si algo falla, todo se revierte automáticamente
-            print(f"DEBUG: Error durante el registro: {str(e)}")
-            self.error_message = f"Error al registrar usuario: {str(e)}"
+            print(f"ERROR: Ocurrió una excepción durante el registro: {e}")
+            import traceback
+            traceback.print_exc()
+            self.error_message = "Ocurrió un error inesperado durante el registro."
             self.is_loading = False
             return
 
-        # --- 6. Éxito: limpiar estado y redirigir ---
-        print("DEBUG: Registro exitoso, limpiando formulario y redirigiendo...")
+        # --- Éxito ---
+        print("DEBUG: Registro exitoso. Limpiando formulario y redirigiendo.")
         self._clear_registration_form()
         self.is_loading = False
-        return rx.redirect("/dashboard", replace=True)
+        yield rx.redirect("/dashboard", replace=True)
 
     # --- Métodos auxiliares para mantener el código organizado ---
+
+    def _get_base_url(self) -> str:
+        """Obtiene la URL base de la aplicación desde las variables de entorno o usa un valor por defecto."""
+        is_production = (
+            os.environ.get("REFLEX_ENV") == "prod" or 
+            not os.path.exists(".env") or
+            "reflex.dev" in os.environ.get("HOSTNAME", "")
+        )
+
+        if is_production:
+            print("DEBUG: Entorno PRODUCCIÓN detectado para URL base")
+            return "https://codebradrez.tech/register"
+        else:
+            print("DEBUG: Entorno DESARROLLO detectado para URL base")
+            return ("http://localhost:3000/register")
 
     def _validate_registration_data(self) -> bool:
         """Valida que todos los datos requeridos estén presentes."""
@@ -401,6 +403,22 @@ class AuthState(rx.State):
     def password_has_special(self) -> bool:
         """Verifica si la contraseña tiene al menos un carácter especial."""
         return bool(re.search(r'[^a-zA-Z0-9]', self.new_password))
+    
+    def _validate_password_complexity(self) -> bool:
+        """Verifica que la contraseña cumpla con todos los requisitos de complejidad."""
+        if not all([
+            self.password_has_length,
+            self.password_has_uppercase,
+            self.password_has_lowercase,
+            self.password_has_number,
+            self.password_has_special
+        ]):
+            self.error_message = (
+                "La contraseña debe tener al menos 8 caracteres, "
+                "una letra mayúscula, una letra minúscula, un número y un carácter especial."
+            )
+            return False
+        return True
 
     def _user_already_exists(self, session) -> bool:
         """Verifica si el usuario ya existe."""
@@ -424,7 +442,7 @@ class AuthState(rx.State):
             username=self.new_username,
             email=self.new_email,
             status=UserStatus.NO_QUALIFIED,  # Usar el enum correcto
-            referral_code=f"{member_id:05d}",
+            referral_link=f"{member_id:05d}",
             created_at=datetime.datetime.utcnow(),
             updated_at=datetime.datetime.utcnow()
         )
@@ -756,9 +774,8 @@ class AuthState(rx.State):
         """Carga los datos completos del usuario desde el token almacenado en cookies."""
         payload = self._decode_jwt_token(self.auth_token)
         if not payload:
-            #self.is_logged_in = False
-            #self.logged_user_data = {}
-            #self.profile_data = {}
+            self.is_logged_in = False
+            self.logged_user_data = {}
             return
         
         user_id = payload.get("id")
@@ -796,7 +813,7 @@ class AuthState(rx.State):
                 "username": user.username,
                 "email": user.email,
                 "member_id": user.member_id,
-                "status": user.status.value if hasattr(user.status, 'value') else str(user.status)
+                "status": user.status.value if hasattr(user.status, 'value') else str(user.status),
             }
             
             # Establecer datos extendidos del perfil
@@ -809,6 +826,7 @@ class AuthState(rx.State):
                 "lastname": user_profile.last_name if user_profile else "",
                 "phone": user_profile.phone_number if user_profile else "",
                 "gender": user_profile.gender.value if user_profile and hasattr(user_profile.gender, 'value') else "",
+                "referral_link": user.referral_link if user.referral_link else "",
                 "created_at": user.created_at.strftime("%d/%m/%Y") if user.created_at else "",
                 "profile_name": profile_name  # ✅ Cambio: ahora se llama profile_name y solo primeras palabras
             }

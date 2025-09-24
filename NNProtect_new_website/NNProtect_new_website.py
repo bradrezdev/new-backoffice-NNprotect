@@ -161,8 +161,10 @@ def index() -> rx.Component:
                             # Enlace de referido
                             rx.box(
                                 rx.text("Enlace de referido", font_size="0.875rem", margin_bottom="0.5em"),
-                                rx.input(
-                                    value="https://www.nnprotect.com.mx/mioficina/aut/register?ref=244",
+                                rx.box(
+                                    rx.text(
+                                        AuthState.get_user_display_name
+                                        ),
                                     read_only=True,           # Solo lectura
                                     border_radius="18px"      # Bordes redondeados
                                 ),
@@ -424,16 +426,21 @@ def index() -> rx.Component:
                     
                     # Enlace de referido móvil
                     rx.box(
-                        rx.vstack(
-                            rx.text("Enlace de referido", font_size="0.9rem", font_weight="bold", margin_bottom="0.5rem"),
-                            rx.input(
-                                width="100%",
-                                value="https://nnprotect.com.mx/ref=244",
-                                read_only=True,
-                                border_radius="13px",
-                                font_size="0.8rem",
+                        rx.text("Enlace de referido", font_size="0.9rem", font_weight="bold", margin_bottom="0.5rem"),
+                        rx.box(
+                            rx.text(
+                                AuthState.profile_data.get("referral_link"),
+                                font_size="16px",
+                                ),
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["background"],
+                                dark=Custom_theme().dark_colors()["background"]
                             ),
-                            spacing="2"
+                            padding="4px 8px",
+                            width="100%",
+                            read_only=True,
+                            border_radius="13px",
+                            font_size="0.8rem",
                         ),
                         bg=rx.color_mode_cond(
                             light=Custom_theme().light_colors()["tertiary"],

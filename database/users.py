@@ -42,7 +42,7 @@ class Users(rx.Model, table=True):
     # Estado y estructura de red
     status: UserStatus = Field(default=UserStatus.NO_QUALIFIED)
     sponsor_id: Optional[int] = Field(default=None, foreign_key="users.id")
-    referral_code: str = Field(max_length=20, unique=True, default="")
+    referral_link: str = Field(unique=True, default=False, index=True)
 
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),

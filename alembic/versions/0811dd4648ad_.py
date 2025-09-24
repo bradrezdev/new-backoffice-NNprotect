@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: caafa6e6e492
+Revision ID: 0811dd4648ad
 Revises: 
-Create Date: 2025-09-22 13:09:25.753441
+Create Date: 2025-09-24 13:10:23.137346
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = 'caafa6e6e492'
+revision: str = '0811dd4648ad'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -55,17 +55,17 @@ def upgrade() -> None:
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('status', sa.Enum('NO_QUALIFIED', 'QUALIFIED', 'SUSPENDED', name='userstatus'), nullable=False),
     sa.Column('sponsor_id', sa.Integer(), nullable=True),
-    sa.Column('referral_code', sqlmodel.sql.sqltypes.AutoString(length=20), nullable=False),
+    sa.Column('referral_link', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['sponsor_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('referral_code')
+    sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_users_email'), ['email'], unique=True)
         batch_op.create_index(batch_op.f('ix_users_id'), ['id'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_member_id'), ['member_id'], unique=True)
+        batch_op.create_index(batch_op.f('ix_users_referral_link'), ['referral_link'], unique=True)
         batch_op.create_index(batch_op.f('ix_users_username'), ['username'], unique=True)
 
     op.create_table('authcredentials',
@@ -166,6 +166,7 @@ def downgrade() -> None:
     op.drop_table('authcredentials')
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_users_username'))
+        batch_op.drop_index(batch_op.f('ix_users_referral_link'))
         batch_op.drop_index(batch_op.f('ix_users_member_id'))
         batch_op.drop_index(batch_op.f('ix_users_id'))
         batch_op.drop_index(batch_op.f('ix_users_email'))
