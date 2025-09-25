@@ -7,6 +7,7 @@ from .business.network import network
 from .business.network_reports import network_reports
 from .auth.login import login
 from .auth.new_register import register
+from .auth.register_noSponsor import register_noSponsor
 from .shop.store import store
 from .business.income_reports import income_reports
 from .shop.orders import orders
@@ -619,7 +620,8 @@ app = rx.App(
 
 app.add_page(index, title="NN Protect | Dashboard", route="/dashboard")
 app.add_page(login, title="NN Protect | Iniciar sesión", route="/")
-app.add_page(register, title="NN Protect | Nuevo registro", route="/new_register")
+app.add_page(register, title="NN Protect | Nuevo registro", route="/register")
+app.add_page(register_noSponsor, title="NN Protect | Registro sin patrocinador", route="/register_noSponsor")
 app.add_page(network, title="NN Protect | Red", route="/network")
 app.add_page(network_reports, title="NN Protect | Reportes de Red", route="/network_reports")
 app.add_page(income_reports, title="NN Protect | Reportes de Ingresos", route="/income_reports")

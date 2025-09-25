@@ -17,6 +17,7 @@ from database.social_accounts import SocialAccounts, SocialNetwork
 from database.roles_users import RolesUsers
 from database.addresses import Countries, Addresses
 from database.users_addresses import UserAddresses
+from database.usertreepaths import UserTreePath
 
 class AuthState(rx.State):
     """State para manejar la autenticación del usuario, registro y sesión."""
@@ -52,6 +53,7 @@ class AuthState(rx.State):
     logged_user_data: dict = {}
     is_logged_in: bool = False
     profile_data: dict = {}
+    potential_sponsor_id: int = 0  # ID del patrocinador potencial
     
     # Setters para campos de dirección
     def set_street_number(self, value: str):
@@ -233,7 +235,6 @@ class AuthState(rx.State):
                     self.is_loading = False
                     return
 
-                # --- Creación de Registros (sin commit aún) ---
                 new_member_id = self._get_next_member_id(session)
                 
                 # 1. Crear el usuario base
@@ -244,19 +245,19 @@ class AuthState(rx.State):
                     status=UserStatus.NO_QUALIFIED
                 )
                 session.add(new_user)
-                session.flush() # Flush para obtener el new_user.id sin hacer commit
+                session.flush()
                 
                 if not new_user.id:
                     raise Exception("No se pudo obtener un ID para el nuevo usuario después de flush.")
                 
-                print(f"DEBUG: Usuario base preparado con ID provisional: {new_user.id}")
+                print(f"DEBUG: Usuario creado con ID: {new_user.id}, Member ID: {new_member_id}")
 
-                # 2. Generar y asignar el enlace de referido
-                base_url = self._get_base_url() # ✅ CAMBIO: Usar el método dinámico
-                new_user.referral_link = f"{base_url}?ref={new_user.id}"
-                print(f"DEBUG: Enlace de referido preparado: {new_user.referral_link}")
+                # 2. ✅ CORRECCIÓN: Usar member_id para garantizar unicidad del enlace
+                base_url = self._get_base_url()
+                new_user.referral_link = f"{base_url}?ref={new_member_id}"
+                print(f"DEBUG: Enlace de referido: {new_user.referral_link}")
 
-                # 3. Preparar todos los demás registros dependientes
+                # 3. Crear registros dependientes
                 self._create_auth_credentials(session, new_user.id)
                 self._assign_default_role(session, new_user.id)
                 self._create_user_profile(session, new_user.id)
@@ -264,10 +265,8 @@ class AuthState(rx.State):
                 if self.new_street_number and self.new_city and self.new_country:
                     self._create_user_address(session, new_user.id)
 
-                # --- Commit Atómico ---
-                # Si todo lo anterior tuvo éxito, guardar todos los cambios a la vez.
                 session.commit()
-                print("DEBUG: Transacción completada. Todos los registros guardados.")
+                print("DEBUG: Transacción completada.")
 
         except Exception as e:
             print(f"ERROR: Ocurrió una excepción durante el registro: {e}")
@@ -277,13 +276,221 @@ class AuthState(rx.State):
             self.is_loading = False
             return
 
-        # --- Éxito ---
-        print("DEBUG: Registro exitoso. Limpiando formulario y redirigiendo.")
+        print("DEBUG: Registro exitoso.")
         self._clear_registration_form()
         self.is_loading = False
         yield rx.redirect("/dashboard", replace=True)
 
+    @rx.event
+    async def new_register_sponsor(self):
+        """Registra un nuevo usuario con sponsor OBLIGATORIO."""
+        print("DEBUG: Iniciando proceso de registro...")
+        self.is_loading = True
+        self.error_message = ""
+        yield
+
+        try:
+            await asyncio.sleep(0.1)
+            
+            # ✅ VALIDACIÓN CRÍTICA: SPONSOR OBLIGATORIO
+            if self.potential_sponsor_id <= 0 or not self._validate_sponsor_by_member_id(self.potential_sponsor_id):
+                self.error_message = "No se puede realizar el registro sin un sponsor válido. Debe acceder desde un enlace de referido o estar autenticado."
+                self.is_loading = False
+                return
+
+            if not self._validate_registration_data():
+                print("DEBUG: Validación de datos de entrada fallida.")
+                self.is_loading = False
+                return
+
+            with rx.session() as session:
+                print("DEBUG: Sesión de base de datos abierta.")
+                if self._user_already_exists(session):
+                    self.error_message = "El nombre de usuario o el correo electrónico ya están en uso."
+                    print("DEBUG: Conflicto de usuario o email existente.")
+                    self.is_loading = False
+                    return
+
+                # ✅ CONVERSIÓN: member_id → user.id para sponsor_id en la BD
+                sponsor_user_id = self._get_user_id_by_member_id(self.potential_sponsor_id)
+                if not sponsor_user_id:
+                    self.error_message = "Error interno: no se pudo resolver el sponsor."
+                    self.is_loading = False
+                    return
+
+                new_member_id = self._get_next_member_id(session)
+                
+                new_user = Users(
+                    member_id=new_member_id,
+                    username=self.new_username,
+                    email=self.new_email,
+                    status=UserStatus.NO_QUALIFIED,
+                    sponsor_id=sponsor_user_id  # ✅ CORRECCIÓN: Usar user.id en la BD
+                )
+                session.add(new_user)
+                session.flush()
+                
+                if not new_user.id:
+                    raise Exception("No se pudo obtener un ID para el nuevo usuario después de flush.")
+                
+                print(f"DEBUG: Usuario creado con ID: {new_user.id}, Member ID: {new_member_id}, Sponsor User ID: {sponsor_user_id} (desde Member ID: {self.potential_sponsor_id})")
+
+                # Usar member_id para el enlace de referido
+                base_url = self._get_base_url()
+                new_user.referral_link = f"{base_url}?ref={new_member_id}"
+                print(f"DEBUG: Enlace de referido: {new_user.referral_link}")
+
+                # Crear registros dependientes
+                self._create_auth_credentials(session, new_user.id)
+                self._assign_default_role(session, new_user.id)
+                self._create_user_profile(session, new_user.id)
+                self._create_social_accounts(session, new_user.id)
+                if self.new_street_number and self.new_city and self.new_country:
+                    self._create_user_address(session, new_user.id)
+
+                session.commit()
+                print("DEBUG: Transacción completada.")
+
+        except Exception as e:
+            print(f"ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            self.error_message = "Ocurrió un error inesperado durante el registro."
+            self.is_loading = False
+            return
+
+        print("DEBUG: Registro exitoso.")
+        self._clear_registration_form()
+        self.is_loading = False
+        yield rx.redirect("/dashboard", replace=True)
+
+    # ✅ CRÍTICO: Actualizar la lógica de captura para buscar por member_id
+    @rx.event
+    def on_load_register_page(self):
+        """Se ejecuta al cargar la página de registro. Captura el sponsor desde URL o usuario logueado."""
+        print("DEBUG: Iniciando captura de sponsor...")
+        
+        # 1. Prioridad: ¿Hay un parámetro ref en la URL?
+        try:
+            current_url = str(self.router.url)
+            print(f"DEBUG: URL actual: {current_url}")
+            
+            if "?ref=" in current_url:
+                ref_param = current_url.split("?ref=")[1].split("&")[0]
+                print(f"DEBUG: Parámetro ref encontrado en URL: {ref_param}")
+                
+                try:
+                    potential_member_id = int(ref_param)
+                    # ✅ CORRECCIÓN: Validar que el member_id existe y almacenar member_id
+                    if self._validate_sponsor_by_member_id(potential_member_id):
+                        self.potential_sponsor_id = potential_member_id  # Almacenar member_id, no user.id
+                        print(f"DEBUG: Sponsor válido capturado desde URL - Member ID: {potential_member_id}")
+                        return
+                    else:
+                        print(f"DEBUG: Member ID {potential_member_id} no existe en la base de datos")
+                except (ValueError, TypeError):
+                    print("DEBUG: Parámetro ref inválido en URL")
+        except Exception as e:
+            print(f"DEBUG: Error procesando URL: {e}")
+        
+        # 2. Fallback: Usuario con datos disponibles
+        if self.profile_data.get("member_id"):
+            sponsor_member_id = self.profile_data["member_id"]  # ✅ CORRECCIÓN: Usar member_id, no user_id
+            print(f"DEBUG: Intentando usar usuario con datos como sponsor - Member ID: {sponsor_member_id}")
+            
+            if self._validate_sponsor_by_member_id(sponsor_member_id):
+                self.potential_sponsor_id = sponsor_member_id  # ✅ CORRECCIÓN: Almacenar member_id
+                print(f"DEBUG: Sponsor asignado desde profile_data - Member ID: {self.potential_sponsor_id}")
+                return
+            else:
+                print(f"DEBUG: Usuario en profile_data con Member ID {sponsor_member_id} no es válido como sponsor")
+        
+        # 3. Sin sponsor válido = error crítico
+        self.potential_sponsor_id = 0
+        self.error_message = "No se puede realizar el registro sin un sponsor válido. Debe acceder desde un enlace de referido o estar autenticado."
+        print("DEBUG: ERROR CRÍTICO - No hay sponsor válido para el registro")
+
+    def _validate_sponsor_by_member_id(self, member_id: int) -> bool:
+        """Verifica si existe un usuario con el member_id dado."""
+        if member_id <= 0:
+            print(f"DEBUG: _validate_sponsor_by_member_id - Member ID inválido: {member_id}")
+            return False
+        
+        try:
+            with rx.session() as session:
+                # Buscar por member_id
+                sponsor = session.exec(
+                    sqlmodel.select(Users).where(Users.member_id == member_id)
+                ).first()
+                exists = sponsor is not None
+                print(f"DEBUG: _validate_sponsor_by_member_id - Member ID {member_id} existe: {exists}")
+                return exists
+        except Exception as e:
+            print(f"DEBUG: _validate_sponsor_by_member_id - Error: {e}")
+            return False
+
+    @rx.var
+    def sponsor_display_name(self) -> str:
+        """Devuelve el nombre del sponsor para mostrar en la UI."""
+        print(f"DEBUG: sponsor_display_name - potential_sponsor_id: {self.potential_sponsor_id}")
+        
+        if self.potential_sponsor_id == 0:
+            return "⚠️ Sin sponsor válido"
+        
+        # ✅ CORRECCIÓN: Comparar con member_id, no con user_id
+        if self.profile_data.get("member_id") == self.potential_sponsor_id:
+            name = self.profile_data.get("profile_name", "Usuario con datos")
+            print(f"DEBUG: sponsor_display_name - Usando profile_data: {name}")
+            return name
+        
+        # Si no, buscar el sponsor en la base de datos por member_id
+        try:
+            with rx.session() as session:
+                sponsor = session.exec(
+                    sqlmodel.select(Users).where(Users.member_id == self.potential_sponsor_id)
+                ).first()
+                if sponsor:
+                    profile = session.exec(
+                        sqlmodel.select(UserProfiles).where(UserProfiles.user_id == sponsor.id)
+                    ).first()
+                    if profile and profile.first_name:
+                        name = f"{profile.first_name} {profile.last_name or ''}".strip()
+                        print(f"DEBUG: sponsor_display_name - Nombre desde BD: {name}")
+                        return name
+                    print(f"DEBUG: sponsor_display_name - Usando username: {sponsor.username}")
+                    return sponsor.username
+        except Exception as e:
+            print(f"DEBUG: sponsor_display_name - Error: {e}")
+        
+        return "Sponsor desconocido"
+
+    @rx.var
+    def can_register(self) -> bool:
+        """Indica si se puede proceder con el registro (solo si hay sponsor válido)."""
+        can_proceed = self.potential_sponsor_id > 0 and self._validate_sponsor_by_member_id(self.potential_sponsor_id)
+        print(f"DEBUG: can_register = {can_proceed} (sponsor_member_id: {self.potential_sponsor_id})")
+        return can_proceed
+
     # --- Métodos auxiliares para mantener el código organizado ---
+
+    def _validate_sponsor_exists(self, sponsor_id: int) -> bool:
+        """Verifica si existe un usuario con el user.id dado."""
+        if sponsor_id <= 0:
+            print(f"DEBUG: _validate_sponsor_exists - User ID inválido: {sponsor_id}")
+            return False
+        
+        try:
+            with rx.session() as session:
+                # Buscar por user.id (internal ID)
+                sponsor = session.exec(
+                    sqlmodel.select(Users).where(Users.id == sponsor_id)
+                ).first()
+                exists = sponsor is not None
+                print(f"DEBUG: _validate_sponsor_exists - User ID {sponsor_id} existe: {exists}")
+                return exists
+        except Exception as e:
+            print(f"DEBUG: _validate_sponsor_exists - Error: {e}")
+            return False
 
     def _get_base_url(self) -> str:
         """Obtiene la URL base de la aplicación desde las variables de entorno o usa un valor por defecto."""
@@ -510,6 +717,16 @@ class AuthState(rx.State):
             print(f"DEBUG: Rol {user_role.role_id} agregado al usuario {user_role.user_id}")
         else:
             raise Exception("Rol por defecto 'USER' no encontrado en la base de datos.")
+        
+    def _assign_sponsortree(self, session, user_id: int):
+        """Asigna el sponsor_id y user_id en la tabla UserTreePath."""
+        new_tree_path = UserTreePath(
+            sponsor_id=session.get(Users, user_id).sponsor_id,
+            user_id=user_id,
+            level=1  # Nivel 1 para el primer nivel de patrocinio
+        )
+        session.add(new_tree_path)
+        print(f"DEBUG: Sponsor tree path creado para usuario {user_id}")
 
     def _create_user_address(self, session, user_id: int):
         """Crea la dirección del usuario si se proporcionaron datos."""

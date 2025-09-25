@@ -8,7 +8,7 @@ from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_si
 from .auth_state import AuthState
 from database.addresses import Countries
 
-def register() -> rx.Component:
+def register_noSponsor() -> rx.Component:
     # Welcome Page (Index)
     return rx.center(
         rx.desktop_only(
@@ -602,7 +602,7 @@ def register() -> rx.Component:
                 rx.form(
                     rx.vstack(
                         rx.text(
-                            f"Prueba Referido por {AuthState.sponsor_display_name}",
+                            f"Referido por {AuthState.get_user_display_name}",
                             font_size="1em",
                             color=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["primary"],
@@ -799,9 +799,16 @@ def register() -> rx.Component:
 
                         rx.text("Usuario*", font_weight="medium", font_size="1em"),
                         rx.input(
+                            rx.button(
+                                "Sugerir",
+                                size="3",
+                                border_radius="11px",
+                                variant="surface",
+                                on_click=AuthState.random_username,
+                            ),
                             placeholder="Usuario único",
-                            value=AuthState.new_username,
-                            on_change=AuthState.set_new_username,
+                            value=AuthState.new_username,  # ✅ Cambiar
+                            on_change=AuthState.set_new_username,  # ✅ Cambiar
                             required=True,
                             reset_on_submit=True,
                             border_radius="15px",
@@ -812,14 +819,23 @@ def register() -> rx.Component:
                             height="48px",
                             width="100%",
                             font_size="1em",
+                            padding="4px",
                         ),
-
+                        rx.cond(
+                            AuthState.error_message != "",
+                            rx.callout(
+                                f"{AuthState.error_message}",
+                                icon="info",
+                                color="red",
+                                role="alert",
+                            ),
+                        ),
                         rx.text("Correo electrónico*", font_weight="medium", font_size="1em"),
                         rx.input(
                             type="email",
                             placeholder="Correo electrónico",
-                            value=AuthState.new_email,
-                            on_change=AuthState.set_new_email,
+                            value=AuthState.new_email,  # ✅ Cambiar
+                            on_change=AuthState.set_new_email,  # ✅ Cambiar
                             required=True,
                             reset_on_submit=True,
                             border_radius="15px",
@@ -912,8 +928,7 @@ def register() -> rx.Component:
                             font_size="1.1rem",
                             font_weight="bold",
                             type="submit",
-                            on_click=AuthState.new_register_sponsor,
-                            disabled=~AuthState.can_register,  # ✅ Deshabilitar si no hay sponsor
+                            on_click=AuthState.new_register,
                         ),
                         
                         spacing="3",
@@ -941,7 +956,6 @@ def register() -> rx.Component:
         ),
         position="absolute",
         width="100%",
-        on_mount=AuthState.on_load_register_page,
     )
 
 
