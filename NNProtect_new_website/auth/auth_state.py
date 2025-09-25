@@ -7,7 +7,6 @@ import os
 import random
 import asyncio
 import re
-from zxcvbn import zxcvbn
 from dotenv import load_dotenv
 from database.users import Users, UserStatus
 from database.auth_credentials import AuthCredentials
@@ -532,58 +531,6 @@ class AuthState(rx.State):
                 return False
         
         return True
-
-    @rx.var
-    def password_strength(self) -> dict:
-        """Evalúa la fortaleza de la contraseña usando zxcvbn y devuelve un score y feedback en español."""
-        
-        feedback_messages = [
-            "",  # 0 - sin contraseña
-            "Muy débil - intenta agregar más caracteres.",
-            "Débil - agrega una combinación de letras, números y símbolos.",
-            "Aceptable - pero podría ser más fuerte.",
-            "Fuerte - excelente elección de contraseña."
-        ]
-
-        # Diccionario de traducción más completo (incluye sugerencias)
-        SPANISH_FEEDBACK = {
-            "This is similar to a commonly used password": "Esta contraseña es similar a una comúnmente usada.",
-            "Straight rows of keys are easy to guess": "Las filas de teclas seguidas (como 'asdf') son fáciles de adivinar.",
-            "Sequences like 'abc' or '6543' are easy to guess": "Las secuencias como 'abc' o '6543' son fáciles de adivinar.",
-            "This is a top-10 common password": "Esta es una de las 10 contraseñas más comunes.",
-            "This is a top-100 common password": "Esta es una de las 100 contraseñas más comunes.",
-        }
-
-        if not self.new_password:
-            return {"score": 0, "feedback": ""}
-        
-        result = zxcvbn(self.new_password)
-        score = result["score"]
-        
-        # ✅ LÓGICA DE TRADUCCIÓN MEJORADA
-        feedback = ""
-        warning = result["feedback"]["warning"]
-        suggestions = result["feedback"]["suggestions"]
-
-        # 1. Priorizar la advertencia si existe y la podemos traducir
-        if warning and warning in SPANISH_FEEDBACK:
-            feedback = SPANISH_FEEDBACK[warning]
-        
-        # 2. Si no, buscar en las sugerencias (pueden venir varias)
-        if not feedback and suggestions:
-            for suggestion in suggestions:
-                if suggestion in SPANISH_FEEDBACK:
-                    feedback = SPANISH_FEEDBACK[suggestion]
-                    break # Usamos la primera sugerencia que encontremos traducida
-
-        # 3. Si después de todo no hay feedback específico, usar el general
-        if not feedback:
-            feedback = feedback_messages[score]
-
-        return {
-            "score": score,
-            "feedback": feedback
-        }
 
     # --- Validadores de Requisitos de Contraseña ---
     @rx.var
