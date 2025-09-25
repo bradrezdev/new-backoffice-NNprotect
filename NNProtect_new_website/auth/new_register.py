@@ -1,6 +1,8 @@
 """Nueva Backoffice NN Protect | Nuevo registro"""
 
 import reflex as rx
+import random
+
 from ..shared_ui.theme import Custom_theme
 from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
@@ -506,8 +508,6 @@ def register() -> rx.Component:
                                         width="100%",
                                         font_size="1em",
                                     ),
-                                    # Feedback de fortaleza de contraseña
-                                    password_strength_indicator(),
                                     
                                     # ✅ CORRECCIÓN: Eliminar el `rx.form` que envolvía este vstack.
                                     rx.vstack(
@@ -595,14 +595,22 @@ def register() -> rx.Component:
         # Versión móvil
         rx.mobile_only(
             rx.vstack(
-                # Header móvil
-                mobile_header(),
-                
+                # Habrá un header móvil si el usuario ya está logueado
+                rx.cond(
+                    AuthState.profile_data.get("user_id"),
+                    mobile_header(),
+                ),
+                # Espaciado extra si el usuario ya está logueado
+                rx.cond(
+                    AuthState.profile_data.get("user_id"),
+                    rx.box(margin_bottom="80px"),
+                    rx.box(margin_bottom="1em")
+                ),
                 # Contenido principal móvil
                 rx.form(
                     rx.vstack(
                         rx.text(
-                            f"Prueba Referido por {AuthState.sponsor_display_name}",
+                            f"Referido por {AuthState.sponsor_display_name}",
                             font_size="1em",
                             color=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["primary"],
@@ -621,7 +629,7 @@ def register() -> rx.Component:
                             font_size="1em",
                             ),
                         rx.input(
-                            placeholder="Escribe tu(s) nombre(s)...",
+                            placeholder="Ejemplo: Juan Carlos",
                             value=AuthState.new_user_firstname,
                             on_change=AuthState.set_new_firstname,
                             required=True,
@@ -642,7 +650,7 @@ def register() -> rx.Component:
                             font_size="1em",
                             ),
                         rx.input(
-                            placeholder="Escribe tu(s) apellido(s)...",
+                            placeholder="Ejemplo: Pérez Quiroz",
                             value=AuthState.new_user_lastname,
                             on_change=AuthState.set_new_lastname,
                             required=True,
@@ -692,9 +700,25 @@ def register() -> rx.Component:
                         # Dirección
                         rx.text("Dirección", font_weight="bold", font_size="1.1em", margin_bottom="0.5em"),
 
+                        rx.text("País*", font_weight="medium", font_size="1em"),
+                        rx.select(
+                            AuthState.country_options,
+                            placeholder="Seleccionar país",
+                            value=AuthState.new_country,
+                            on_change=AuthState.set_new_country,
+                            radius="large",
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["tertiary"],
+                                dark=Custom_theme().dark_colors()["tertiary"]
+                            ),
+                            width="100%",
+                            size="3",
+                            required=True,
+                        ),
+
                         rx.text("Calle y número*", font_weight="medium", font_size="1em"),
                         rx.input(
-                            placeholder="Ejemplo: Av. Siempre Viva #742",
+                            placeholder="Ejemplo: Siempre Viva #742",
                             value=AuthState.new_street_number,
                             on_change=AuthState.set_new_street_number,
                             border_radius="15px",
@@ -761,22 +785,6 @@ def register() -> rx.Component:
                             width="100%",
                         ),
 
-                        rx.text("País*", font_weight="medium", font_size="1em"),
-                        rx.select(
-                            AuthState.country_options,
-                            placeholder="Seleccionar país",
-                            value=AuthState.new_country,
-                            on_change=AuthState.set_new_country,
-                            radius="large",
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["tertiary"],
-                                dark=Custom_theme().dark_colors()["tertiary"]
-                            ),
-                            width="100%",
-                            size="3",
-                            required=True,
-                        ),
-
                         rx.text("Estado*", font_weight="medium", font_size="1em"),
                         rx.select(
                             AuthState.state_options,
@@ -799,6 +807,13 @@ def register() -> rx.Component:
 
                         rx.text("Usuario*", font_weight="medium", font_size="1em"),
                         rx.input(
+                            rx.button(
+                                "Sugerir",
+                                size="3",
+                                border_radius="11px",
+                                variant="surface",
+                                on_click=AuthState.random_username,
+                            ),
                             placeholder="Usuario único",
                             value=AuthState.new_username,
                             on_change=AuthState.set_new_username,
@@ -811,6 +826,7 @@ def register() -> rx.Component:
                             ),
                             height="48px",
                             width="100%",
+                            padding="4px",
                             font_size="1em",
                         ),
 
@@ -849,9 +865,6 @@ def register() -> rx.Component:
                             width="100%",
                             font_size="1em",
                         ),
-
-                        # Feedback de fortaleza de contraseña
-                        password_strength_indicator(),
                         
                         # ✅ REEMPLAZAR LA LISTA ESTÁTICA CON ESTE BLOQUE DINÁMICO
                         rx.vstack(
@@ -920,7 +933,7 @@ def register() -> rx.Component:
                         width="100%"
                     ),
                     width="100%",
-                    margin_top="80px",
+                    #margin_top="80px",
                     margin_bottom="15px"
                 ),
                 align="center",
@@ -942,36 +955,6 @@ def register() -> rx.Component:
         position="absolute",
         width="100%",
         on_mount=AuthState.on_load_register_page,
-    )
-
-
-def password_strength_indicator() -> rx.Component:
-    """Componente visual para la fortaleza de la contraseña."""
-    return rx.vstack(
-        rx.progress(
-            value=AuthState.password_strength["score"], 
-            max=4, 
-            width="100%",
-            color_scheme=rx.match(
-                AuthState.password_strength["score"],
-                (0, "gray"),
-                (1, "red"),
-                (2, "orange"),
-                (3, "yellow"),
-                (4, "green"),
-                "gray" # Default
-            )
-        ),
-        rx.text(
-            AuthState.password_strength["feedback"],
-            font_size="0.8rem",
-            color=rx.color_mode_cond("gray.600", "gray.400"),
-            align_self="flex-start",
-            margin_top="0.25rem"
-        ),
-        spacing="1",
-        width="100%",
-        align_items="center"
     )
 
 

@@ -412,4 +412,5 @@ def mobile_header():
         position="fixed",
         top="0",
         z_index="1",
+        margin_bottom="80px",
     )

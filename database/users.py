@@ -41,7 +41,7 @@ class Users(rx.Model, table=True):
 
     # Estado y estructura de red
     status: UserStatus = Field(default=UserStatus.NO_QUALIFIED)
-    sponsor_id: int = Field(default=None, foreign_key="users.id")
+    sponsor_id: int = Field(default=None, foreign_key="users.member_id")
     referral_link: str = Field(unique=True, default=False, index=True)
 
     # Timestamps
