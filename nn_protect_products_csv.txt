@@ -1,0 +1,25 @@
+id,product_name,SKU,description,presentation,type,pv_mx,pv_usa,pv_colombia,vn_mx,vn_usa,vn_colombia,price_mx,price_usa,price_colombia,public_mx,public_usa,public_colombia
+1,Kit 1 Supplement Protect,,5 suplementos,kit,suplemento,1670,1670,1670,1670,108,387990,1996,120,479000,-,-,-
+2,Kit 2 Full Skin,,4 serums y 3 cremas,kit,skincare,2180,2180,2180,2180,144,504468,2596,160,622800,-,-,-
+3,Kit 3 Full Protect,,8 suplementos 4 serums y 3 cremas,kit,suplemento,4860,4860,4860,4860,317.7,1125090,5790,353,1389000,-,-,-
+4,Cúrcuma líquida 15ml,,,líquido,suplemento,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000
+5,Cúrcuma cápsula 30 caps,,,cápsulas,suplemento,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000
+6,Dreaming Deep 30 ml,,,líquido,suplemento,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000
+7,Chía nanodispersión 30ml,,,líquido,suplemento,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000
+8,Citrus nanodispersión 30ml,,,líquido,suplemento,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000
+9,Jengibre nanodispersión 30ml,,,líquido,suplemento,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000
+10,Jengibre cápsula 30 caps,,,cápsulas,suplemento,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000
+11,Omega 5 nanodispersión 15 ml,,,líquido,suplemento,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000
+12,Glutatión 15ml,,,líquido,suplemento,322,322,322,322,20.7,74200,384.30,23.10,91700,549,33.00,131000
+13,NAD+ Triptófano 15ml (Nuevo),,,líquido,suplemento,412,412,412,412,24.5,94500,489.3,27.30,116690,699,39.00,166700
+14,Ácido Hialurónico 30ml,,,skincare,skincare,322,322,322,322,20.79,74200,384.30,23.10,91700,549,33.00,131000
+15,Serum de cúrcuma 30ml,,,skincare,skincare,322,322,322,322,20.79,74200,384.30,23.10,91700,549,33.00,131000
+16,Serum de Chía 30ml,,,skincare,skincare,322,322,322,322,20.79,74200,384.30,23.10,91700,549,33.00,131000
+17,Serum de vitaminas 30ml,,,skincare,skincare,322,322,322,322,20.79,74200,384.30,23.10,91700,549,33.00,131000
+18,Crema hidratante Con nanopartículas de Omegas 50ml,,,skincare,skincare,205,205,205,205,14.49,47000,244.30,16.10,58100,349,23.00,83000
+19,Crema Antiacné Con nanopartículas de óxido de zinc 50ml,,,skincare,skincare,205,205,205,205,14.49,47000,244.30,16.10,58100,349,23.00,83000
+20,Gel Dermolimpiador Con nanotecnología 50 ml,,,skincare,skincare,205,205,205,205,14.49,47000,244.30,16.10,58100,349,23.00,83000
+21,Crema desinfectante y Sanitizante Con colágeno y elastina 60ml,,,skincare,skincare,57,57,57,57,4.41,13300,68.6,4.90,16464,98,7.00,23520
+22,Crema desinfectante y Sanitizante Con colágeno y Elastina 280ml,,,skincare,skincare,205,205,205,205,14.49,47000,244.30,16.10,58100,349,23.00,83000
+23,Sanitizante 60ml,,,líquido,desinfección,57,57,57,57,4.41,13300,68.60,4.90,16464,98,7.00,23520
+24,Sanitizante 280ml,,,líquido,desinfección,205,205,205,205,14.49,47000,244.30,16.10,58100,349,23.00,83000
