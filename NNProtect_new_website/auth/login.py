@@ -4,7 +4,7 @@ import reflex as rx
 from rxconfig import config
 #from ..state import Login
 from ..shared_ui.theme import Custom_theme
-from .auth_state import AuthState
+from ..auth_service.auth_state import AuthState
 
 def login() -> rx.Component:
     # Contenedor principal
@@ -130,12 +130,12 @@ def login() -> rx.Component:
                                 margin_bottom="1rem"
                             ),
                             
-                            rx.text("Nombre de usuario", font_weight="bold", font_size="16px"),
+                            rx.text("Correo electrónico", font_weight="bold", font_size="16px"),
                             rx.input(
-                                placeholder="Escribe tu nombre de usuario",
+                                placeholder="Escribe tu correo electrónico",
                                 type="text",
-                                value=AuthState.username,
-                                on_change=AuthState.set_username,
+                                value=AuthState.email,
+                                on_change=AuthState.set_email,
                                 required=True,
                                 border_color=rx.color_mode_cond(
                                     light=Custom_theme().light_colors()["primary"],

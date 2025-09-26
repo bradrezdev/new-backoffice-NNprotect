@@ -5,7 +5,7 @@ from ..shared_ui.theme import Custom_theme
 from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 
-from .shopping_cart import cart_data  # Importar método reutilizable del carrito
+from ..product_service.shopping_cart import cart_data  # Importar método reutilizable del carrito
 
 def payment() -> rx.Component:
     # 📦 EJEMPLO DE REUTILIZACIÓN DE DATOS DEL CARRITO

@@ -3,20 +3,31 @@
 import reflex as rx
 
 # --- Pages ---
-from .business.network import network
-from .business.network_reports import network_reports
+# MLM Service
+from .mlm_service.network import network
+from .mlm_service.network_reports import network_reports
+from .mlm_service.income_reports import income_reports
+
+# Auth Service
 from .auth.login import login
 from .auth.new_register import register
 from .auth.register_noSponsor import register_noSponsor
-from .shop.store import store
-from .business.income_reports import income_reports
-from .shop.orders import orders
-from .shop.order_details import order_details
-from .finance.withdrawals import withdrawals
-from .finance.new_withdrawal import new_withdrawal
-from .shop.shipment import shipment_method
-from .shop.shopping_cart import shopping_cart
-from .shop.payment import payment
+
+# Product Service
+from .product_service.store import store
+from .product_service.shopping_cart import shopping_cart
+
+# Order Service
+from .order_service.orders import orders
+from .order_service.order_details import order_details
+from .order_service.shipment import shipment_method
+
+# Finance Service
+from .finance_service.withdrawals import withdrawals
+from .finance_service.new_withdrawal import new_withdrawal
+
+# Payment Service
+from .payment_service.payment import payment
 
 # --- Components ---
 from .shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
@@ -24,7 +35,7 @@ from .shared_ui.theme import Custom_theme
 from .status_bar import pwa_meta_tags, wrap_page_with_statusbar  # ← NUEVO IMPORT
 from rxconfig import config
 
-from .auth.auth_state import AuthState
+from .auth_service.auth_state import AuthState
 
 from database import *
 

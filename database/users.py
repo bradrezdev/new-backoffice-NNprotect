@@ -34,18 +34,31 @@ class Users(rx.Model, table=True):
     # Clave primaria
     id: int | None = Field(default=None, primary_key=True, index=True)
 
+    # Vinculo con Supabase Auth - UUID del usuario en auth.users
+    supabase_user_id: str | None = Field(default=None, index=True, unique=True)
+
     # Identificadores únicos
     member_id: int = Field(unique=True, index=True)
-    username: str = Field(max_length=50, unique=True, index=True)
-    email: str = Field(unique=True, index=True)
+
+    # Nombres de la persona
+    first_name: str = Field(index=True)
+    last_name: str = Field(index=True)
+    
+    # Cache de email para consultas rápidas (email real está en Supabase auth.users)
+    email_cache: str | None = Field(default=None, index=True)
 
     # Estado y estructura de red
     status: UserStatus = Field(default=UserStatus.NO_QUALIFIED)
-    sponsor_id: int = Field(default=None, foreign_key="users.member_id")
-    referral_link: str = Field(unique=True, default=False, index=True)
+    sponsor_id: int | None = Field(default=None)  # Temporal - sin FK para evitar problemas circulares
+    referral_link: str | None = Field(default=None, unique=True, index=True)
 
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
                                  sa_column_kwargs={"server_default": func.now()})
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
                                  sa_column_kwargs={"server_default": func.now()})
+    
+    @property
+    def full_name(self) -> str:
+        """Nombre completo del usuario."""
+        return f"{self.first_name} {self.last_name}".strip()

@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 0811dd4648ad
+Revision ID: fd47104175f5
 Revises: 
-Create Date: 2025-09-24 13:10:23.137346
+Create Date: 2025-09-25 17:43:29.340982
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = '0811dd4648ad'
+revision: str = 'fd47104175f5'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -50,29 +50,34 @@ def upgrade() -> None:
 
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('supabase_user_id', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('member_id', sa.Integer(), nullable=False),
-    sa.Column('username', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),
-    sa.Column('email', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('first_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('last_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('email_cache', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('status', sa.Enum('NO_QUALIFIED', 'QUALIFIED', 'SUSPENDED', name='userstatus'), nullable=False),
     sa.Column('sponsor_id', sa.Integer(), nullable=True),
-    sa.Column('referral_link', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('referral_link', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['sponsor_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_users_email'), ['email'], unique=True)
+        batch_op.create_index(batch_op.f('ix_users_email_cache'), ['email_cache'], unique=False)
+        batch_op.create_index(batch_op.f('ix_users_first_name'), ['first_name'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_id'), ['id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_users_last_name'), ['last_name'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_member_id'), ['member_id'], unique=True)
         batch_op.create_index(batch_op.f('ix_users_referral_link'), ['referral_link'], unique=True)
-        batch_op.create_index(batch_op.f('ix_users_username'), ['username'], unique=True)
+        batch_op.create_index(batch_op.f('ix_users_supabase_user_id'), ['supabase_user_id'], unique=True)
 
     op.create_table('authcredentials',
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+    sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('terms_accepted', sa.Boolean(), nullable=False),
-    sa.Column('last_login_at', sa.DateTime(), nullable=True),
+    sa.Column('email_verified', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('user_id')
     )
@@ -90,7 +95,7 @@ def upgrade() -> None:
     op.create_table('socialaccounts',
     sa.Column('socialaccount_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('provider', sa.Enum('FACEBOOK', 'INSTAGRAM', 'X', name='socialnetwork'), nullable=True),
+    sa.Column('provider', sa.Enum('NONE', 'FACEBOOK', 'INSTAGRAM', 'X', name='socialnetwork'), nullable=True),
     sa.Column('url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('socialaccount_id')
@@ -119,19 +124,29 @@ def upgrade() -> None:
 
     op.create_table('userprofiles',
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('first_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('last_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('bio', sqlmodel.sql.sqltypes.AutoString(length=150), nullable=False),
     sa.Column('gender', sa.Enum('MALE', 'FEMALE', name='usergender'), nullable=False),
     sa.Column('phone_number', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('date_of_birth', sa.Date(), nullable=True),
     sa.Column('photo_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('timezone', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('user_id')
     )
     with op.batch_alter_table('userprofiles', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_userprofiles_first_name'), ['first_name'], unique=False)
         batch_op.create_index(batch_op.f('ix_userprofiles_gender'), ['gender'], unique=False)
-        batch_op.create_index(batch_op.f('ix_userprofiles_last_name'), ['last_name'], unique=False)
         batch_op.create_index(batch_op.f('ix_userprofiles_phone_number'), ['phone_number'], unique=False)
+
+    op.create_table('usertreepath',
+    sa.Column('sponsor_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('level', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['sponsor_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('sponsor_id', 'user_id')
+    )
+    with op.batch_alter_table('usertreepath', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_usertreepath_level'), ['level'], unique=False)
 
     # ### end Alembic commands ###
 
@@ -139,11 +154,13 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    with op.batch_alter_table('usertreepath', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_usertreepath_level'))
+
+    op.drop_table('usertreepath')
     with op.batch_alter_table('userprofiles', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_userprofiles_phone_number'))
-        batch_op.drop_index(batch_op.f('ix_userprofiles_last_name'))
         batch_op.drop_index(batch_op.f('ix_userprofiles_gender'))
-        batch_op.drop_index(batch_op.f('ix_userprofiles_first_name'))
 
     op.drop_table('userprofiles')
     with op.batch_alter_table('useraddresses', schema=None) as batch_op:
@@ -165,11 +182,13 @@ def downgrade() -> None:
     op.drop_table('rolesusers')
     op.drop_table('authcredentials')
     with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_users_username'))
+        batch_op.drop_index(batch_op.f('ix_users_supabase_user_id'))
         batch_op.drop_index(batch_op.f('ix_users_referral_link'))
         batch_op.drop_index(batch_op.f('ix_users_member_id'))
+        batch_op.drop_index(batch_op.f('ix_users_last_name'))
         batch_op.drop_index(batch_op.f('ix_users_id'))
-        batch_op.drop_index(batch_op.f('ix_users_email'))
+        batch_op.drop_index(batch_op.f('ix_users_first_name'))
+        batch_op.drop_index(batch_op.f('ix_users_email_cache'))
 
     op.drop_table('users')
     with op.batch_alter_table('roles', schema=None) as batch_op:

@@ -4,6 +4,7 @@ from enum import Enum
 
 class SocialNetwork(Enum):
     """Redes sociales soportadas para autenticación"""
+    NONE = "none"                         # Sin red social
     FACEBOOK = "facebook"                 # Facebook
     INSTAGRAM = "instagram"               # Instagram
     X = "x"                               # Twitter (X)

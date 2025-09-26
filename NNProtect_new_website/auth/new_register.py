@@ -7,7 +7,7 @@ from ..shared_ui.theme import Custom_theme
 from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 
-from .auth_state import AuthState
+from ..auth_service.auth_state import AuthState
 from database.addresses import Countries
 
 def register() -> rx.Component:
@@ -568,7 +568,7 @@ def register() -> rx.Component:
                                         font_size="1.1rem",
                                         font_weight="bold",
                                         type="submit",
-                                        on_click=AuthState.new_register,
+                                        on_click=AuthState.new_register_sponsor,
                                     ),
                                     
                                     spacing="3",
@@ -597,12 +597,12 @@ def register() -> rx.Component:
             rx.vstack(
                 # Habrá un header móvil si el usuario ya está logueado
                 rx.cond(
-                    AuthState.profile_data.get("user_id"),
+                    AuthState.profile_data.get("member_id"),
                     mobile_header(),
                 ),
                 # Espaciado extra si el usuario ya está logueado
                 rx.cond(
-                    AuthState.profile_data.get("user_id"),
+                    AuthState.profile_data.get("member_id"),
                     rx.box(margin_bottom="80px"),
                     rx.box(margin_bottom="1em")
                 ),
@@ -933,7 +933,6 @@ def register() -> rx.Component:
                         width="100%"
                     ),
                     width="100%",
-                    #margin_top="80px",
                     margin_bottom="15px"
                 ),
                 align="center",

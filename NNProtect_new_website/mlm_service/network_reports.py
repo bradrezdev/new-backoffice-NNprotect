@@ -4,6 +4,163 @@ import reflex as rx
 from ..shared_ui.theme import Custom_theme
 from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, logged_in_user
+from ..auth_service.auth_state import AuthState
+from .mlm_user_manager import MLMUserManager
+from typing import List, Dict, Any
+
+def format_date(date_obj) -> str:
+    """Convierte objeto datetime a formato YYYY/MM/DD"""
+    try:
+        # Debug: ver qué tipo de objeto llega
+        print(f"🔍 DEBUG fecha recibida: '{date_obj}' (tipo: {type(date_obj)})")
+        
+        if not date_obj:
+            return "N/A"
+        
+        # Manejar diferentes tipos de entrada
+        from datetime import datetime
+        
+        # Caso 1: Ya es un objeto datetime
+        if isinstance(date_obj, datetime):
+            return date_obj.strftime("%Y/%m/%d")
+        
+        # Caso 2: Es un string (fallback para otros casos)
+        if isinstance(date_obj, str):
+            if "T" in date_obj or "-" in date_obj:
+                try:
+                    parsed_date = datetime.fromisoformat(str(date_obj).replace("Z", ""))
+                    return parsed_date.strftime("%Y/%m/%d")
+                except:
+                    pass
+            
+            if "/" in date_obj:
+                parts = date_obj.split("/")
+                if len(parts) == 3:
+                    day, month, year = parts
+                    return f"{year}/{month.zfill(2)}/{day.zfill(2)}"
+        
+        # Fallback: convertir a string y devolver
+        return str(date_obj)
+        
+    except Exception as e:
+        print(f"❌ Error parseando fecha '{date_obj}': {e}")
+        return "N/A"
+
+class NetworkReportsState(rx.State):
+	"""State para manejar datos de reportes de red."""
+	todays_registrations: List[Dict[str, Any]] = []
+	monthly_registrations: List[Dict[str, Any]] = []
+	is_loading: bool = False
+
+	@rx.var
+	def today_registrations_count(self) -> str:
+		"""Cuenta de inscripciones del día."""
+		return str(len(self.todays_registrations))
+
+	@rx.var
+	def monthly_registrations_count(self) -> str:
+		"""Cuenta de inscripciones del mes."""
+		return str(len(self.monthly_registrations))
+	
+	@rx.event
+	async def load_todays_registrations(self):
+		"""Carga las inscripciones del día de la red del usuario autenticado."""
+		self.is_loading = True
+		yield
+		
+		try:
+			# Obtener el member_id del usuario autenticado
+			auth_state = await self.get_state(AuthState)
+			
+			# ✅ VALIDACIÓN SIMPLIFICADA - Solo lo necesario
+			member_id = auth_state.profile_data.get("member_id") if auth_state.profile_data else None
+			if not member_id:
+				print("❌ Usuario no autenticado o member_id no encontrado")
+				self.todays_registrations = []
+				return
+				
+			print(f"🔄 Cargando inscripciones del día para member_id: {member_id}")
+			
+			# Obtener inscripciones del día de la red
+			registrations = MLMUserManager.get_todays_registrations(member_id)
+			self.todays_registrations = registrations
+			
+			print(f"✅ Cargadas {len(registrations)} inscripciones del día")
+			
+		except Exception as e:
+			print(f"❌ Error cargando inscripciones: {e}")
+			self.todays_registrations = []
+		finally:
+			self.is_loading = False
+
+	@rx.event
+	async def load_monthly_registrations(self):
+		"""Carga las inscripciones del mes de la red del usuario autenticado."""
+		self.is_loading = True
+		yield
+		
+		try:
+			# Obtener el member_id del usuario autenticado
+			auth_state = await self.get_state(AuthState)
+			
+			# ✅ VALIDACIÓN SIMPLIFICADA - Solo lo necesario
+			member_id = auth_state.profile_data.get("member_id") if auth_state.profile_data else None
+			if not member_id:
+				print("❌ Usuario no autenticado o member_id no encontrado")
+				self.monthly_registrations = []
+				return
+				
+			print(f"🔄 Cargando inscripciones del mes para member_id: {member_id}")
+			
+			# Obtener inscripciones del mes de la red
+			registrations = MLMUserManager.get_monthly_registrations(member_id)
+			self.monthly_registrations = registrations
+			
+			print(f"✅ Cargadas {len(registrations)} inscripciones del mes")
+			
+		except Exception as e:
+			print(f"❌ Error cargando inscripciones del mes: {e}")
+			self.monthly_registrations = []
+		finally:
+			self.is_loading = False
+
+	@rx.event
+	async def load_all_registrations(self):
+		"""Carga tanto las inscripciones del día como del mes."""
+		self.is_loading = True
+		yield
+		
+		try:
+			# Obtener el member_id del usuario autenticado
+			auth_state = await self.get_state(AuthState)
+			
+			# ✅ VALIDACIÓN SIMPLIFICADA - Solo lo necesario
+			member_id = auth_state.profile_data.get("member_id") if auth_state.profile_data else None
+			if not member_id:
+				print("❌ Usuario no autenticado o member_id no encontrado")
+				self.todays_registrations = []
+				self.monthly_registrations = []
+				return
+				
+			print(f"🔄 Cargando inscripciones para member_id: {member_id}")
+			
+			# Cargar ambos tipos de inscripciones
+			daily_registrations = MLMUserManager.get_todays_registrations(member_id)
+			monthly_registrations = MLMUserManager.get_monthly_registrations(member_id)
+			
+			self.todays_registrations = daily_registrations
+			self.monthly_registrations = monthly_registrations
+			
+			print(f"✅ Cargadas {len(daily_registrations)} inscripciones del día")
+			print(f"✅ Cargadas {len(monthly_registrations)} inscripciones del mes")
+			
+		except Exception as e:
+			print(f"❌ Error cargando inscripciones: {e}")
+			self.todays_registrations = []
+			self.monthly_registrations = []
+		finally:
+			self.is_loading = False
+
 
 def network_reports() -> rx.Component:
 	"""Página de reportes de red"""
@@ -45,8 +202,8 @@ def network_reports() -> rx.Component:
 										rx.hstack(
 											# Primera columna - Etiquetas
 											rx.vstack(
-												rx.text("ID de Usuario:", font_weight="bold", color="#FFFFFF"),
-												rx.text("Nombre completo:", font_weight="bold", color="#FFFFFF"),
+												rx.text("ID:", font_weight="bold", color="#FFFFFF"),
+												rx.text("Nombre:", font_weight="bold", color="#FFFFFF"),
 												rx.text("Rango actual:", font_weight="bold", color="#FFFFFF"),
 												rx.text("Fecha de registro:", font_weight="bold", color="#FFFFFF"),
 												align="start",
@@ -55,13 +212,13 @@ def network_reports() -> rx.Component:
 											),
 											# Segunda columna - Valores
 											rx.vstack(
-												rx.text("224", color="#FFFFFF"),
-												rx.text("Bryan Núñez", color="#FFFFFF"),
-												rx.text("Distribuidor", color="#FFFFFF"),
-												rx.text("15/03/2024", color="#FFFFFF"),
+												rx.text(AuthState.profile_data.get("member_id"), color="#FFFFFF"),
+												rx.text(AuthState.profile_data.get("full_name"), color="#FFFFFF"),
+												rx.text(AuthState.profile_data.get("phone"), color="#FFFFFF"),
+												rx.text(AuthState.profile_data.get("created_at"), color="#FFFFFF"),
 												align="end",
 												spacing="3",
-												width="50%"
+												width="70%"
 											),
 											width="100%",
 											align="stretch",
@@ -91,9 +248,9 @@ def network_reports() -> rx.Component:
 										rx.hstack(
 											# Primera columna - Etiquetas
 											rx.vstack(
-												rx.text("ID del patrocinador:", font_weight="bold"),
-												rx.text("Nombre del patrocinador:", font_weight="bold"),
-												rx.text("Rango del patrocinador:", font_weight="bold"),
+												rx.text("ID:", font_weight="bold"),
+												rx.text("Patrocinador:", font_weight="bold"),
+												rx.text("Rango:", font_weight="bold"),
 												rx.text("Contacto:", font_weight="bold"),
 												align="start",
 												spacing="3",
@@ -101,10 +258,10 @@ def network_reports() -> rx.Component:
 											),
 											# Segunda columna - Valores
 											rx.vstack(
-												rx.text("200", color=rx.color("gray", 11)),
-												rx.text("Judith Gómez", color=rx.color("gray", 11)),
-												rx.text("Director", color=rx.color("blue", 11)),
-												rx.text("+523124587102", color=rx.color("gray", 11)),
+												rx.text(AuthState.profile_data.get("sponsor_id", "N/A"), color=rx.color("gray", 11)),
+												rx.text(AuthState.sponsor_data.get("full_name", "N/A"), color=rx.color("gray", 11)),
+												rx.text("Por agregar", color=rx.color("blue", 11)),
+												rx.text(AuthState.sponsor_data.get("phone", "N/A"), color=rx.color("gray", 11)),
 												align="end",
 												spacing="3",
 												width="50%"
@@ -197,7 +354,7 @@ def network_reports() -> rx.Component:
 												rx.table.cell("$1,850", color=rx.color("orange", 11)),
 												rx.table.cell("$1,600", color=rx.color("gray", 11)),
 												rx.table.cell("$1,400", color=rx.color("gray", 11)),
-												rx.table.cell("$1,500", color=rx.color("gray", 11)),
+													rx.table.cell("$1,500", color=rx.color("gray", 11)),
 												rx.table.cell("$1,700", color=rx.color("gray", 11))
 											),
 											rx.table.row(
@@ -205,7 +362,7 @@ def network_reports() -> rx.Component:
 												rx.table.cell("$980", color=rx.color("purple", 11)),
 												rx.table.cell("$850", color=rx.color("gray", 11)),
 												rx.table.cell("$750", color=rx.color("gray", 11)),
-												rx.table.cell("$800", color=rx.color("gray", 11)),
+													rx.table.cell("$800", color=rx.color("gray", 11)),
 												rx.table.cell("$900", color=rx.color("gray", 11))
 											),
 											rx.table.row(
@@ -300,7 +457,7 @@ def network_reports() -> rx.Component:
 										),
 										rx.vstack(
 											rx.text("Nuevos este mes:", font_weight="bold"),
-											rx.text("8", color=rx.color("green", 11), font_size="2rem"),
+											rx.text(NetworkReportsState.monthly_registrations_count, color=rx.color("green", 11), font_size="2rem"),
 											align="center",
 											spacing="1"
 										),
@@ -314,60 +471,57 @@ def network_reports() -> rx.Component:
 										width="100%"
 									),
 									rx.divider(),
-									# Tabla de inscripciones del día
-									rx.text("Inscripciones del día:", font_weight="bold", margin_bottom="0.5rem"),
-									rx.table.root(
-										rx.table.header(
-											rx.table.row(
-												rx.table.column_header_cell("Nombre"),
-												rx.table.column_header_cell("ID socio"),
-												rx.table.column_header_cell("Contacto"),
-												rx.table.column_header_cell("Volumen personal"),
-												rx.table.column_header_cell("Nivel"),
-												rx.table.column_header_cell("Fecha de inscripción"),
-												rx.table.column_header_cell("Patrocinador"),
-												rx.table.column_header_cell("ID patrocinador"),
-												rx.table.column_header_cell("Estado")
+									# Tabla de inscripciones del mes
+									rx.text("Inscripciones del mes:", font_weight="bold", margin_bottom="0.5rem"),
+									rx.cond(
+										NetworkReportsState.is_loading,
+										rx.spinner(loading=True, size="2"),
+										rx.cond(
+											NetworkReportsState.monthly_registrations,
+											rx.table.root(
+												rx.table.header(
+													rx.table.row(
+														rx.table.column_header_cell("Nombre", align="left"),
+														rx.table.column_header_cell("ID socio"),
+														rx.table.column_header_cell("Contacto"),
+														rx.table.column_header_cell("Volumen personal"),
+														rx.table.column_header_cell("Nivel"),
+														rx.table.column_header_cell("Fecha de inscripción"),
+														rx.table.column_header_cell("Patrocinador"),
+														rx.table.column_header_cell("ID patrocinador"),
+														rx.table.column_header_cell("Estado"),
+														align="center",
+													),
+													text_align="center"
+												),
+												rx.table.body(
+													rx.foreach(
+														NetworkReportsState.monthly_registrations,
+														lambda user: rx.table.row(
+															rx.table.row_header_cell(user["full_name"], align="left"),
+															rx.table.cell(user["member_id"]),
+															rx.table.cell(user["phone"]),
+															rx.table.cell("2000"),  # Volumen personal (placeholder)
+															rx.table.cell(user["level"]),  # ✅ Nivel real del usuario
+															rx.table.cell(user["created_at"]),
+															rx.table.cell(user["sponsor_full_name"]),
+															rx.table.cell(user["sponsor_member_id"]),
+															rx.table.cell(rx.cond(user["status"] == "active", rx.badge("Activo", color_scheme="green"), rx.badge("Inactivo", color_scheme="red"))),
+															align="center"
+														),
+													),
+													text_align="center",
+												),
+												width="100%"
 											),
-											text_align="center"
-										),
-										rx.table.body(
-											rx.table.row(
-												rx.table.row_header_cell("Juan Pérez"),
-												rx.table.cell("12345"),
-												rx.table.cell("+521234567890"),
-												rx.table.cell("1465"),
-												rx.table.cell("2"),
-												rx.table.cell("18/07/2025"),
-												rx.table.cell("Bryan Núñez"),
-												rx.table.cell("224"),
-												rx.table.cell(rx.badge("Activo", color_scheme="green"))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Ana Martínez"),
-												rx.table.cell("54321"),
-												rx.table.cell("+521098765432"),
-												rx.table.cell("2930"),
-												rx.table.cell("11"),
-												rx.table.cell("15/07/2025"),
-												rx.table.cell("Juan Pérez"),
-												rx.table.cell("12345"),
-												rx.table.cell(rx.badge("Activo", color_scheme="green"))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Carlos López"),
-												rx.table.cell("67890"),
-												rx.table.cell("+521987654321"),
-												rx.table.cell("0"),
-												rx.table.cell("5"),
-												rx.table.cell("12/07/2025"),
-												rx.table.cell("Enrique Torres"),
-												rx.table.cell("42356"),
-												rx.table.cell(rx.badge("Inactivo", color_scheme="tomato"))
-											),
-											text_align="center",
-										),
-										width="100%"
+											rx.text(
+												"No hay inscripciones del día en tu red",
+												font_style="italic",
+												color="gray",
+												text_align="center",
+												padding="2rem"
+											)
+										)
 									),
 									align="start",
 									spacing="3",
@@ -395,6 +549,7 @@ def network_reports() -> rx.Component:
 				margin_bottom="2em",
 				max_width="1920px",
 				width="100%",
+				on_mount=NetworkReportsState.load_all_registrations,
 			),
 			#width="100%",
 		),
@@ -418,13 +573,13 @@ def network_reports() -> rx.Component:
 						rx.vstack(
 							rx.hstack(
 								rx.text("ID de Usuario:", font_weight="bold", color="#FFFFFF", font_size="0.9rem"),
-								rx.text("224", color="#FFFFFF", font_size="0.9rem"),
+								rx.text(AuthState.profile_data.get("member_id"), color="#FFFFFF", font_size="0.9rem"),
 								justify="between",
 								width="100%"
 							),
 							rx.hstack(
-								rx.text("Nombre completo:", font_weight="bold", color="#FFFFFF", font_size="0.9rem"),
-								rx.text("Bryan Núñez", color="#FFFFFF", font_size="0.9rem"),
+								rx.text("Nombre:", font_weight="bold", color="#FFFFFF", font_size="0.9rem"),
+								rx.text(AuthState.profile_data.get("full_name"), color="#FFFFFF", font_size="0.9rem"),
 								justify="between",
 								width="100%"
 							),
@@ -436,7 +591,7 @@ def network_reports() -> rx.Component:
 							),
 							rx.hstack(
 								rx.text("Fecha de registro:", font_weight="bold", color="#FFFFFF", font_size="0.9rem"),
-								rx.text("15/03/2024", color="#FFFFFF", font_size="0.9rem"),
+								rx.text(AuthState.profile_data.get("created_at"), color="#FFFFFF", font_size="0.9rem"),
 								justify="between",
 								width="100%"
 							),
@@ -468,26 +623,26 @@ def network_reports() -> rx.Component:
 						),
 						rx.vstack(
 							rx.hstack(
-								rx.text("ID del patrocinador:", font_weight="bold", font_size="0.9rem"),
-								rx.text("200", color=rx.color("gray", 11), font_size="0.9rem"),
+								rx.text("ID:", font_weight="bold", font_size="0.9rem"),
+								rx.text(AuthState.profile_data.get("sponsor_id", "N/A"), color=rx.color("gray", 11), font_size="0.9rem"),
 								justify="between",
 								width="100%"
 							),
 							rx.hstack(
-								rx.text("Nombre del patrocinador:", font_weight="bold", font_size="0.9rem"),
-								rx.text("Judith Gómez", color=rx.color("gray", 11), font_size="0.9rem"),
+								rx.text("Nombre:", font_weight="bold", font_size="0.9rem"),
+								rx.text(AuthState.sponsor_data.get("full_name", "N/A"), color=rx.color("gray", 11), font_size="0.9rem"),
 								justify="between",
 								width="100%"
 							),
 							rx.hstack(
-								rx.text("Rango del patrocinador:", font_weight="bold", font_size="0.9rem"),
-								rx.text("Director", color=rx.color("blue", 11), font_size="0.9rem"),
+								rx.text("Rango:", font_weight="bold", font_size="0.9rem"),
+								rx.text("Por agregar", color=rx.color("blue", 11), font_size="0.9rem"),
 								justify="between",
 								width="100%"
 							),
 							rx.hstack(
 								rx.text("Contacto:", font_weight="bold", font_size="0.9rem"),
-								rx.text("+523124587102", color=rx.color("gray", 11), font_size="0.9rem"),
+								rx.text(AuthState.sponsor_data.get("phone", "N/A"), color=rx.color("gray", 11), font_size="0.9rem"),
 								justify="between",
 								width="100%"
 							),
@@ -527,7 +682,7 @@ def network_reports() -> rx.Component:
 							),
 							rx.hstack(
 								rx.text("Nuevos este mes:", font_weight="bold", font_size="0.9rem"),
-								rx.text("8", color=rx.color("green", 11), font_size="1.5rem", font_weight="bold"),
+								rx.text(NetworkReportsState.monthly_registrations_count, color=rx.color("green", 11), font_size="1.5rem", font_weight="bold"),
 								justify="between",
 								width="100%"
 							),
@@ -542,7 +697,7 @@ def network_reports() -> rx.Component:
 						),
 						rx.divider(),
 						# Inscripciones recientes con información completa para móvil
-						rx.text("Inscripciones del día:", font_weight="bold", font_size="0.9rem", margin_bottom="0.5rem"),
+						rx.text("Inscripciones del mes:", font_weight="bold", font_size="0.9rem", margin_bottom="0.5rem"),
 						rx.vstack(
 							# Primera inscripción - Juan Pérez
 							rx.box(
@@ -825,6 +980,7 @@ def network_reports() -> rx.Component:
 					margin_bottom="0.4em",
 				),
 				# Propiedades del vstack móvil
+				margin_top="80px",
 				padding="1em",
 			),
 			width="100%",

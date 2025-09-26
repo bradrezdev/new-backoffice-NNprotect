@@ -1,32 +1,26 @@
 import reflex as rx
-
 from sqlmodel import Field
-from typing import Optional
-from datetime import datetime
-from database.users import Users
-
-# Permite encriptar la contraseña del usuario
-import bcrypt
-
+from datetime import datetime, timezone
+from sqlmodel import func
 
 class AuthCredentials(rx.Model, table=True):
     """
     Credenciales de autenticación de usuarios.
-    Almacena información sensible de autenticación de forma segura.
+    Nota: Con Supabase Auth, este modelo es principalmente para compatibilidad.
+    La autenticación real la maneja Supabase.
     """
     # Clave primaria compuesta con user_id
     user_id: int = Field(primary_key=True, foreign_key="users.id")
-
-    # Datos de autenticación
-    password_hash: str = Field(max_length=255)
+    
+    # Hash de contraseña (para compatibilidad - Supabase maneja la real)
+    password_hash: str = Field(default="supabase_managed")
+    
+    # Configuraciones de autenticación  
     terms_accepted: bool = Field(default=False)
-    last_login_at: Optional[datetime] = Field(default=None)
-
-    @classmethod
-    def create_credentials(cls, user_id: int, password: str):
-        # Hashear la contraseña
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        return cls(
-            user_id=user_id,
-            password_hash=password_hash.decode('utf-8'),
-        )
+    email_verified: bool = Field(default=False)
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
+                                 sa_column_kwargs={"server_default": func.now()})
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
+                                 sa_column_kwargs={"server_default": func.now()})
