@@ -11,6 +11,9 @@ from enum import Enum
 # Manejo de fechas y horas con zona horaria
 from datetime import datetime, date, timezone
 
+# Importar Countries enum para country_cache
+from .addresses import Countries
+
 
 class UserStatus(Enum):
     """Estados posibles de un usuario en el sistema"""
@@ -46,6 +49,9 @@ class Users(rx.Model, table=True):
     
     # Cache de email para consultas rápidas (email real está en Supabase auth.users)
     email_cache: str | None = Field(default=None, index=True)
+    
+    # Cache del país de registro desde addresses
+    country_cache: Countries | None = Field(default=None, index=True)
 
     # Estado y estructura de red
     status: UserStatus = Field(default=UserStatus.NO_QUALIFIED)

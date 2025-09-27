@@ -5,19 +5,12 @@ from ..shared_ui.theme import Custom_theme
 from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 
-from ..product_service.shopping_cart import cart_data  # Importar método reutilizable del carrito
+from ..product_service.store_products_state import CountProducts  # Importar estado del carrito
 
 def payment() -> rx.Component:
     # 📦 EJEMPLO DE REUTILIZACIÓN DE DATOS DEL CARRITO
-    # Usando el método cart_data() podemos acceder a toda la información
-    # del carrito desde cualquier página sin duplicar código
-    cart_info = cart_data()
-    cart_items = cart_info["cart_items"]
-    total_products = cart_info["total_products"]
-    subtotal_products = cart_info["subtotal_products"]
-    total_volume_points = cart_info["total_volume_points"]
-    shipping_cost = cart_info["shipping_cost"]
-    final_total = cart_info["final_total"]
+    # Usando CountProducts podemos acceder a toda la información
+    # del carrito desde cualquier página de forma dinámica
 
     return rx.center(
         # Versión desktop - dejada en blanco según requerimiento
@@ -432,9 +425,9 @@ def payment() -> rx.Component:
                         rx.vstack(
                             # Productos
                             rx.hstack(
-                                rx.text(f"Productos ({total_products})", font_size="0.9rem", color="gray"),
+                                rx.text(f"Productos ({CountProducts.cart_total})", font_size="0.9rem", color="gray"),
                                 rx.spacer(),
-                                rx.text(f"${subtotal_products:.2f}", font_size="0.9rem", font_weight="medium"),
+                                rx.text(f"${CountProducts.cart_subtotal:.2f}", font_size="0.9rem", font_weight="medium"),
                                 width="100%",
                                 align="center"
                             ),
@@ -443,7 +436,7 @@ def payment() -> rx.Component:
                             rx.hstack(
                                 rx.text("Puntos de volumen", font_size="0.9rem", color="gray"),
                                 rx.spacer(),
-                                rx.text(f"{total_volume_points} pts", font_size="0.9rem", font_weight="medium", color="#f59e0b"),
+                                rx.text(f"{CountProducts.cart_volume_points} pts", font_size="0.9rem", font_weight="medium", color="#f59e0b"),
                                 width="100%",
                                 align="center"
                             ),
@@ -453,9 +446,9 @@ def payment() -> rx.Component:
                                 rx.text("Costo de envío", font_size="0.9rem", color="gray"),
                                 rx.spacer(),
                                 rx.cond(
-                                    shipping_cost == 0,
+                                    CountProducts.cart_shipping_cost == 0,
                                     rx.text("GRATIS", font_size="0.9rem", font_weight="medium", color="#059669"),
-                                    rx.text(f"${shipping_cost:.2f}", font_size="0.9rem", font_weight="medium")
+                                    rx.text(f"${CountProducts.cart_shipping_cost:.2f}", font_size="0.9rem", font_weight="medium")
                                 ),
                                 width="100%",
                                 align="center"
@@ -473,7 +466,7 @@ def payment() -> rx.Component:
                             rx.hstack(
                                 rx.text("Total", font_size="1rem", font_weight="bold"),
                                 rx.spacer(),
-                                rx.text(f"${final_total:.2f}", font_size="1rem", font_weight="bold", color=Custom_theme().light_colors()["primary"]),
+                                rx.text(f"${CountProducts.cart_final_total:.2f}", font_size="1rem", font_weight="bold", color=Custom_theme().light_colors()["primary"]),
                                 width="100%",
                                 align="center"
                             ),

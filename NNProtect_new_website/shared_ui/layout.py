@@ -1,6 +1,7 @@
 import reflex as rx
 from .theme import Custom_theme
 from ..auth_service.auth_state import AuthState
+from ..product_service.store_products_state import CountProducts
 
 ############################################
 # --- Componente links + cuenta activa --- #
@@ -362,6 +363,24 @@ def mobile_header():
                 ),
                 rx.link(
                     rx.button(
+                        rx.cond(
+                            CountProducts.cart_total > 0,
+                            rx.box(
+                                rx.text(CountProducts.cart_total, color="white", font_size="0.8em", font_weight="bold", margin="0"),
+                                bg="red",
+                                border="1px solid white",
+                                border_radius="36px",
+                                width="21px",
+                                height="content",
+                                align="center",
+                                justify="center",
+                                padding="2px",
+                                position="absolute",
+                                top="6px",
+                                right="6px",
+                                z_index="1",
+                            )
+                        ),
                         rx.icon(
                         "shopping-cart",
                         color=rx.color_mode_cond(

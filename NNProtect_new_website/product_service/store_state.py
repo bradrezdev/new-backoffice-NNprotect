@@ -10,3 +10,7 @@ class SlideToAnyWhere(rx.State):
     def scroll_to_skin_care(self):
         """Deslizar a la sección de cuidado de la piel."""
         return rx.call_script("document.getElementById('cuidado_piel').scrollIntoView({behavior: 'smooth'})")
+
+    def scroll_to_disinfectants(self):
+        """Deslizar a la sección de desinfectantes."""
+        return rx.call_script("document.getElementById('desinfectantes').scrollIntoView({behavior: 'smooth'})")

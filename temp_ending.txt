@@ -1,0 +1,10 @@
+        ),
+        bg=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["background"],
+            dark=Custom_theme().dark_colors()["background"]
+        ),
+        position="absolute",
+        width="100%",
+        height="max-content",
+        on_mount=StoreState.load_products,
+    )

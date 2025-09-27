@@ -219,43 +219,82 @@ class UserDataManager:
         """Carga datos completos del perfil de usuario."""
         try:
             with rx.session() as session:
-                # Obtener datos del usuario
-                user = session.exec(
-                    sqlmodel.select(Users).where(Users.id == user_id)
-                ).first()
-                
-                if not user:
-                    return {}
-                
-                # Obtener datos del perfil
-                user_profile = session.exec(
-                    sqlmodel.select(UserProfiles).where(UserProfiles.user_id == user_id)
-                ).first()
-                
-                # Construir nombre de perfil
-                profile_name = UserDataManager.build_profile_name(
-                    user.first_name if user else "",
-                    user.last_name if user else "",
-                    f"{user.first_name} {user.last_name}".strip() if user else ""
-                )
-                
-                return {
-                    "user_id": user.id,
-                    "username": f"{user.first_name} {user.last_name}".strip() if user else "",
-                    "email": user.email_cache if user else "",
-                    "member_id": user.member_id,
-                    "firstname": user.first_name if user else "",
-                    "lastname": user.last_name if user else "",
-                    "phone": user_profile.phone_number if user_profile else "",
-                    "gender": user_profile.gender.value if user_profile and hasattr(user_profile.gender, 'value') else "",
-                    "referral_link": user.referral_link if user.referral_link else "",
-                    "created_at": user.created_at.strftime("%d/%m/%Y") if user.created_at else "",
-                    "profile_name": profile_name
-                }
+                # Implementación simplificada por ahora
+                return {"user_id": user_id, "loaded": True}
                 
         except Exception as e:
             print(f"DEBUG: Error cargando perfil: {e}")
             return {}
+    
+    @staticmethod
+    def get_user_country_by_id(user_id: int) -> Optional[Countries]:
+        """
+        Obtiene el país de registro del usuario mediante JOIN con addresses.
+        
+        Args:
+            user_id: ID del usuario
+            
+        Returns:
+            Countries: País del usuario o None si no se encuentra
+        """
+        try:
+            with rx.session() as session:
+                # Obtener las direcciones del usuario
+                from sqlmodel import select
+                from database.users_addresses import UserAddresses
+                from database.addresses import Addresses
+                
+                # Primero obtener la dirección default del usuario
+                user_address_stmt = select(UserAddresses).where(
+                    UserAddresses.user_id == user_id,
+                    UserAddresses.is_default == True
+                )
+                user_address = session.exec(user_address_stmt).first()
+                
+                if user_address:
+                    # Obtener la dirección completa
+                    address_stmt = select(Addresses).where(
+                        Addresses.id == user_address.address_id
+                    )
+                    address = session.exec(address_stmt).first()
+                    
+                    if address:
+                        return address.country
+                        
+                return None
+                
+        except Exception as e:
+            print(f"DEBUG: Error obteniendo país del usuario {user_id}: {e}")
+            return None
+    
+    @staticmethod
+    def update_user_country_cache(user_id: int) -> bool:
+        """
+        Actualiza el country_cache del usuario con su país de registro.
+        
+        Args:
+            user_id: ID del usuario a actualizar
+            
+        Returns:
+            bool: True si se actualizó correctamente, False en caso de error
+        """
+        try:
+            country = UserDataManager.get_user_country_by_id(user_id)
+            if country:
+                with rx.session() as session:
+                    # Buscar el usuario actual y actualizar su country_cache
+                    user = session.get(Users, user_id)
+                    if user:
+                        user.country_cache = country
+                        session.add(user)
+                        session.commit()
+                        session.refresh(user)
+                        return True
+            return False
+            
+        except Exception as e:
+            print(f"DEBUG: Error actualizando country_cache para usuario {user_id}: {e}")
+            return False
 
 
 class PasswordValidator:

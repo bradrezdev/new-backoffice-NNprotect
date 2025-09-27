@@ -4,88 +4,15 @@ import reflex as rx
 from ..shared_ui.theme import Custom_theme
 from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
+from .store_products_state import CountProducts
+from .product_manager import ProductManager
+from database.addresses import Countries
 
-def cart_data():
-    """
-    Método reutilizable que contiene todos los datos del carrito de compras.
+from .product_components import plusminus_buttons
 
-    Retorna un diccionario con:
-    - cart_items: Lista de productos en el carrito
-    - total_products: Número total de productos
-    - subtotal_products: Subtotal de productos
-    - total_volume_points: Total de puntos de volumen
-    - shipping_cost: Costo de envío
-    - final_total: Total final del pedido
 
-    Este método puede ser importado y usado en cualquier página que necesite
-    acceder a la información del carrito, como payment.py, order_summary.py, etc.
-
-    Ejemplo de uso:
-        from .shopping_cart import cart_data
-        cart_info = cart_data()
-        items = cart_info["cart_items"]
-        total = cart_info["final_total"]
-    """
-    # Datos de ejemplo para productos en el carrito
-    cart_items = [
-        {
-            "id": 1,
-            "name": "NN Protect Basic",
-            "price": 250.00,
-            "quantity": 2,
-            "volume_points": 50,
-            "image": "/product_1.png",
-            "subtotal": 500.00,
-            "volume_subtotal": 100
-        },
-        {
-            "id": 2,
-            "name": "NN Protect Premium",
-            "price": 450.00,
-            "quantity": 1,
-            "volume_points": 90,
-            "image": "/product_2.png",
-            "subtotal": 450.00,
-            "volume_subtotal": 90
-        },
-        {
-            "id": 3,
-            "name": "NN Protect Pro",
-            "price": 350.00,
-            "quantity": 3,
-            "volume_points": 70,
-            "image": "/product_3.png",
-            "subtotal": 1050.00,
-            "volume_subtotal": 210
-        }
-    ]
-
-    # Cálculos del carrito
-    total_products = sum(item["quantity"] for item in cart_items)
-    subtotal_products = sum(item["subtotal"] for item in cart_items)
-    total_volume_points = sum(item["volume_subtotal"] for item in cart_items)
-    shipping_cost = 99.00 if subtotal_products < 1000 else 0.00
-    final_total = subtotal_products + shipping_cost
-
-    # Retornar todos los datos necesarios
-    return {
-        "cart_items": cart_items,
-        "total_products": total_products,
-        "subtotal_products": subtotal_products,
-        "total_volume_points": total_volume_points,
-        "shipping_cost": shipping_cost,
-        "final_total": final_total
-    }
 
 def shopping_cart() -> rx.Component:
-    # Obtener datos del carrito usando el método reutilizable
-    cart_info = cart_data()
-    cart_items = cart_info["cart_items"]
-    total_products = cart_info["total_products"]
-    subtotal_products = cart_info["subtotal_products"]
-    total_volume_points = cart_info["total_volume_points"]
-    shipping_cost = cart_info["shipping_cost"]
-    final_total = cart_info["final_total"]
 
     return rx.center(
         # Versión desktop - dejada en blanco según requerimiento
@@ -108,7 +35,11 @@ def shopping_cart() -> rx.Component:
                     ),
 
                     rx.text(
-                        f"{total_products} producto{'s' if total_products != 1 else ''} en tu carrito",
+                        rx.cond(
+                            CountProducts.cart_total == 1,
+                            f"{CountProducts.cart_total} producto en tu carrito", 
+                            f"{CountProducts.cart_total} productos en tu carrito"
+                        ),
                         font_size="0.9rem",
                         color="gray",
                         margin_bottom="1.5em",
@@ -117,129 +48,137 @@ def shopping_cart() -> rx.Component:
 
                     # Lista de productos en el carrito
                     rx.vstack(
-                        *[rx.box(
-                            rx.hstack(
-                                # Imagen del producto
-                                rx.box(
-                                    rx.image(
-                                        src=item["image"],
-                                        height="60px",
-                                        width="60px",
-                                        object_fit="contain",
-                                        border_radius="13px",
-                                        bg="rgba(0,0,0,0.05)"
+                        rx.foreach(
+                            CountProducts.cart_items_detailed,
+                            lambda item: rx.box(
+                                rx.hstack(
+                                    # Imagen del producto
+                                    rx.box(
+                                        rx.image(
+                                            src=item["image"],
+                                            height="60px",
+                                            width="60px",
+                                            object_fit="contain",
+                                            border_radius="13px",
+                                            bg="rgba(0,0,0,0.05)"
+                                        ),
+                                        border_radius="8px",
+                                        overflow="hidden"
                                     ),
-                                    border_radius="8px",
-                                    overflow="hidden"
-                                ),
 
-                                # Información del producto
-                                rx.vstack(
-                                    rx.text(
-                                        item["name"],
-                                        font_weight="semibold",
-                                        font_size="0.9rem",
-                                        line_height="1.2"
-                                    ),
-                                    rx.hstack(
+                                    # Información del producto
+                                    rx.vstack(
                                         rx.text(
-                                            f"${item['price']:.2f}",
-                                            font_size="0.8rem",
-                                            color=Custom_theme().light_colors()["primary"],
-                                            font_weight="medium"
+                                            item["name"],
+                                            font_weight="semibold",
+                                            font_size="0.9rem",
+                                            line_height="1.2"
                                         ),
-                                        rx.text(
-                                            f"• {item['volume_points']} pts",
-                                            font_size="0.8rem",
-                                            color="gray"
-                                        ),
-                                        spacing="1",
-                                        align="center"
-                                    ),
-                                    rx.text(
-                                        f"Subtotal: ${item['subtotal']:.2f}",
-                                        font_size="0.8rem",
-                                        font_weight="medium",
-                                        color="#059669"
-                                    ),
-                                    spacing="1",
-                                    align="start",
-                                    flex="1"
-                                ),
-
-                                # Controles de cantidad y eliminar
-                                rx.vstack(
-                                    # Controles de cantidad
-                                    rx.hstack(
-                                        rx.button(
-                                            rx.icon("minus", size=12),
-                                            size="1",
-                                            variant="soft",
-                                            border_radius="6px",
-                                            min_width="28px",
-                                            height="28px",
-                                            _hover={"bg": "rgba(239, 68, 68, 0.1)"}
-                                        ),
-                                        rx.box(
+                                        rx.hstack(
                                             rx.text(
-                                                str(item["quantity"]),
+                                                f"${item['price']:.2f}",
                                                 font_size="0.8rem",
-                                                font_weight="medium",
-                                                text_align="center"
+                                                color=Custom_theme().light_colors()["primary"],
+                                                font_weight="medium"
                                             ),
-                                            min_width="32px",
-                                            height="28px",
-                                            border_radius="6px",
-                                            bg=rx.color_mode_cond(
-                                                light="rgba(0,0,0,0.05)",
-                                                dark="rgba(255,255,255,0.1)"
+                                            rx.text(
+                                                f"• {item['volume_points']} PV",
+                                                font_size="0.8rem",
+                                                color="gray"
                                             ),
-                                            display="flex",
-                                            align_items="center",
-                                            justify_content="center"
+                                            spacing="1",
+                                            align="center"
                                         ),
+                                        rx.text(
+                                            f"Subtotal: ${item['subtotal']:.2f}",
+                                            font_size="0.8rem",
+                                            font_weight="medium",
+                                            color="#059669"
+                                        ),
+                                        spacing="1",
+                                        align="start",
+                                        flex="1"
+                                    ),
+
+                                    # Controles de cantidad y eliminar
+                                    rx.vstack(
+                                        # Controles de cantidad
+                                        rx.hstack(
+                                            # Botón decrementar - CORREGIDO
+                                            rx.button(
+                                                rx.icon("minus", size=12),
+                                                size="1",
+                                                variant="soft",
+                                                border_radius="6px",
+                                                min_width="28px",
+                                                height="28px",
+                                                _hover={"bg": "rgba(239, 68, 68, 0.1)"},
+                                                on_click=CountProducts.decrement_cart_item(item["id"]),  # ✅ CORREGIDO: sin lambda
+                                            ),
+                                            rx.box(
+                                                rx.text(
+                                                    item["quantity"],
+                                                    font_size="0.8rem",
+                                                    font_weight="medium",
+                                                    text_align="center"
+                                                ),
+                                                min_width="32px",
+                                                height="28px",
+                                                border_radius="6px",
+                                                bg=rx.color_mode_cond(
+                                                    light="rgba(0,0,0,0.05)",
+                                                    dark="rgba(255,255,255,0.1)"
+                                                ),
+                                                display="flex",
+                                                align_items="center",
+                                                justify_content="center"
+                                            ),
+                                            # Botón incrementar - CORREGIDO
+                                            rx.button(
+                                                rx.icon("plus", size=12),
+                                                size="1",
+                                                variant="soft",
+                                                border_radius="6px",
+                                                min_width="28px",
+                                                height="28px",
+                                                _hover={"bg": "rgba(34, 197, 94, 0.1)"},
+                                                on_click=CountProducts.increment_cart_item(item["id"]),  # ✅ CORREGIDO: sin lambda
+                                            ),
+                                            spacing="1",
+                                            align="center"
+                                        ),
+
+                                        # Botón eliminar - CORREGIDO
                                         rx.button(
-                                            rx.icon("plus", size=12),
+                                            rx.icon("trash-2", size=14),
+                                            variant="ghost",
                                             size="1",
-                                            variant="soft",
                                             border_radius="6px",
-                                            min_width="28px",
-                                            height="28px",
-                                            _hover={"bg": "rgba(34, 197, 94, 0.1)"}
+                                            padding="6px",
+                                            _hover={"bg": "rgba(239, 68, 68, 0.1)"},
+                                            margin_top="0.5em",
+                                            on_click=CountProducts.remove_from_cart(item["id"]),  # ✅ CORREGIDO: sin lambda
                                         ),
+
                                         spacing="1",
                                         align="center"
                                     ),
 
-                                    # Botón eliminar
-                                    rx.button(
-                                        rx.icon("trash-2", size=14),
-                                        variant="ghost",
-                                        size="1",
-                                        border_radius="6px",
-                                        padding="6px",
-                                        _hover={"bg": "rgba(239, 68, 68, 0.1)"},
-                                        margin_top="0.5em"
-                                    ),
-
-                                    spacing="1",
-                                    align="center"
+                                    spacing="3",
+                                    align="start",
+                                    width="100%"
                                 ),
-
-                                spacing="3",
-                                align="start",
+                                bg=rx.color_mode_cond(
+                                    light=Custom_theme().light_colors()["tertiary"],
+                                    dark=Custom_theme().dark_colors()["tertiary"]
+                                ),
+                                border_radius="29px",
+                                padding="16px",
+                                border="1px solid rgba(0,0,0,0.05)",
+                                margin_bottom="12px",
                                 width="100%"
-                            ),
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["tertiary"],
-                                dark=Custom_theme().dark_colors()["tertiary"]
-                            ),
-                            border_radius="29px",
-                            padding="16px",
-                            border="1px solid rgba(0,0,0,0.05)",
-                            margin_bottom="12px",
-                            width="100%"
-                        ) for item in cart_items],
+                            )
+                        ),
 
                         spacing="0",
                         width="100%",
@@ -271,9 +210,17 @@ def shopping_cart() -> rx.Component:
                         rx.vstack(
                             # Productos
                             rx.hstack(
-                                rx.text(f"Productos ({total_products})", font_size="0.9rem", color="gray"),
+                                rx.text(
+                                    rx.cond(
+                                        CountProducts.cart_total == 1,
+                                        f"Productos ({CountProducts.cart_total})",
+                                        f"Productos ({CountProducts.cart_total})"
+                                    ), 
+                                    font_size="0.9rem", 
+                                    color="gray"
+                                ),
                                 rx.spacer(),
-                                rx.text(f"${subtotal_products:.2f}", font_size="0.9rem", font_weight="medium"),
+                                rx.text(f"${CountProducts.cart_subtotal:.2f}", font_size="0.9rem", font_weight="medium"),
                                 width="100%",
                                 align="center"
                             ),
@@ -282,20 +229,7 @@ def shopping_cart() -> rx.Component:
                             rx.hstack(
                                 rx.text("Puntos de volumen", font_size="0.9rem", color="gray"),
                                 rx.spacer(),
-                                rx.text(f"{total_volume_points} pts", font_size="0.9rem", font_weight="medium", color="#f59e0b"),
-                                width="100%",
-                                align="center"
-                            ),
-
-                            # Costo de envío
-                            rx.hstack(
-                                rx.text("Costo de envío", font_size="0.9rem", color="gray"),
-                                rx.spacer(),
-                                rx.cond(
-                                    shipping_cost == 0,
-                                    rx.text("GRATIS", font_size="0.9rem", font_weight="medium", color="#059669"),
-                                    rx.text(f"${shipping_cost:.2f}", font_size="0.9rem", font_weight="medium")
-                                ),
+                                rx.text(f"{CountProducts.cart_volume_points} pts", font_size="0.9rem", font_weight="medium", color="#f59e0b"),
                                 width="100%",
                                 align="center"
                             ),
@@ -312,7 +246,7 @@ def shopping_cart() -> rx.Component:
                             rx.hstack(
                                 rx.text("Total", font_size="1rem", font_weight="bold"),
                                 rx.spacer(),
-                                rx.text(f"${final_total:.2f}", font_size="1rem", font_weight="bold", color=Custom_theme().light_colors()["primary"]),
+                                rx.text(f"${CountProducts.cart_final_total:.2f}", font_size="1rem", font_weight="bold", color=Custom_theme().light_colors()["primary"]),
                                 width="100%",
                                 align="center"
                             ),

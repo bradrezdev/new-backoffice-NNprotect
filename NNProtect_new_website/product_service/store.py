@@ -7,6 +7,8 @@ from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_si
 
 # Import de estados
 from .store_state import SlideToAnyWhere
+from .store_products_state import StoreState
+from .product_components import product_card, product_card_horizontal, new_products_card, most_requested_products_card, supplement_products_card, skincare_products_card, sanitized_products_card
 
 """
 # Función para crear tarjetas de productos
@@ -160,11 +162,13 @@ def popular_product_card(product_id: int, price: float, is_popular: bool = False
 categorias_data = [
     {"name": "Suplementos", "action": SlideToAnyWhere.scroll_to_suplements},
     {"name": "Cuidado de la piel", "action": SlideToAnyWhere.scroll_to_skin_care},
+    {"name": "Desinfectantes", "action": SlideToAnyWhere.scroll_to_disinfectants},
 ]
 
 
 def store() -> rx.Component:
     # Welcome Page (Index)
+    # Cargar productos al inicializar la página
     return rx.center(
         rx.desktop_only(
             rx.vstack(
@@ -317,111 +321,15 @@ def store() -> rx.Component:
                     rx.text("Últimas novedades", size="5", font_weight="bold", padding_x="1em"),
                     rx.box(
                         rx.scroll_area(
-                            # Contenedor horizontal de las tarjetas
+                            # Contenedor horizontal de las tarjetas con productos reales
                             rx.hstack(
-                                *[rx.box(
-                                    rx.vstack(
-                                        # Imagen del producto
-                                        rx.image(
-                                            src=f"/product_{i}.jpg",
-                                            height="100%",
-                                            width="100%",
-                                            object_fit="cover",
-                                            border_radius="19px",
-                                            bg="rgba(0,0,0,0.05)",
-                                            margin_bottom="0.5em"
-                                        ),
-
-                                        # Información del producto
-                                        rx.vstack(
-                                            rx.text(
-                                                f"Producto {i}",
-                                                font_weight="bold",
-                                                font_size="0.9rem",
-                                                text_align="center",
-                                                no_of_lines=2
-                                            ),
-                                            rx.text(
-                                                "$999.00",
-                                                font_weight="600",
-                                                font_size="0.9rem",
-                                                color=rx.color_mode_cond(
-                                                    light=Custom_theme().light_colors()["primary"],
-                                                    dark=Custom_theme().dark_colors()["primary"]
-                                                ),
-                                                text_align="center"
-                                            ),
-                                            z_index=1,
-                                            spacing="1",
-                                            align="center",
-                                            width="100%"
-                                        ),
-
-                                        # Controles de cantidad
-                                        rx.hstack(
-                                            rx.button(
-                                                "-",
-                                                size="1",
-                                                variant="soft",
-                                                border_radius="8px",
-                                                min_width="32px",
-                                                height="32px"
-                                            ),
-                                            rx.text(
-                                                "0",
-                                                font_size="0.9rem",
-                                                font_weight="medium",
-                                                min_width="40px",
-                                                text_align="center"
-                                            ),
-                                            rx.button(
-                                                "+",
-                                                size="1",
-                                                variant="soft",
-                                                border_radius="8px",
-                                                min_width="32px",
-                                                height="32px"
-                                            ),
-                                            justify="center",
-                                            spacing="2",
-                                            align="center",
-                                            margin_bottom="0.5em"
-                                        ),
-
-                                        # Botón agregar
-                                        rx.button(
-                                            "Agregar",
-                                            size="3",
-                                            width="100%",
-                                            variant="solid",
-                                            border_radius="19px",
-                                            bg=rx.color_mode_cond(
-                                                light=Custom_theme().light_colors()["primary"],
-                                                dark=Custom_theme().dark_colors()["primary"]
-                                            ),
-                                            color="white",
-                                            _hover={"opacity": 0.9}
-                                        ),
-
-                                        spacing="3",
-                                        align="center",
-                                        width="100%"
-                                    ),
-                                    bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["tertiary"],
-                                        dark=Custom_theme().dark_colors()["tertiary"]
-                                    ),
-                                    border_radius="29px",
-                                    padding="10px",
-                                    width="50vw",  # Ancho fijo para consistencia
-                                    #_hover={
-                                    #    "transform": "translateY(-2px)",
-                                    #    "box_shadow": "0 4px 12px rgba(0, 0, 0, 0.15)"
-                                    #},
-                                    #transition="all 0.2s ease"
-                                ) for i in range(1, 5)],
-                                spacing="4",  # Espacio entre tarjetas
-                                min_width="100%"  # Mínimo ancho de la pantalla
+                                rx.foreach(
+                                    StoreState.latest_products,  # ✅ Lista de productos nuevos
+                                    new_products_card            # ✅ Componente que recibe 1 producto
+                                ),
+                                margin_right="1em",
+                                spacing="4",
+                                align="start"
                             ),
 
                             # Configuración del scroll area
@@ -478,109 +386,13 @@ def store() -> rx.Component:
                         rx.scroll_area(
                             # Contenedor horizontal de las tarjetas
                             rx.hstack(
-                                *[rx.box(
-                                    rx.vstack(
-                                        # Imagen del producto
-                                        rx.image(
-                                            src=f"/product_{i}.jpg",
-                                            height="100%",
-                                            width="100%",
-                                            object_fit="cover",
-                                            border_radius="19px",
-                                            bg="rgba(0,0,0,0.05)",
-                                            margin_bottom="0.5em"
-                                        ),
-
-                                        # Información del producto
-                                        rx.vstack(
-                                            rx.text(
-                                                f"Producto {i}",
-                                                font_weight="bold",
-                                                font_size="0.9rem",
-                                                text_align="center",
-                                                no_of_lines=2
-                                            ),
-                                            rx.text(
-                                                "$999.00",
-                                                font_weight="600",
-                                                font_size="0.9rem",
-                                                color=rx.color_mode_cond(
-                                                    light=Custom_theme().light_colors()["primary"],
-                                                    dark=Custom_theme().dark_colors()["primary"]
-                                                ),
-                                                text_align="center"
-                                            ),
-                                            z_index=1,
-                                            spacing="1",
-                                            align="center",
-                                            width="100%"
-                                        ),
-
-                                        # Controles de cantidad
-                                        rx.hstack(
-                                            rx.button(
-                                                "-",
-                                                size="1",
-                                                variant="soft",
-                                                border_radius="8px",
-                                                min_width="32px",
-                                                height="32px"
-                                            ),
-                                            rx.text(
-                                                "0",
-                                                font_size="0.9rem",
-                                                font_weight="medium",
-                                                min_width="40px",
-                                                text_align="center"
-                                            ),
-                                            rx.button(
-                                                "+",
-                                                size="1",
-                                                variant="soft",
-                                                border_radius="8px",
-                                                min_width="32px",
-                                                height="32px"
-                                            ),
-                                            justify="center",
-                                            spacing="2",
-                                            align="center",
-                                            margin_bottom="0.5em"
-                                        ),
-
-                                        # Botón agregar
-                                        rx.button(
-                                            "Agregar",
-                                            size="3",
-                                            width="100%",
-                                            variant="solid",
-                                            border_radius="19px",
-                                            bg=rx.color_mode_cond(
-                                                light=Custom_theme().light_colors()["primary"],
-                                                dark=Custom_theme().dark_colors()["primary"]
-                                            ),
-                                            color="white",
-                                            _hover={"opacity": 0.9}
-                                        ),
-
-                                        spacing="3",
-                                        align="center",
-                                        width="100%"
-                                    ),
-                                    bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["tertiary"],
-                                        dark=Custom_theme().dark_colors()["tertiary"]
-                                    ),
-                                    border_radius="29px",
-                                    padding="10px",
-                                    width="50vw",  # Ancho fijo para consistencia
-                                    #_hover={
-                                    #    "transform": "translateY(-2px)",
-                                    #    "box_shadow": "0 4px 12px rgba(0, 0, 0, 0.15)"
-                                    #},
-                                    #transition="all 0.2s ease"
-                                ) for i in range(1, 5)],
-                                spacing="4",  # Espacio entre tarjetas
-                                min_width="100%"  # Mínimo ancho de la pantalla
+                                rx.foreach(
+                                    StoreState.popular_products,  # ✅ Lista de productos populares
+                                    most_requested_products_card
+                                ),
+                                spacing="4", 
+                                align="start",
+                                margin_right="1em",
                             ),
 
                             # Configuración del scroll area
@@ -633,107 +445,10 @@ def store() -> rx.Component:
                     # Grid de productos móvil
                     rx.text("Suplementos", size="5", font_weight="bold", padding_x="1em"),
                     rx.grid(
-                        *[rx.box(
-                            rx.vstack(
-                                # Imagen del producto
-                                rx.image(
-                                    src=f"/product_{i}.jpg",
-                                    height="100%",
-                                    width="100%",
-                                    object_fit="cover",
-                                    border_radius="19px",
-                                    bg="rgba(0,0,0,0.05)",
-                                    margin_bottom="0.5em"
-                                ),
-
-                                # Información del producto
-                                rx.vstack(
-                                    rx.text(
-                                        f"Producto {i}",
-                                        font_weight="bold",
-                                        font_size="0.9rem",
-                                        text_align="center",
-                                        no_of_lines=2
-                                    ),
-                                    rx.text(
-                                        "$999.00",
-                                        font_weight="600",
-                                        font_size="0.9rem",
-                                        color=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["primary"],
-                                            dark=Custom_theme().dark_colors()["primary"]
-                                        ),
-                                        text_align="center"
-                                    ),
-                                    z_index=1,
-                                    spacing="1",
-                                    align="center",
-                                    width="100%"
-                                ),
-
-                                # Controles de cantidad
-                                rx.hstack(
-                                    rx.button(
-                                        "-",
-                                        size="1",
-                                        variant="soft",
-                                        border_radius="8px",
-                                        min_width="32px",
-                                        height="32px"
-                                    ),
-                                    rx.text(
-                                        "0",
-                                        font_size="0.9rem",
-                                        font_weight="medium",
-                                        min_width="40px",
-                                        text_align="center"
-                                    ),
-                                    rx.button(
-                                        "+",
-                                        size="1",
-                                        variant="soft",
-                                        border_radius="8px",
-                                        min_width="32px",
-                                        height="32px"
-                                    ),
-                                    justify="center",
-                                    spacing="2",
-                                    align="center",
-                                    margin_bottom="0.5em"
-                                ),
-
-                                # Botón agregar
-                                rx.button(
-                                    "Agregar",
-                                    size="3",
-                                    width="100%",
-                                    variant="solid",
-                                    border_radius="19px",
-                                    bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["primary"],
-                                        dark=Custom_theme().dark_colors()["primary"]
-                                    ),
-                                    color="white",
-                                    _hover={"opacity": 0.9}
-                                ),
-
-                                spacing="3",
-                                align="center",
-                                width="100%"
-                            ),
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["tertiary"],
-                                dark=Custom_theme().dark_colors()["tertiary"]
-                            ),
-                            border_radius="29px",
-                            padding="10px",
-                            width="45vw",  # Ancho fijo para consistencia
-                            #_hover={
-                            #    "transform": "translateY(-2px)",
-                            #    "box_shadow": "0 4px 12px rgba(0, 0, 0, 0.15)"
-                            #},
-                            #transition="all 0.2s ease"
-                        ) for i in range(1, 11)], # 10 productos en total
+                        rx.foreach(
+                            StoreState.supplement_products,  # ✅ Lista de productos de suplementos
+                            supplement_products_card
+                        ),
                         columns="2",
                         spacing="3",
                         width="100%",
@@ -743,107 +458,23 @@ def store() -> rx.Component:
                     # Grid de productos skin care móvil
                     rx.text("Cuidado de la piel", size="5", font_weight="bold", padding_x="1em"),
                     rx.grid(
-                        *[rx.box(
-                            rx.vstack(
-                                # Imagen del producto
-                                rx.image(
-                                    src=f"/product_{i}.jpg",
-                                    height="100%",
-                                    width="100%",
-                                    object_fit="cover",
-                                    border_radius="19px",
-                                    bg="rgba(0,0,0,0.05)",
-                                    margin_bottom="0.5em"
-                                ),
-
-                                # Información del producto
-                                rx.vstack(
-                                    rx.text(
-                                        f"Producto {i}",
-                                        font_weight="bold",
-                                        font_size="0.9rem",
-                                        text_align="center",
-                                        no_of_lines=2
-                                    ),
-                                    rx.text(
-                                        "$999.00",
-                                        font_weight="600",
-                                        font_size="0.9rem",
-                                        color=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["primary"],
-                                            dark=Custom_theme().dark_colors()["primary"]
-                                        ),
-                                        text_align="center"
-                                    ),
-                                    z_index=1,
-                                    spacing="1",
-                                    align="center",
-                                    width="100%"
-                                ),
-
-                                # Controles de cantidad
-                                rx.hstack(
-                                    rx.button(
-                                        "-",
-                                        size="1",
-                                        variant="soft",
-                                        border_radius="8px",
-                                        min_width="32px",
-                                        height="32px"
-                                    ),
-                                    rx.text(
-                                        "0",
-                                        font_size="0.9rem",
-                                        font_weight="medium",
-                                        min_width="40px",
-                                        text_align="center"
-                                    ),
-                                    rx.button(
-                                        "+",
-                                        size="1",
-                                        variant="soft",
-                                        border_radius="8px",
-                                        min_width="32px",
-                                        height="32px"
-                                    ),
-                                    justify="center",
-                                    spacing="2",
-                                    align="center",
-                                    margin_bottom="0.5em"
-                                ),
-
-                                # Botón agregar
-                                rx.button(
-                                    "Agregar",
-                                    size="3",
-                                    width="100%",
-                                    variant="solid",
-                                    border_radius="19px",
-                                    bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["primary"],
-                                        dark=Custom_theme().dark_colors()["primary"]
-                                    ),
-                                    color="white",
-                                    _hover={"opacity": 0.9}
-                                ),
-
-                                spacing="3",
-                                align="center",
-                                width="100%"
-                            ),
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["tertiary"],
-                                dark=Custom_theme().dark_colors()["tertiary"]
-                            ),
-                            border_radius="29px",
-                            padding="10px",
-                            width="45vw",  # Ancho fijo para consistencia
-                            #_hover={
-                            #    "transform": "translateY(-2px)",
-                            #    "box_shadow": "0 4px 12px rgba(0, 0, 0, 0.15)"
-                            #},
-                            #transition="all 0.2s ease"
-                        ) for i in range(1, 10)], # 9 productos en total
+                        rx.foreach(
+                            StoreState.skincare_products,  # ✅ Lista de productos de cuidado de la piel
+                            skincare_products_card
+                        ),
+                        columns="2",
+                        spacing="3",
+                        width="100%",
+                        padding="0 1em",
+                    ),
+                    rx.spacer(id="desinfectantes", margin_bottom="4em"),  # Espaciador para el scroll
+                    # Grid de productos móvil
+                    rx.text("Desinfectantes", size="5", font_weight="bold", padding_x="1em"),
+                    rx.grid(
+                        rx.foreach(
+                            StoreState.sanitize_products,  # ✅ Lista de productos de desinfectantes
+                            sanitized_products_card,
+                        ),
                         columns="2",
                         spacing="3",
                         width="100%",
