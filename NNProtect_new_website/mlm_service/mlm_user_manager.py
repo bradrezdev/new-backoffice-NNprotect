@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any
 from database.users import Users, UserStatus
 
 # Timezone utilities
-from ..utils.timezone_mx import get_mexico_datetime_naive, format_mexico_date, format_mexico_datetime, get_mexico_date, convert_to_mexico_time
+from ..utils.timezone_mx import get_mexico_now, format_mexico_date, format_mexico_datetime, get_mexico_date, get_mexico_datetime_naive
 from datetime import timedelta
 from database.userprofiles import UserProfiles, UserGender
 from database.social_accounts import SocialAccounts, SocialNetwork
@@ -16,6 +16,7 @@ from database.roles import Roles
 from database.roles_users import RolesUsers
 from database.auth_credentials import AuthCredentials
 from database.usertreepaths import UserTreePath
+from .rank_service import RankService
 import os
 
 class MLMUserManager:
@@ -73,6 +74,11 @@ class MLMUserManager:
             # Generar referral link
             base_url = MLMUserManager.get_base_url()
             new_user.referral_link = f"{base_url}?ref={member_id}"
+            
+            # 🎯 ASIGNAR RANGO INICIAL "Sin rango" (id=1) AUTOMÁTICAMENTE
+            rank_assigned = RankService.assign_initial_rank(session, member_id)
+            if not rank_assigned:
+                print(f"⚠️  Advertencia: No se pudo asignar rango inicial a usuario {member_id}")
             
             print(f"✅ Usuario MLM creado - Member ID: {member_id}, Sponsor ID: {sponsor_id}")
             return new_user
@@ -322,34 +328,26 @@ class MLMUserManager:
     def create_user_address(session, user_id: int, street: str, neighborhood: str, 
                            city: str, state: str, country: str, zip_code: str):
         """Crea dirección del usuario."""
-        from database.addresses import Addresses, Countries
+        from database.addresses import Addresses
         from database.users_addresses import UserAddresses
         import datetime
         
         try:
-            # Mapeo de países
-            COUNTRY_MAP = {
-                "United States": "USA",
-                "Colombia": "COLOMBIA", 
-                "Mexico": "MEXICO",
-                "Puerto Rico": "PUERTO_RICO",
-            }
+            # ✅ Usar RegistrationManager para convertir país a valor interno
+            from ..auth_service.auth_state import RegistrationManager
+            country_value = RegistrationManager.get_country_value(country)
             
-            # Obtener enum del país
-            country_key = COUNTRY_MAP.get(country)
-            if not country_key:
-                print(f"⚠️ País '{country}' no encontrado en mapeo")
+            if not country_value:
+                print(f"⚠️ País '{country}' no válido")
                 return
             
-            country_enum = Countries[country_key]
-            
-            # Crear dirección
+            # Crear dirección con texto plano
             new_address = Addresses(
                 street=street,
                 neighborhood=neighborhood or "",
                 city=city,
                 state=state or "",
-                country=country_enum,
+                country=country_value,  # ✅ Texto plano, no ENUM
                 zip_code=zip_code or ""
             )
             session.add(new_address)
@@ -361,8 +359,8 @@ class MLMUserManager:
                 address_id=new_address.id,
                 address_name="Principal",
                 is_default=True,
-                created_at=get_mexico_datetime_naive().isoformat(),  # ✅ MÉXICO TIMEZONE
-                updated_at=get_mexico_datetime_naive().isoformat()  # ✅ MÉXICO TIMEZONE
+                created_at=get_mexico_now(),  # ✅ MÉXICO TIMEZONE
+                updated_at=get_mexico_now()  # ✅ MÉXICO TIMEZONE
             )
             session.add(user_address)
             print(f"✅ Dirección creada para usuario {user_id}")
@@ -613,4 +611,48 @@ class MLMUserManager:
             
         except Exception as e:
             print(f"❌ Error obteniendo inscripciones del mes: {e}")
+            return []
+
+    # 🎯 MÉTODOS PARA GESTIÓN AUTOMÁTICA DE RANGOS
+    @staticmethod
+    def get_user_current_rank(member_id: int) -> Optional[int]:
+        """Obtiene el rango actual del usuario."""
+        try:
+            with rx.session() as session:
+                return RankService.get_user_current_rank(session, member_id)
+        except Exception as e:
+            print(f"❌ Error obteniendo rango actual: {e}")
+            return None
+
+    @staticmethod  
+    def get_user_highest_rank(member_id: int) -> Optional[int]:
+        """Obtiene el rango más alto alcanzado por el usuario."""
+        try:
+            with rx.session() as session:
+                return RankService.get_user_highest_rank(session, member_id)
+        except Exception as e:
+            print(f"❌ Error obteniendo rango más alto: {e}")
+            return None
+
+    @staticmethod
+    def promote_user_rank(member_id: int, new_rank_id: int) -> bool:
+        """Promueve usuario a un nuevo rango."""
+        try:
+            with rx.session() as session:
+                success = RankService.promote_user_rank(session, member_id, new_rank_id)
+                if success:
+                    session.commit()
+                return success
+        except Exception as e:
+            print(f"❌ Error promoviendo usuario: {e}")
+            return False
+
+    @staticmethod
+    def get_user_rank_history(member_id: int) -> list:
+        """Obtiene historial completo de rangos del usuario."""
+        try:
+            with rx.session() as session:
+                return RankService.get_rank_progression_history(session, member_id)
+        except Exception as e:
+            print(f"❌ Error obteniendo historial de rangos: {e}")
             return []

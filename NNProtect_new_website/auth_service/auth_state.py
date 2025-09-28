@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 
 # Timezone utilities
-from ..utils.timezone_mx import get_mexico_now, get_mexico_datetime_naive
+from ..utils.timezone_mx import get_mexico_now
 
 # Database imports
 from database.users import Users, UserStatus
@@ -27,7 +27,7 @@ from database.roles import Roles
 from database.userprofiles import UserProfiles, UserGender
 from database.social_accounts import SocialAccounts, SocialNetwork
 from database.roles_users import RolesUsers
-from database.addresses import Countries, Addresses
+from database.addresses import Addresses
 from database.users_addresses import UserAddresses
 from database.usertreepaths import UserTreePath
 
@@ -88,7 +88,7 @@ class AuthenticationManager:
             login_token = {
                 "id": user_id,
                 "username": username,
-                "exp": get_mexico_datetime_naive() + datetime.timedelta(minutes=60),  # ✅ MÉXICO TIMEZONE
+                "exp": get_mexico_now() + datetime.timedelta(minutes=60),  # ✅ MÉXICO TIMEZONE
             }
             
             token = jwt.encode(login_token, jwt_secret_key, algorithm="HS256")
@@ -227,7 +227,7 @@ class UserDataManager:
             return {}
     
     @staticmethod
-    def get_user_country_by_id(user_id: int) -> Optional[Countries]:
+    def get_user_country_by_id(user_id: int) -> Optional[str]:
         """
         Obtiene el país de registro del usuario mediante JOIN con addresses.
         
@@ -345,12 +345,61 @@ class PasswordValidator:
 class RegistrationManager:
     """Maneja operaciones de registro de usuarios."""
     
+    # ✅ Mapeo de países display → valor interno
     COUNTRY_MAP = {
-        "USA": "United States",
-        "COLOMBIA": "Colombia", 
-        "MEXICO": "Mexico",
-        "PUERTO_RICO": "Puerto Rico",
+        "United States": "USA",
+        "Colombia": "COLOMBIA", 
+        "Mexico": "MEXICO",
+        "Puerto Rico": "PUERTO_RICO",
     }
+    
+    # ✅ Estados por país (movido desde ENUM)
+    COUNTRY_STATES = {
+        "USA": ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
+                "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
+                "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi",
+                "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico",
+                "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
+                "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont",
+                "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"],
+        "COLOMBIA": ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", "Caldas", "Caquetá",
+                     "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía",
+                     "Guaviare","Huila","La Guajira","Magdalena","Meta","Nariño","Norte de Santander","Putumayo",
+                     "Quindío","Risaralda","San Andrés y Providencia","Santander","Sucre","Tolima","Valle del Cauca",
+                     "Vaupés","Vichada"],
+        "MEXICO": ["Aguascalientes","Baja California","Baja California Sur","Campeche","Chiapas","Chihuahua",
+                   "Ciudad de México","Coahuila","Colima","Durango","Guanajuato","Guerrero","Hidalgo","Jalisco",
+                   "México","Michoacán","Morelos","Nayarit","Nuevo León","Oaxaca","Puebla","Querétaro",
+                   "Quintana Roo","San Luis Potosí","Sinaloa","Sonora","Tabasco","Tamaulipas",
+                   "Tlaxcala","Veracruz","Yucatán","Zacatecas"],
+        "PUERTO_RICO": ["Adjuntas","Aguada","Aguadilla","Aguasbuena","Aibonito","Anasco","Arecibo","Arroyo",
+                        "Barceloneta","Barranquitas","Bayamón","Cabo Rojo","Caguas","Camuy","Canóvanas","Carolina",
+                        "Cataño","Cayey","Ceiba","Ciales","Cidra","Coamo","Comerío","Corozal","Culebra","Dorado",
+                        "Fajardo","Florida","Guánica","Guayama","Guayanilla","Guaynabo","Gurabo","Hatillo","Hormigueros",
+                        "Humacao","Isabela","Jayuya","Juana Díaz","Juncos","Lajas","Lares","Las Marías","Las Piedras","Loíza",
+                        "Luquillo","Manatí","Maricao","Maunabo","Mayagüez","Moca","Morovis","Naguabo","Naranjito","Orocovis",
+                        "Patillas","Peñuelas","Ponce","Quebradillas","Rincón","Río Grande","Sabana Grande","Salinas","San Germán","San Juan",
+                        "San Lorenzo","San Sebastián","Santa Isabel","Toa Alta","Toa Baja","Trujillo Alto","Utuado","Vega Alta","Vega Baja","Vieques",
+                        "Villalba","Yabucoa","Yauco"]
+    }
+    
+    @classmethod
+    def get_country_options(cls) -> List[str]:
+        """Obtiene lista de países disponibles."""
+        return list(cls.COUNTRY_MAP.keys())
+    
+    @classmethod
+    def get_states_for_country(cls, country_display: str) -> List[str]:
+        """Obtiene estados para un país dado (por nombre display)."""
+        country_key = cls.COUNTRY_MAP.get(country_display)
+        if not country_key:
+            return []
+        return cls.COUNTRY_STATES.get(country_key, [])
+    
+    @classmethod
+    def get_country_value(cls, country_display: str) -> str:
+        """Convierte nombre display a valor interno."""
+        return cls.COUNTRY_MAP.get(country_display, country_display)
 
     @staticmethod
     def get_next_member_id(session) -> int:
@@ -459,36 +508,31 @@ class RegistrationManager:
                           city: str, state: str, country: str, zip_code: str):
         """Crea dirección del usuario."""
         try:
-            # Encontrar enum del país
-            country_key = None
-            for key, value in cls.COUNTRY_MAP.items():
-                if value == country:
-                    country_key = key
-                    break
-            
-            if not country_key:
-                raise ValueError(f"País '{country}' no válido")
-            
-            country_enum = Countries[country_key]
+            # ✅ Convertir nombre display a valor interno
+            country_value = cls.get_country_value(country)
             
             new_address = Addresses(
                 street=street,
                 neighborhood=neighborhood or "",
                 city=city,
                 state=state or "",
-                country=country_enum,
+                country=country_value,  # ✅ Texto plano
                 zip_code=zip_code or ""
             )
             session.add(new_address)
             session.flush()
+            
+            # ✅ Verificar que address_id no sea None
+            if new_address.id is None:
+                raise ValueError("Error: No se pudo crear la dirección")
             
             user_address = UserAddresses(
                 user_id=user_id,
                 address_id=new_address.id,
                 address_name="Principal",
                 is_default=True,
-                created_at=get_mexico_datetime_naive().isoformat(),  # ✅ MÉXICO TIMEZONE
-                updated_at=get_mexico_datetime_naive().isoformat()  # ✅ MÉXICO TIMEZONE
+                created_at=get_mexico_now().isoformat(),  # ✅ MÉXICO TIMEZONE
+                updated_at=get_mexico_now().isoformat()  # ✅ MÉXICO TIMEZONE
             )
             session.add(user_address)
             
@@ -563,28 +607,14 @@ class AuthState(rx.State):
     @rx.var
     def country_options(self) -> List[str]:
         """Lista de países disponibles."""
-        return list(RegistrationManager.COUNTRY_MAP.values())
+        return RegistrationManager.get_country_options()
 
     @rx.var
     def state_options(self) -> List[str]:
         """Estados del país seleccionado."""
         if not self.new_country:
             return []
-        
-        try:
-            country_key = None
-            for key, value in RegistrationManager.COUNTRY_MAP.items():
-                if value == self.new_country:
-                    country_key = key
-                    break
-            
-            if country_key:
-                selected_country = Countries[country_key]
-                states = selected_country.states()
-                return states if states is not None else []
-            return []
-        except:
-            return []
+        return RegistrationManager.get_states_for_country(self.new_country)
 
     @rx.var
     def sponsor_display_name(self) -> str:

@@ -1,38 +1,23 @@
 import reflex as rx
-
-# Permite encriptar la contraseña del usuario
 import bcrypt
-
-# Librerías de rx.Model para definir modelos y relaciones
 from sqlmodel import Field, func
 from typing import Optional
 from enum import Enum
-
-# Manejo de fechas y horas con zona horaria
 from datetime import datetime, date, timezone
 
-# Importar Countries enum para country_cache
-from .addresses import Countries
+# ✅ Usar timezone utility con resta de 6 horas
+from NNProtect_new_website.utils.timezone_mx import get_mexico_now
 
 
 class UserStatus(Enum):
     """Estados posibles de un usuario en el sistema"""
-    NO_QUALIFIED = "NO_QUALIFIED"       # Usuario no calificado
-    QUALIFIED = "QUALIFIED"             # Usuario calificado
-    SUSPENDED = "SUSPENDED"             # Usuario suspendido
+    NO_QUALIFIED = "NO_QUALIFIED"
+    QUALIFIED = "QUALIFIED" 
+    SUSPENDED = "SUSPENDED"
 
 class Users(rx.Model, table=True):
     """
-    Modelo principal de usuarios del sistema.
-    Contiene información básica de identificación y estado del usuario.
-
-    Relaciones:
-    - Tiene un perfil (user_profiles)
-    - Tiene credenciales de autenticación (auth_credentials)
-    - Puede tener múltiples roles (roles)
-    - Puede tener múltiples direcciones (user_addresses)
-    - Puede tener múltiples cuentas sociales (social_accounts)
-    - Forma parte de estructura de enrolamiento (user_tree_paths)
+    Modelo principal de usuarios con timestamps México Central (UTC - 6h).
     """
     # Clave primaria
     id: int | None = Field(default=None, primary_key=True, index=True)
@@ -51,18 +36,26 @@ class Users(rx.Model, table=True):
     email_cache: str | None = Field(default=None, index=True)
     
     # Cache del país de registro desde addresses
-    country_cache: Countries | None = Field(default=None, index=True)
+    country_cache: str | None = Field(default=None, max_length=50, index=True)  # ✅ Texto plano
 
     # Estado y estructura de red
     status: UserStatus = Field(default=UserStatus.NO_QUALIFIED)
     sponsor_id: int | None = Field(default=None)  # Temporal - sin FK para evitar problemas circulares
     referral_link: str | None = Field(default=None, unique=True, index=True)
 
-    # Timestamps
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
-                                 sa_column_kwargs={"server_default": func.now()})
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
-                                 sa_column_kwargs={"server_default": func.now()})
+    # ✅ Timestamps México Central (UTC - 6 horas)
+    created_at: datetime = Field(
+        default_factory=get_mexico_now,
+        sa_column_kwargs={
+            "server_default": func.now() - func.interval('6 hours')
+        }
+    )
+    updated_at: datetime = Field(
+        default_factory=get_mexico_now,
+        sa_column_kwargs={
+            "server_default": func.now() - func.interval('6 hours')
+        }
+    )
     
     @property
     def full_name(self) -> str:

@@ -8,7 +8,7 @@ from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 
 from ..auth_service.auth_state import AuthState
-from database.addresses import Countries
+# Countries manejado directamente por RegistrationManager
 
 def register() -> rx.Component:
     # Welcome Page (Index)

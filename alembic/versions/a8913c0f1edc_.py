@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: fd47104175f5
+Revision ID: a8913c0f1edc
 Revises: 
-Create Date: 2025-09-25 17:43:29.340982
+Create Date: 2025-09-27 14:35:44.154224
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = 'fd47104175f5'
+revision: str = 'a8913c0f1edc'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('neighborhood', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('city', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('state', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('country', sa.Enum('USA', 'COLOMBIA', 'MEXICO', 'PUERTO_RICO', name='countries'), nullable=False),
+    sa.Column('country', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),
     sa.Column('zip_code', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
@@ -39,6 +39,44 @@ def upgrade() -> None:
         batch_op.create_index(batch_op.f('ix_addresses_state'), ['state'], unique=False)
         batch_op.create_index(batch_op.f('ix_addresses_street'), ['street'], unique=False)
         batch_op.create_index(batch_op.f('ix_addresses_zip_code'), ['zip_code'], unique=False)
+
+    op.create_table('periods',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
+    sa.Column('starts_on', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('ends_on', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('periods', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_periods_id'), ['id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_periods_name'), ['name'], unique=True)
+
+    op.create_table('products',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('product_name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+    sa.Column('SKU', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=True),
+    sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True),
+    sa.Column('presentation', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),
+    sa.Column('type', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),
+    sa.Column('pv_mx', sa.Integer(), nullable=False),
+    sa.Column('pv_usa', sa.Integer(), nullable=False),
+    sa.Column('pv_colombia', sa.Integer(), nullable=False),
+    sa.Column('vn_mx', sa.Float(), nullable=True),
+    sa.Column('vn_usa', sa.Float(), nullable=True),
+    sa.Column('vn_colombia', sa.Float(), nullable=True),
+    sa.Column('price_mx', sa.Float(), nullable=True),
+    sa.Column('price_usa', sa.Float(), nullable=True),
+    sa.Column('price_colombia', sa.Float(), nullable=True),
+    sa.Column('public_mx', sa.Float(), nullable=True),
+    sa.Column('public_usa', sa.Float(), nullable=True),
+    sa.Column('public_colombia', sa.Float(), nullable=True),
+    sa.Column('is_new', sa.Boolean(), nullable=False),
+    sa.Column('purchase_count', sa.Integer(), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('products', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_products_id'), ['id'], unique=False)
 
     op.create_table('roles',
     sa.Column('role_id', sa.Integer(), nullable=False),
@@ -55,6 +93,7 @@ def upgrade() -> None:
     sa.Column('first_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('last_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('email_cache', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('country_cache', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=True),
     sa.Column('status', sa.Enum('NO_QUALIFIED', 'QUALIFIED', 'SUSPENDED', name='userstatus'), nullable=False),
     sa.Column('sponsor_id', sa.Integer(), nullable=True),
     sa.Column('referral_link', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
@@ -63,6 +102,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_users_country_cache'), ['country_cache'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_email_cache'), ['email_cache'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_first_name'), ['first_name'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_id'), ['id'], unique=False)
@@ -140,23 +180,16 @@ def upgrade() -> None:
     op.create_table('usertreepath',
     sa.Column('sponsor_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('level', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['sponsor_id'], ['users.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['sponsor_id'], ['users.member_id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.member_id'], ),
     sa.PrimaryKeyConstraint('sponsor_id', 'user_id')
     )
-    with op.batch_alter_table('usertreepath', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_usertreepath_level'), ['level'], unique=False)
-
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    with op.batch_alter_table('usertreepath', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_usertreepath_level'))
-
     op.drop_table('usertreepath')
     with op.batch_alter_table('userprofiles', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_userprofiles_phone_number'))
@@ -189,12 +222,22 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f('ix_users_id'))
         batch_op.drop_index(batch_op.f('ix_users_first_name'))
         batch_op.drop_index(batch_op.f('ix_users_email_cache'))
+        batch_op.drop_index(batch_op.f('ix_users_country_cache'))
 
     op.drop_table('users')
     with op.batch_alter_table('roles', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_roles_role_id'))
 
     op.drop_table('roles')
+    with op.batch_alter_table('products', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_products_id'))
+
+    op.drop_table('products')
+    with op.batch_alter_table('periods', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_periods_name'))
+        batch_op.drop_index(batch_op.f('ix_periods_id'))
+
+    op.drop_table('periods')
     with op.batch_alter_table('addresses', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_addresses_zip_code'))
         batch_op.drop_index(batch_op.f('ix_addresses_street'))
