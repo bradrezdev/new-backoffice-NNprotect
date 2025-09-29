@@ -359,7 +359,7 @@ def index() -> rx.Component:
                         rx.box(
                             rx.vstack(
                                 rx.text("Máximo rango", font_size="0.8rem"),
-                                rx.text("E. Consciente", font_size="0.9rem", font_weight="bold"),
+                                rx.text(AuthState.profile_data.get("highest_rank"), font_size="0.9rem", font_weight="bold"),
                                 spacing="1"
                             ),
                             bg="#0039F2",
@@ -371,7 +371,7 @@ def index() -> rx.Component:
                         rx.box(
                             rx.vstack(
                                 rx.text("Rango Actual", font_size="0.8rem"),
-                                rx.text("E. Transformador", font_size="0.9rem", font_weight="bold"),
+                                rx.text(AuthState.profile_data.get("current_month_rank"), font_size="0.9rem", font_weight="bold"),
                                 spacing="1"
                             ),
                             bg="#5E79FF",

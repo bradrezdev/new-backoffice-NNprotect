@@ -221,6 +221,10 @@ class MLMUserManager:
                     profile_name = last_word
                 else:
                     profile_name = f"Usuario {user.member_id}"
+
+                # ✅ NUEVO: Cargar rangos del usuario
+                current_month_rank = MLMUserManager.get_user_current_month_rank(session, user.member_id)
+                highest_rank = MLMUserManager.get_user_highest_rank(session, user.member_id)
                 
                 # Datos de retorno completos
                 mlm_data = {
@@ -240,8 +244,10 @@ class MLMUserManager:
                     "created_at": format_mexico_date(user.created_at) if user.created_at else '',  # ✅ MÉXICO TIMEZONE
                     "created_at_iso": user.created_at.isoformat() if user.created_at else '',  # ✅ NUEVO: Formato ISO  
                     "last_login": format_mexico_datetime(user.updated_at) if user.updated_at else '',  # ✅ MÉXICO TIMEZONE
+                    "current_month_rank": current_month_rank,
+                    "highest_rank": highest_rank,
                 }
-                
+
                 # ✅ NUEVO: Cargar datos del sponsor
                 sponsor_data = MLMUserManager.load_sponsor_data(session, user)
                 mlm_data["sponsor_data"] = sponsor_data
@@ -316,6 +322,7 @@ class MLMUserManager:
                 "referral_link": sponsor.referral_link or '',
                 "created_at": format_mexico_date(sponsor.created_at) if sponsor.created_at else '',
                 "status": sponsor.status.value if hasattr(sponsor.status, 'value') else str(sponsor.status),
+                "current_month_rank": MLMUserManager.get_user_current_month_rank(session, sponsor.member_id),  # ✅ NUEVO: Rango actual del sponsor
             }
             
             return sponsor_data
@@ -538,6 +545,10 @@ class MLMUserManager:
             filtered_registrations = []
             from datetime import datetime
             
+            # Convertir start_date y end_date a date objects para comparación consistente
+            start_date_only = start_date.date() if hasattr(start_date, 'date') else start_date
+            end_date_only = end_date.date() if hasattr(end_date, 'date') else end_date
+            
             for user in all_descendants:
                 if user.get("created_at") and user["created_at"] != "N/A":
                     try:
@@ -546,14 +557,14 @@ class MLMUserManager:
                         created_at_date = datetime.strptime(created_at_str, "%d/%m/%Y").date()
                         
                         # Comparar fechas
-                        if start_date <= created_at_date <= end_date:
+                        if start_date_only <= created_at_date <= end_date_only:
                             filtered_registrations.append(user)
                             
                     except ValueError as ve:
                         print(f"⚠️ Error parseando fecha '{user['created_at']}': {ve}")
                         continue
             
-            print(f"✅ Filtradas {len(filtered_registrations)} registraciones entre {start_date} y {end_date}")
+            print(f"✅ Filtradas {len(filtered_registrations)} registraciones entre {start_date_only} y {end_date_only}")
             return filtered_registrations
             
         except Exception as e:
@@ -615,24 +626,63 @@ class MLMUserManager:
 
     # 🎯 MÉTODOS PARA GESTIÓN AUTOMÁTICA DE RANGOS
     @staticmethod
-    def get_user_current_rank(member_id: int) -> Optional[int]:
-        """Obtiene el rango actual del usuario."""
+    def get_user_current_month_rank(session, member_id: int) -> str:
+        """
+        Obtiene el rango actual del mes del usuario (name del rango más alto del mes).
+        Retorna 1 (Sin rango) si no tiene rangos este mes.
+        """
         try:
-            with rx.session() as session:
-                return RankService.get_user_current_rank(session, member_id)
-        except Exception as e:
-            print(f"❌ Error obteniendo rango actual: {e}")
-            return None
+            from datetime import datetime
+            from NNProtect_new_website.utils.timezone_mx import get_mexico_now
 
-    @staticmethod  
-    def get_user_highest_rank(member_id: int) -> Optional[int]:
-        """Obtiene el rango más alto alcanzado por el usuario."""
-        try:
-            with rx.session() as session:
-                return RankService.get_user_highest_rank(session, member_id)
+            # Obtener fecha actual en México
+            now = get_mexico_now()
+            current_year = now.year
+            current_month = now.month
+
+            # ✅ JOIN explícito entre Ranks y UserRankHistory
+            from database.user_rank_history import UserRankHistory
+            from database.ranks import Ranks
+            latest_rank = session.exec(
+                sqlmodel.select(Ranks)
+                .join(UserRankHistory, Ranks.id == UserRankHistory.rank_id)  # ✅ JOIN explícito
+                .where(
+                    UserRankHistory.member_id == member_id,
+                    sqlmodel.extract('year', UserRankHistory.achieved_on) == current_year,
+                    sqlmodel.extract('month', UserRankHistory.achieved_on) == current_month
+                )
+                .order_by(sqlmodel.desc(UserRankHistory.rank_id))  # ✅ Ordenar por rank_id descendente
+            ).first()
+
+            return latest_rank.name if latest_rank else "Sin rango"  # ✅ Retornar name, no id
+
         except Exception as e:
-            print(f"❌ Error obteniendo rango más alto: {e}")
-            return None
+            print(f"❌ Error obteniendo rango mensual de usuario {member_id}: {e}")
+            return "Sin rango"
+
+    @staticmethod
+    def get_user_highest_rank(session, member_id: int) -> str:
+        """
+        Obtiene el rango máximo alcanzado por el usuario en toda su vida.
+        Retorna 1 (Sin rango) si no tiene rangos.
+        """
+        try:
+            from database.user_rank_history import UserRankHistory
+            from database.ranks import Ranks
+
+            # Buscar el rango más alto de toda la vida con JOIN para obtener el nombre
+            highest_rank = session.exec(
+                sqlmodel.select(Ranks)
+                .join(UserRankHistory, Ranks.id == UserRankHistory.rank_id)
+                .where(UserRankHistory.member_id == member_id)
+                .order_by(sqlmodel.desc(UserRankHistory.rank_id))
+            ).first()
+
+            return highest_rank.name if highest_rank else "Sin rango"  # ✅ Retornar name, no id
+
+        except Exception as e:
+            print(f"❌ Error obteniendo rango máximo de usuario {member_id}: {e}")
+            return "Sin rango"
 
     @staticmethod
     def promote_user_rank(member_id: int, new_rank_id: int) -> bool:

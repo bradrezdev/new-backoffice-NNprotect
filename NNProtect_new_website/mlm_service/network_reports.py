@@ -214,7 +214,7 @@ def network_reports() -> rx.Component:
 											rx.vstack(
 												rx.text(AuthState.profile_data.get("member_id"), color="#FFFFFF"),
 												rx.text(AuthState.profile_data.get("full_name"), color="#FFFFFF"),
-												rx.text(AuthState.profile_data.get("phone"), color="#FFFFFF"),
+												rx.text(AuthState.profile_data.get("current_month_rank"), color="#FFFFFF"),
 												rx.text(AuthState.profile_data.get("created_at"), color="#FFFFFF"),
 												align="end",
 												spacing="3",
@@ -260,7 +260,7 @@ def network_reports() -> rx.Component:
 											rx.vstack(
 												rx.text(AuthState.profile_data.get("sponsor_id", "N/A"), color=rx.color("gray", 11)),
 												rx.text(AuthState.sponsor_data.get("full_name", "N/A"), color=rx.color("gray", 11)),
-												rx.text("Por agregar", color=rx.color("blue", 11)),
+												rx.text(AuthState.sponsor_data.get("current_month_rank", "N/A"), color=rx.color("blue", 11)),
 												rx.text(AuthState.sponsor_data.get("phone", "N/A"), color=rx.color("gray", 11)),
 												align="end",
 												spacing="3",
@@ -600,7 +600,7 @@ def network_reports() -> rx.Component:
 							),
 							rx.hstack(
 								rx.text("Rango actual:", font_weight="bold", color="#FFFFFF", font_size="0.9rem"),
-								rx.text("Distribuidor", color="#FFFFFF", font_size="0.9rem"),
+								rx.text(AuthState.profile_data.get("current_month_rank"), color="#FFFFFF", font_size="0.9rem"),
 								justify="between",
 								width="100%"
 							),
@@ -651,7 +651,7 @@ def network_reports() -> rx.Component:
 							),
 							rx.hstack(
 								rx.text("Rango:", font_weight="bold", font_size="0.9rem"),
-								rx.text("Por agregar", color=rx.color("blue", 11), font_size="0.9rem"),
+								rx.text(AuthState.sponsor_data.get("current_month_rank", "N/A"), color=rx.color("blue", 11), font_size="0.9rem"),
 								justify="between",
 								width="100%"
 							),
