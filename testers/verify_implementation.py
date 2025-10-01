@@ -15,22 +15,28 @@ def verify_implementation():
         products = ProductManager.get_all_products()
         print(f"   📦 {len(products)} productos cargados desde la BD")
         
+        # Probar con user_id=1 (asumiendo existe)
+        user_id = 1
+        from NNProtect_new_website.auth_service.auth_state import UserDataManager
+        user_country = UserDataManager.get_user_country_by_id(user_id)
+        print(f"   👤 Usuario {user_id} registrado en: {user_country}")
+        
         if products:
             first_product = products[0]
-            print(f"   🧪 Probando precios por país para '{first_product.product_name}':")
+            print(f"   🧪 Probando precios por usuario para '{first_product.product_name}':")
             
-            for country in [Countries.MEXICO, Countries.USA, Countries.COLOMBIA]:
-                price = ProductManager.get_product_price_by_country(first_product, country)
-                pv = ProductManager.get_product_pv_by_country(first_product, country)
-                currency = ProductManager.get_currency_symbol_by_country(country)
-                print(f"      {country.value}: {currency}{price} (PV: {pv})")
+            price = ProductManager.get_product_price_by_user(first_product, user_id)
+            pv = ProductManager.get_product_pv_by_user(first_product, user_id)
+            vn = ProductManager.get_product_vn_by_user(first_product, user_id)
+            currency = ProductManager.get_currency_symbol_by_user(user_id)
+            print(f"      Precio: {currency}{price}, PV: {pv}, VN: {vn}")
         
         print("\n2. ✅ Verificando ProductDataService...")
-        formatted_products = ProductDataService.get_products_for_store(Countries.MEXICO)
-        print(f"   📋 {len(formatted_products)} productos formateados para México")
+        formatted_products = ProductDataService.get_products_for_store(user_id)
+        print(f"   📋 {len(formatted_products)} productos formateados para usuario {user_id}")
         
-        supplements = ProductDataService.get_products_by_type(Countries.MEXICO, "suplemento")
-        skincare = ProductDataService.get_products_by_type(Countries.MEXICO, "skincare")
+        supplements = ProductDataService.get_products_by_type(user_id, "suplemento")
+        skincare = ProductDataService.get_products_by_type(user_id, "skincare")
         print(f"   💊 {len(supplements)} suplementos")
         print(f"   🧴 {len(skincare)} productos skincare")
         

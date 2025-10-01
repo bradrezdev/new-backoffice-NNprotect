@@ -11,9 +11,11 @@ from typing import Optional
 from datetime import datetime, timezone
 
 from database.users import Users
-from database.ranks import Ranks  
+from database.ranks import Ranks
 from database.user_rank_history import UserRankHistory
 from database.periods import Periods
+from database.orders import Orders, OrderStatus
+from database.usertreepaths import UserTreePath
 from ..utils.timezone_mx import get_mexico_now
 
 
@@ -118,6 +120,7 @@ class RankService:
     def promote_user_rank(cls, session, member_id: int, new_rank_id: int) -> bool:
         """
         Promueve usuario a un nuevo rango (si es mayor al actual).
+        Dispara Bono por Alcance si aplica.
         Principio DRY: Lógica centralizada para promociones.
         """
         try:
@@ -125,23 +128,23 @@ class RankService:
             new_rank = session.exec(
                 sqlmodel.select(Ranks).where(Ranks.id == new_rank_id)
             ).first()
-            
+
             if not new_rank:
                 print(f"❌ Rango con ID {new_rank_id} no existe")
                 return False
-            
+
             # Obtener rango actual
             current_rank_id = cls.get_user_current_rank(session, member_id)
-            
+
             # Solo promover si el nuevo rango es mayor
             if current_rank_id and new_rank_id <= current_rank_id:
                 print(f"⚠️  Usuario {member_id} ya tiene rango igual o mayor ({current_rank_id})")
                 return False
-            
+
             # Obtener período actual
             current_period = cls._get_current_period(session)
             period_id = current_period.id if current_period else None
-            
+
             # Crear nuevo registro de rango
             rank_history = UserRankHistory(
                 member_id=member_id,
@@ -149,13 +152,23 @@ class RankService:
                 achieved_on=datetime.now(timezone.utc),
                 period_id=period_id
             )
-            
+
             session.add(rank_history)
             session.flush()
-            
+
             print(f"✅ Usuario {member_id} promovido a rango {new_rank.name} (id={new_rank_id})")
+
+            # Disparar Bono por Alcance (si aplica)
+            from .commission_service import CommissionService
+            achievement_commission_id = CommissionService.process_achievement_bonus(
+                session, member_id, new_rank.name
+            )
+
+            if achievement_commission_id:
+                print(f"✅ Bono por Alcance generado para {member_id}")
+
             return True
-            
+
         except Exception as e:
             print(f"❌ Error promoviendo usuario {member_id} a rango {new_rank_id}: {e}")
             return False
@@ -195,6 +208,158 @@ class RankService:
             return []
     
     @classmethod
+    def get_pv(cls, session, member_id: int, period_id: Optional[int] = None) -> int:
+        """
+        Calcula Puntos de Volumen Personal (PV) de compras personales.
+        Principio KISS: Solo compras confirmadas del usuario.
+
+        Args:
+            session: Sesión de base de datos
+            member_id: ID del miembro
+            period_id: ID del período (opcional, si None = acumulado total)
+
+        Returns:
+            Total de PV del usuario
+        """
+        try:
+            query = sqlmodel.select(sqlmodel.func.sum(Orders.total_pv)).where(
+                (Orders.member_id == member_id) &
+                (Orders.status == OrderStatus.PAYMENT_CONFIRMED.value)
+            )
+
+            if period_id:
+                query = query.where(Orders.period_id == period_id)
+
+            result = session.exec(query).first()
+            return result if result else 0
+
+        except Exception as e:
+            print(f"❌ Error calculando PV de usuario {member_id}: {e}")
+            return 0
+
+    @classmethod
+    def get_pvg(cls, session, member_id: int, period_id: Optional[int] = None) -> int:
+        """
+        Calcula Puntos de Volumen Grupal (PVG) en TIEMPO REAL.
+        PVG = PV personal + PV de TODOS los descendientes.
+        Principio DRY: Usa get_pv() para evitar duplicación.
+
+        Args:
+            session: Sesión de base de datos
+            member_id: ID del miembro
+            period_id: ID del período (opcional, si None = acumulado total)
+
+        Returns:
+            Total de PVG (personal + grupo)
+        """
+        try:
+            # 1. Obtener PV personal
+            personal_pv = cls.get_pv(session, member_id, period_id)
+
+            # 2. Obtener todos los descendientes usando UserTreePath
+            descendants = session.exec(
+                sqlmodel.select(UserTreePath.descendant_id)
+                .where(
+                    (UserTreePath.ancestor_id == member_id) &
+                    (UserTreePath.depth > 0)  # Excluir self-reference
+                )
+            ).all()
+
+            # 3. Calcular PV de cada descendiente
+            group_pv = 0
+            for descendant_id in descendants:
+                group_pv += cls.get_pv(session, descendant_id, period_id)
+
+            return personal_pv + group_pv
+
+        except Exception as e:
+            print(f"❌ Error calculando PVG de usuario {member_id}: {e}")
+            return 0
+
+    @classmethod
+    def calculate_rank(cls, session, member_id: int, period_id: Optional[int] = None) -> Optional[int]:
+        """
+        Calcula el rango que corresponde al usuario según PV y PVG.
+        Reglas:
+        - Mínimo 1,465 PV personal requerido
+        - Rango determinado por PVG acumulado
+
+        Principio KISS: Lógica directa de umbrales.
+
+        Args:
+            session: Sesión de base de datos
+            member_id: ID del miembro
+            period_id: ID del período (opcional)
+
+        Returns:
+            rank_id del rango alcanzado o None si no cumple requisitos
+        """
+        try:
+            # Verificar PV mínimo personal
+            pv = cls.get_pv(session, member_id, period_id)
+            if pv < 1465:
+                return cls.DEFAULT_RANK_ID  # "Sin rango"
+
+            # Calcular PVG
+            pvg = cls.get_pvg(session, member_id, period_id)
+
+            # Obtener todos los rangos ordenados por PVG requerido (descendente)
+            ranks = session.exec(
+                sqlmodel.select(Ranks)
+                .where(Ranks.pvg_required > 0)
+                .order_by(sqlmodel.desc(Ranks.pvg_required))
+            ).all()
+
+            # Encontrar el rango más alto que cumple el requisito
+            for rank in ranks:
+                if pvg >= rank.pvg_required:
+                    return rank.id
+
+            # Si tiene PV suficiente pero no cumple ningún umbral de PVG
+            return cls.DEFAULT_RANK_ID
+
+        except Exception as e:
+            print(f"❌ Error calculando rango de usuario {member_id}: {e}")
+            return None
+
+    @classmethod
+    def check_and_update_rank(cls, session, member_id: int) -> bool:
+        """
+        Verifica si el usuario califica para nuevo rango y lo actualiza.
+        Principio POO: Encapsula lógica de detección y actualización.
+
+        Args:
+            session: Sesión de base de datos
+            member_id: ID del miembro
+
+        Returns:
+            True si hubo promoción, False si no
+        """
+        try:
+            # Obtener período actual
+            current_period = cls._get_current_period(session)
+            period_id = current_period.id if current_period else None
+
+            # Calcular rango que corresponde
+            calculated_rank_id = cls.calculate_rank(session, member_id, period_id)
+
+            if not calculated_rank_id:
+                return False
+
+            # Obtener rango actual
+            current_rank_id = cls.get_user_current_rank(session, member_id)
+
+            # Solo promover si el nuevo rango es mayor
+            if not current_rank_id or calculated_rank_id > current_rank_id:
+                return cls.promote_user_rank(session, member_id, calculated_rank_id)
+
+            return False
+
+        except Exception as e:
+            print(f"❌ Error verificando rango de usuario {member_id}: {e}")
+            return False
+
+    @classmethod
     def _get_current_period(cls, session) -> Optional[Periods]:
         """
         Obtiene el período actual activo.
@@ -202,7 +367,7 @@ class RankService:
         """
         try:
             current_date = get_mexico_now()
-            
+
             current_period = session.exec(
                 sqlmodel.select(Periods)
                 .where(
@@ -210,9 +375,9 @@ class RankService:
                     (Periods.ends_on >= current_date)
                 )
             ).first()
-            
+
             return current_period
-            
+
         except Exception as e:
             print(f"❌ Error obteniendo período actual: {e}")
             return None

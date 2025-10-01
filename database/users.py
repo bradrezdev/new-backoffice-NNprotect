@@ -1,6 +1,6 @@
 import reflex as rx
 import bcrypt
-from sqlmodel import Field, func
+from sqlmodel import Field, func, UniqueConstraint
 from typing import Optional
 from enum import Enum
 from datetime import datetime, date, timezone
@@ -17,8 +17,12 @@ class UserStatus(Enum):
 
 class Users(rx.Model, table=True):
     """
-    Modelo principal de usuarios con timestamps México Central (UTC - 6h).
+    Modelo principal de usuarios con timestamps en UTC puro.
     """
+    __table_args__ = (
+        UniqueConstraint('member_id', name='uq_users_member_id'),
+    )
+
     # Clave primaria
     id: int | None = Field(default=None, primary_key=True, index=True)
 
@@ -40,21 +44,23 @@ class Users(rx.Model, table=True):
 
     # Estado y estructura de red
     status: UserStatus = Field(default=UserStatus.NO_QUALIFIED)
-    sponsor_id: int | None = Field(default=None)  # Temporal - sin FK para evitar problemas circulares
+    sponsor_id: int | None = Field(default=None, foreign_key="users.member_id")
     referral_link: str | None = Field(default=None, unique=True, index=True)
 
-    # ✅ Timestamps México Central (UTC - 6 horas)
+    # Cache de PV acumulado (Personal Volume)
+    pv_cache: int = Field(default=0, index=True)
+
+    # Cache de PVG acumulado (Puntos de Volumen Grupal)
+    pvg_cache: int = Field(default=0, index=True)
+
+    # Timestamps en UTC puro (conversión a timezone local en UI)
     created_at: datetime = Field(
-        default_factory=get_mexico_now,
-        sa_column_kwargs={
-            "server_default": func.now() - func.interval('6 hours')
-        }
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=get_mexico_now,
-        sa_column_kwargs={
-            "server_default": func.now() - func.interval('6 hours')
-        }
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column_kwargs={"server_default": func.now()}
     )
     
     @property

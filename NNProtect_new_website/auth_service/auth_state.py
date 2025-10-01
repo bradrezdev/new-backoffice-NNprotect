@@ -55,26 +55,9 @@ class AuthenticationManager:
     
     @staticmethod
     def get_jwt_secret() -> str:
-        """Obtiene la clave JWT con detección robusta de entorno."""
-        is_production = (
-            os.environ.get("REFLEX_ENV") == "prod" or 
-            not os.path.exists(".env") or
-            "reflex.dev" in os.environ.get("HOSTNAME", "")
-        )
-        
-        if is_production:
-            # En producción, usar clave hardcodeada
-            print("DEBUG: Usando JWT secret de PRODUCCIÓN")
-            return "cd3de0d6ca1fe14e1d1893137218613d76d63f88902412c204882deec8681d7b"
-        else:
-            # En desarrollo, usar .env
-            load_dotenv()
-            jwt_secret = os.environ.get("JWT_SECRET_KEY")
-            if not jwt_secret:
-                print("DEBUG: JWT_SECRET_KEY no encontrada en .env, usando fallback")
-                return "cd3de0d6ca1fe14e1d1893137218613d76d63f88902412c204882deec8681d7b"
-            print("DEBUG: Usando JWT secret desde .env")
-            return jwt_secret
+        """Obtiene la clave JWT según el entorno (Principio DRY)."""
+        from ..utils.environment import Environment
+        return Environment.get_jwt_secret()
 
     @classmethod
     def create_jwt_token(cls, user: Users) -> str:
@@ -98,11 +81,9 @@ class AuthenticationManager:
             else:
                 token_str = str(token)
                 
-            print(f"DEBUG: Token generado exitosamente (longitud: {len(token_str)})")
             return token_str
             
         except Exception as e:
-            print(f"DEBUG: Error creando JWT token: {str(e)}")
             raise Exception(f"Error generando token JWT: {str(e)}")
 
     @classmethod
@@ -114,14 +95,11 @@ class AuthenticationManager:
         try:
             jwt_secret_key = cls.get_jwt_secret()
             decoded = jwt.decode(token, jwt_secret_key, algorithms=["HS256"])
-            print("DEBUG: Token decodificado exitosamente")
             return decoded
             
         except jwt.ExpiredSignatureError:
-            print("DEBUG: Token expirado")
             return {}
         except Exception as e:
-            print(f"DEBUG: Error decodificando token: {e}")
             return {}
 
     @staticmethod
@@ -418,17 +396,9 @@ class RegistrationManager:
 
     @staticmethod
     def get_base_url() -> str:
-        """Obtiene la URL base de la aplicación."""
-        is_production = (
-            os.environ.get("REFLEX_ENV") == "prod" or 
-            not os.path.exists(".env") or
-            "reflex.dev" in os.environ.get("HOSTNAME", "")
-        )
-
-        if is_production:
-            return "https://codebradrez.tech/register"
-        else:
-            return "http://localhost:3000/register"
+        """Obtiene la URL base de la aplicación (Principio DRY)."""
+        from ..utils.environment import Environment
+        return Environment.get_base_url()
 
     @staticmethod
     def create_user_record(session, member_id: int, username: str, email: str,
@@ -765,7 +735,6 @@ class AuthState(rx.State):
         NUEVO: Login híbrido Supabase Auth + datos MLM.
         Ahora usa email como identificador principal.
         """
-        print("🔐 Iniciando login híbrido Supabase + MLM...")
         self.is_loading = True
         self.error_message = ""
         yield
@@ -796,8 +765,6 @@ class AuthState(rx.State):
                 self.is_loading = False
                 return
                 
-            print(f"✅ Autenticado en Supabase: {supabase_user_id}")
-
             # ✅ PASO 2: CARGAR DATOS MLM
             try:
                 complete_user_data = MLMUserManager.load_complete_user_data(supabase_user_id)
@@ -821,7 +788,6 @@ class AuthState(rx.State):
                 # Cargar datos extendidos del perfil
                 self.profile_data = complete_user_data
                 
-                print(f"🎉 Login híbrido exitoso - Member ID: {complete_user_data['member_id']}")
                 yield rx.redirect("/dashboard")
                 return
                 
@@ -1041,37 +1007,69 @@ class AuthState(rx.State):
             self.is_logged_in = False
             self.logged_user_data = {}
             return
-        
+
         user_id = payload.get("id")
         if not user_id:
             return
-            
+
         try:
             with rx.session() as session:
                 user = session.exec(
                     sqlmodel.select(Users).where(Users.id == user_id)
                 ).first()
-                
+
                 if not user:
                     self.is_logged_in = False
                     self.logged_user_data = {}
                     self.profile_data = {}
                     return
-                
+
                 self.is_logged_in = True
                 self.logged_user_data = {
                     "id": user.id,
-                    "username": f"{user.first_name} {user.last_name}".strip(),  # Concatenar nombres
-                    "email": user.email_cache,  # Usar email_cache
+                    "username": f"{user.first_name} {user.last_name}".strip(),
+                    "email": user.email_cache,
                     "member_id": user.member_id,
                     "status": user.status.value if hasattr(user.status, 'value') else str(user.status),
                 }
-                
-                # Cargar datos extendidos del perfil
-                self.profile_data = UserDataManager.load_user_profile_data(user_id)
-                
+
+                # Cargar datos completos del perfil incluyendo rangos y datos MLM
+                if user.supabase_user_id:
+                    complete_data = MLMUserManager.load_complete_user_data(user.supabase_user_id)
+                    if complete_data:
+                        self.profile_data = complete_data
+                    else:
+                        # Fallback: cargar datos básicos manualmente
+                        self.profile_data = self._build_basic_profile_data(session, user)
+                else:
+                    # Fallback para usuarios sin supabase_user_id
+                    self.profile_data = self._build_basic_profile_data(session, user)
+
         except Exception as e:
             print(f"DEBUG: Error cargando usuario desde token: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _build_basic_profile_data(self, session, user: Users) -> dict:
+        """Construye datos básicos del perfil cuando no hay supabase_user_id."""
+        current_month_rank = MLMUserManager.get_user_current_month_rank(session, user.member_id)
+        highest_rank = MLMUserManager.get_user_highest_rank(session, user.member_id)
+
+        return {
+            "id": user.id,
+            "member_id": user.member_id,
+            "firstname": user.first_name or "",
+            "lastname": user.last_name or "",
+            "full_name": f"{user.first_name or ''} {user.last_name or ''}".strip(),
+            "profile_name": f"{user.first_name or ''} {user.last_name or ''}".strip(),
+            "email": user.email_cache or "",
+            "referral_link": user.referral_link or "",
+            "pv_cache": user.pv_cache,
+            "pvg_cache": user.pvg_cache,
+            "current_month_rank": current_month_rank,
+            "highest_rank": highest_rank,
+            "sponsor_data": MLMUserManager.load_sponsor_data(session, user)
+        }
 
     @rx.event
     def check_login(self):

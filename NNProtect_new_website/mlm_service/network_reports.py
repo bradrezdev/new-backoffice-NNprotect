@@ -298,7 +298,7 @@ def network_reports() -> rx.Component:
 									rx.hstack(
 										rx.vstack(
 											rx.text("Volumen personal:", font_weight="bold"),
-											rx.text("2,930", color="#32D74B", font_size="2rem"),
+											rx.text(AuthState.profile_data.get("pv_cache"), color="#32D74B", font_size="2rem"),
 											align="center",
 											spacing="1"
 										),
@@ -564,7 +564,7 @@ def network_reports() -> rx.Component:
 				margin_bottom="2em",
 				max_width="1920px",
 				width="100%",
-				on_mount=NetworkReportsState.load_all_registrations,
+				on_mount=[AuthState.load_user_from_token, NetworkReportsState.load_all_registrations],
 			),
 			#width="100%",
 		),
@@ -691,7 +691,7 @@ def network_reports() -> rx.Component:
 						rx.vstack(
 							rx.hstack(
 								rx.text("Volumen personal:", font_weight="bold", font_size="0.9rem"),
-								rx.text("2,930", color="#32D74B", font_size="1.2rem", font_weight="bold"),
+								rx.text(AuthState.profile_data.get("pv_cache"), color="#32D74B", font_size="1.2rem", font_weight="bold"),
 								justify="between",
 								width="100%"
 							),

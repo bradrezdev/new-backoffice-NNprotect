@@ -66,8 +66,16 @@ class Products(rx.Model, table=True):
     # Etiqueta para asignar como "nuevo" a ciertos productos
     is_new: bool = Field(default=False)
 
-    # Entero para asignar un valor de cuántas veces se ha comprado el producto
-    purchase_count: int = Field(default=0)
+    def get_purchase_count(self, db_session):
+        """
+        Calcula purchase count dinámicamente desde transactions.
+        Evita desincronización de datos redundantes (Principio DRY).
+        """
+        from database.transactions import Transactions
+        return db_session.query(Transactions).filter(
+            Transactions.product_id == self.id,
+            Transactions.payment_confirmed_at.isnot(None)
+        ).count()
 
     def __repr__(self):
-        return f"<Product(id={self.id}, name='{self.product_name}', type='{self.type}', is_new={self.is_new}, purchase_count={self.purchase_count})>"
+        return f"<Product(id={self.id}, name='{self.product_name}', type='{self.type}', is_new={self.is_new})>"

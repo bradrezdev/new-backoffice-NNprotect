@@ -12,6 +12,7 @@ from .mlm_service.income_reports import income_reports
 from .auth.login import login
 from .auth.new_register import register
 from .auth.register_noSponsor import register_noSponsor
+from .auth.welcome_page import welcome_page
 
 # Product Service
 from .product_service.store import store
@@ -38,6 +39,10 @@ from rxconfig import config
 from .auth_service.auth_state import AuthState
 
 from database import *
+from database import initialize_database
+
+# Importar SchedulerService para tareas automáticas
+from .mlm_service.scheduler_service import SchedulerService
 
 def index() -> rx.Component:
     # Welcome Page (Index)
@@ -333,7 +338,7 @@ def index() -> rx.Component:
                         rx.box(
                             rx.vstack(
                                 rx.text("Volumen Personal", font_size="0.8rem", color="black", text_align="center"),
-                                rx.text("2,930", font_size="1.3rem", font_weight="bold", color="black", text_align="center"),
+                                rx.text(AuthState.profile_data.get("pv_cache", 0), font_size="1.3rem", font_weight="bold", color="black", text_align="center"),
                                 spacing="1"
                             ),
                             bg="#32D74B",
@@ -417,13 +422,23 @@ def index() -> rx.Component:
                     rx.box(
                         rx.vstack(
                             rx.text("Progresión siguiente rango", font_size="0.9rem", color="white", text_align="center"),
-                            rx.text("754,654 VG – 1,300,000 VG", font_size="1.1rem", font_weight="bold", color="white", text_align="center"),
+                            rx.text(
+                                rx.cond(
+                                    AuthState.profile_data.get("pvg_cache"),
+                                    f"{AuthState.profile_data.get('pvg_cache', 0)} PVG",
+                                    "0 PVG"
+                                ),
+                                font_size="1.1rem",
+                                font_weight="bold",
+                                color="white",
+                                text_align="center"
+                            ),
                             rx.progress(
                                 bg="#D0D7FF",
                                 fill_color="#0039F2",
                                 height="6px",
                                 width="100%",
-                                value=754654,
+                                value=AuthState.profile_data.get("pvg_cache", 0),
                                 max=1300000,
                             ),
                             spacing="2"
@@ -507,7 +522,7 @@ def index() -> rx.Component:
                             rx.box(
                                 rx.vstack(
                                     rx.text("Billetera", font_size="0.8rem", text_align="center"),
-                                    rx.text("$53,324,034", font_size="1rem", font_weight="bold", text_align="center"),
+                                    rx.text(AuthState.profile_data.get("wallet_balance", 0), font_size="1rem", font_weight="bold", text_align="center"),
                                     spacing="1"
                                 ),
                                 bg=rx.color_mode_cond(
@@ -633,6 +648,7 @@ app.add_page(index, title="NN Protect | Dashboard", route="/dashboard")
 app.add_page(login, title="NN Protect | Iniciar sesión", route="/")
 app.add_page(register, title="NN Protect | Nuevo registro", route="/register")
 app.add_page(register_noSponsor, title="NN Protect | Registro sin patrocinador", route="/register_noSponsor")
+app.add_page(welcome_page, title="NN Protect | Bienvenido", route="/welcome")
 app.add_page(network, title="NN Protect | Red", route="/network")
 app.add_page(network_reports, title="NN Protect | Reportes de Red", route="/network_reports")
 app.add_page(income_reports, title="NN Protect | Reportes de Ingresos", route="/income_reports")
@@ -644,3 +660,9 @@ app.add_page(new_withdrawal, title="NN Protect | Nuevo Retiro", route="/new_with
 app.add_page(shipment_method, title="NN Protect | Método de Envío", route="/shipment_method")
 app.add_page(shopping_cart, title="NN Protect | Carrito de Compras", route="/shopping_cart")
 app.add_page(payment, title="NN Protect | Método de Pago", route="/payment")
+
+# Inicializar base de datos (crear periodo inicial si no existe)
+initialize_database()
+
+# Iniciar scheduler de tareas automáticas
+SchedulerService.start_scheduler()

@@ -24,34 +24,7 @@ def plusminus_buttons(product_id: int):
             on_click=lambda: CountProducts.decrement(product_id)
         ),
         rx.text(
-            rx.match(
-                product_id,
-                (1, CountProducts.count_1),
-                (2, CountProducts.count_2),
-                (3, CountProducts.count_3),
-                (4, CountProducts.count_4),
-                (5, CountProducts.count_5),
-                (6, CountProducts.count_6),
-                (7, CountProducts.count_7),
-                (8, CountProducts.count_8),
-                (9, CountProducts.count_9),
-                (10, CountProducts.count_10),
-                (11, CountProducts.count_11),
-                (12, CountProducts.count_12),
-                (13, CountProducts.count_13),
-                (14, CountProducts.count_14),
-                (15, CountProducts.count_15),
-                (16, CountProducts.count_16),
-                (17, CountProducts.count_17),
-                (18, CountProducts.count_18),
-                (19, CountProducts.count_19),
-                (20, CountProducts.count_20),
-                (21, CountProducts.count_21),
-                (22, CountProducts.count_22),
-                (23, CountProducts.count_23),
-                (24, CountProducts.count_24),
-                0  # default
-            ),
+            CountProducts.get_count_reactive.get(str(product_id), 0),
             font_size="0.9rem",
             font_weight="bold",
             min_width="40px",
@@ -643,15 +616,15 @@ def skincare_products_card(product_data: Dict) -> rx.Component:
 
 def sanitized_products_card(product_data: Dict) -> rx.Component:
     """
-    Tarjeta de producto para la sección "Cuidado de la piel".
-    Principio DRY: hereda propiedades de product_card_horizontal.
+    Tarjeta de producto para productos desinfectantes.
+    Principio DRY: reutiliza componente base con badge personalizado.
     """
     return rx.box(
         rx.vstack(
-            # Badge de cuidado de la piel
+            # Badge de desinfectante
             rx.badge(
-                "Cuidado de la piel",
-                color_scheme="violet",
+                "Desinfectante",
+                color_scheme="green",
                 size="2",
                 border_radius="12px",
                 position="absolute",
@@ -718,7 +691,7 @@ def sanitized_products_card(product_data: Dict) -> rx.Component:
                 ),
                 color="white",
                 _hover={"opacity": 0.9},
-                on_click=CountProducts.add_to_cart(product_data.get("id", 1)),
+                on_click=CountProducts.add_to_cart(product_data.get("id", 1))
             ),
             spacing="3",
             align="center",

@@ -20,3 +20,6 @@ class Periods(rx.Model, table=True):
                                  sa_column_kwargs={"server_default": func.now()})
     ends_on: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
                                  sa_column_kwargs={"server_default": func.now()})
+
+    # Fecha de cierre/finalización del periodo (None = activo)
+    closed_at: datetime | None = Field(default=None)

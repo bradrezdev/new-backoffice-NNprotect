@@ -62,14 +62,17 @@ class MLMUserManager:
             session.add(new_user)
             session.flush()
             
-            # Crear entrada en UserTreePath si hay sponsor
-            if sponsor_member_id and sponsor_member_id > 0:
-                user_tree_path = UserTreePath(
-                    sponsor_id=sponsor_member_id,  # member_id del sponsor
-                    user_id=member_id              # member_id del nuevo usuario
-                )
-                session.add(user_tree_path)
+            # Crear genealogía en UserTreePath
+            from .genealogy_service import GenealogyService
+            tree_created = GenealogyService.add_member_to_tree(
+                session,
+                new_member_id=member_id,
+                sponsor_id=sponsor_member_id
+            )
+            if tree_created:
                 print(f"✅ UserTreePath creado - Sponsor ID: {sponsor_member_id}, User ID: {member_id}")
+            else:
+                print(f"⚠️  No se pudo crear UserTreePath para usuario {member_id}")
             
             # Generar referral link
             base_url = MLMUserManager.get_base_url()
@@ -225,7 +228,10 @@ class MLMUserManager:
                 # ✅ NUEVO: Cargar rangos del usuario
                 current_month_rank = MLMUserManager.get_user_current_month_rank(session, user.member_id)
                 highest_rank = MLMUserManager.get_user_highest_rank(session, user.member_id)
-                
+
+                # ✅ NUEVO: Cargar balance de wallet
+                wallet_balance, wallet_currency = MLMUserManager.get_user_wallet_balance(session, user.member_id)
+
                 # Datos de retorno completos
                 mlm_data = {
                     "id": user.id,
@@ -242,10 +248,14 @@ class MLMUserManager:
                     "referral_link": user.referral_link,
                     "sponsor_id": user.sponsor_id,
                     "created_at": format_mexico_date(user.created_at) if user.created_at else '',  # ✅ MÉXICO TIMEZONE
-                    "created_at_iso": user.created_at.isoformat() if user.created_at else '',  # ✅ NUEVO: Formato ISO  
+                    "created_at_iso": user.created_at.isoformat() if user.created_at else '',  # ✅ NUEVO: Formato ISO
                     "last_login": format_mexico_datetime(user.updated_at) if user.updated_at else '',  # ✅ MÉXICO TIMEZONE
                     "current_month_rank": current_month_rank,
                     "highest_rank": highest_rank,
+                    "pv_cache": user.pv_cache,  # ✅ NUEVO: PV acumulado
+                    "pvg_cache": user.pvg_cache,  # ✅ NUEVO: PVG acumulado
+                    "wallet_balance": wallet_balance,  # ✅ NUEVO: Balance de billetera virtual
+                    "wallet_currency": wallet_currency,  # ✅ NUEVO: Moneda de la billetera
                 }
 
                 # ✅ NUEVO: Cargar datos del sponsor
@@ -406,11 +416,11 @@ class MLMUserManager:
                     # Buscar todos los usuarios directos de current_id
                     direct_users = session.exec(
                         sqlmodel.select(UserTreePath)
-                        .where(UserTreePath.sponsor_id == current_id)
+                        .where(UserTreePath.ancestor_id == current_id)
                     ).all()
                     
                     for tree_path in direct_users:
-                        child_id = tree_path.user_id
+                        child_id = tree_path.descendant_id
                         child_level = current_level + 1
                         
                         # Si encontramos al usuario buscado
@@ -437,64 +447,63 @@ class MLMUserManager:
     def get_network_descendants(sponsor_member_id: int, root_user_id: Optional[int] = None) -> list:
         """
         Obtiene toda la red descendente de un sponsor usando UserTreePath.
-        
+        Optimizado con Path Enumeration Pattern - elimina recursión innecesaria.
+
         Args:
             sponsor_member_id: member_id del sponsor principal
             root_user_id: member_id del usuario autenticado (para calcular niveles)
-            
+
         Returns:
             Lista de diccionarios con datos de usuarios descendentes
         """
         try:
             with rx.session() as session:
-                descendants = []
-                
-                # Buscar todos los paths que tienen como sponsor_id el member_id dado
-                tree_paths = session.exec(
-                    sqlmodel.select(UserTreePath)
-                    .where(UserTreePath.sponsor_id == sponsor_member_id)
+                # Query optimizado con JOIN para obtener todos los datos en una sola consulta
+                descendants_query = session.exec(
+                    sqlmodel.select(Users, UserTreePath, UserProfiles)
+                    .join(UserTreePath, Users.member_id == UserTreePath.descendant_id)
+                    .outerjoin(UserProfiles, Users.id == UserProfiles.user_id)
+                    .where(
+                        UserTreePath.ancestor_id == sponsor_member_id,
+                        UserTreePath.depth > 0  # Excluir self-reference
+                    )
+                    .order_by(UserTreePath.depth, Users.member_id)
                 ).all()
-                
-                for tree_path in tree_paths:
-                    # Buscar el usuario correspondiente por member_id
-                    user = session.exec(
-                        sqlmodel.select(Users).where(Users.member_id == tree_path.user_id)
-                    ).first()
-                    
-                    if not user:
-                        continue
-                    # Cargar perfil del usuario
-                    user_profile = session.exec(
-                        sqlmodel.select(UserProfiles).where(UserProfiles.user_id == user.id)
-                    ).first()
-                    
-                    # Cargar información del patrocinador
+
+                descendants = []
+                sponsor_cache = {}  # Cache para evitar queries repetidas de sponsors
+
+                for user, tree_path, user_profile in descendants_query:
+                    # Obtener datos del sponsor (con cache)
                     sponsor_data = {}
-                    if sponsor_member_id:
-                        sponsor = session.exec(
-                            sqlmodel.select(Users).where(Users.member_id == sponsor_member_id)
-                        ).first()
-                        if sponsor:
-                            sponsor_profile = session.exec(
-                                sqlmodel.select(UserProfiles).where(UserProfiles.user_id == sponsor.id)
+                    if user.sponsor_id:
+                        if user.sponsor_id not in sponsor_cache:
+                            sponsor_result = session.exec(
+                                sqlmodel.select(Users, UserProfiles)
+                                .outerjoin(UserProfiles, Users.id == UserProfiles.user_id)
+                                .where(Users.member_id == user.sponsor_id)
                             ).first()
-                            sponsor_data = {
-                                "id": sponsor.id,
-                                "member_id": sponsor.member_id,
-                                "first_name": sponsor.first_name or "",
-                                "last_name": sponsor.last_name or "",
-                                "full_name": f"{sponsor.first_name or ''} {sponsor.last_name or ''}".strip(),
-                                "phone": sponsor_profile.phone_number if sponsor_profile else "",
-                                "email": sponsor.email_cache or ""
-                            }
-                    
+
+                            if sponsor_result:
+                                sponsor_user, sponsor_profile = sponsor_result
+                                sponsor_cache[user.sponsor_id] = {
+                                    "id": sponsor_user.id,
+                                    "member_id": sponsor_user.member_id,
+                                    "first_name": sponsor_user.first_name or "",
+                                    "last_name": sponsor_user.last_name or "",
+                                    "full_name": f"{sponsor_user.first_name or ''} {sponsor_user.last_name or ''}".strip(),
+                                    "phone": sponsor_profile.phone_number if sponsor_profile else "",
+                                    "email": sponsor_user.email_cache or ""
+                                }
+
+                        sponsor_data = sponsor_cache.get(user.sponsor_id, {})
+
                     # Formatear fecha a DD/MM/YYYY
                     formatted_date = user.created_at.strftime("%d/%m/%Y") if user.created_at else "N/A"
-                    
-                    # Calcular nivel del usuario respecto al usuario raíz autenticado
-                    actual_root_id = root_user_id if root_user_id is not None else sponsor_member_id
-                    user_level = MLMUserManager.get_user_level(user.member_id, actual_root_id)
-                    
+
+                    # Nivel ya viene directamente de tree_path.depth (más eficiente)
+                    user_level = tree_path.depth
+
                     user_data = {
                         "id": user.id,
                         "member_id": user.member_id,
@@ -505,22 +514,19 @@ class MLMUserManager:
                         "status": user.status.value if hasattr(user.status, 'value') else str(user.status),
                         "created_at": formatted_date,
                         "phone": user_profile.phone_number if user_profile else "",
-                        "sponsor_member_id": sponsor_member_id,
-                        "level": user_level,  # ✅ NUEVO: Nivel del usuario
-                        # Agregar campos directos para patrocinador
-                        "sponsor_full_name": sponsor_data.get("full_name", "N/A") if sponsor_data else "N/A",
-                        "sponsor_phone": sponsor_data.get("phone", "N/A") if sponsor_data else "N/A"
+                        "sponsor_member_id": sponsor_data.get("member_id", None),
+                        "level": user_level,
+                        "sponsor_full_name": sponsor_data.get("full_name", "N/A"),
+                        "sponsor_phone": sponsor_data.get("phone", "N/A")
                     }
                     descendants.append(user_data)
-                    
-                    # Buscar recursivamente los descendientes de este usuario
-                    sub_descendants = MLMUserManager.get_network_descendants(user.member_id, actual_root_id)
-                    descendants.extend(sub_descendants)
-                
+
                 return descendants
-                
+
         except Exception as e:
             print(f"❌ Error obteniendo red descendente: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
     @staticmethod
@@ -596,32 +602,39 @@ class MLMUserManager:
     @staticmethod
     def get_monthly_registrations(sponsor_member_id: int) -> list:
         """
-        Obtiene las inscripciones del mes actual de la red de un sponsor.
-        
+        Obtiene las inscripciones del mes actual de la red de un sponsor
+        según el período corriendo en ese instante.
+
         Args:
             sponsor_member_id: member_id del sponsor principal
-            
+
         Returns:
-            Lista de usuarios registrados en el mes actual
+            Lista de usuarios registrados en el período actual
         """
         try:
-            # ✅ USAR FECHA DE MÉXICO
-            today = get_mexico_date()
-            
-            # Calcular primer y último día del mes actual
-            first_day_of_month = today.replace(day=1)  # Primer día del mes
-            
-            # Último día del mes (usar el día antes del primer día del siguiente mes)
-            if today.month == 12:
-                last_day_of_month = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
-            else:
-                last_day_of_month = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
-            
+            from .period_service import PeriodService
+
+            # Obtener el período actual
+            with rx.session() as session:
+                current_period = PeriodService.get_current_period(session)
+
+                if not current_period:
+                    print("⚠️ No hay período actual activo")
+                    return []
+
+                # Convertir starts_on y ends_on a date objects para comparación
+                start_date = current_period.starts_on.date()
+                end_date = current_period.ends_on.date()
+
+                print(f"📅 Filtrando registros por período actual: {current_period.name} ({start_date} a {end_date})")
+
             # Reutilizar lógica común usando POO
-            return MLMUserManager._filter_registrations_by_date_range(sponsor_member_id, first_day_of_month, last_day_of_month)
-            
+            return MLMUserManager._filter_registrations_by_date_range(sponsor_member_id, start_date, end_date)
+
         except Exception as e:
             print(f"❌ Error obteniendo inscripciones del mes: {e}")
+            import traceback
+            traceback.print_exc()
             return []
 
     # 🎯 MÉTODOS PARA GESTIÓN AUTOMÁTICA DE RANGOS
@@ -629,35 +642,36 @@ class MLMUserManager:
     def get_user_current_month_rank(session, member_id: int) -> str:
         """
         Obtiene el rango actual del mes del usuario (name del rango más alto del mes).
-        Retorna 1 (Sin rango) si no tiene rangos este mes.
+        Retorna "Sin rango" si no tiene rangos este mes.
         """
         try:
-            from datetime import datetime
-            from NNProtect_new_website.utils.timezone_mx import get_mexico_now
+            from datetime import datetime, timezone
+            from database.user_rank_history import UserRankHistory
+            from database.ranks import Ranks
 
-            # Obtener fecha actual en México
-            now = get_mexico_now()
+            # Usar UTC para comparación (achieved_on está en UTC)
+            now = datetime.now(timezone.utc)
             current_year = now.year
             current_month = now.month
 
-            # ✅ JOIN explícito entre Ranks y UserRankHistory
-            from database.user_rank_history import UserRankHistory
-            from database.ranks import Ranks
+            # JOIN explícito entre Ranks y UserRankHistory
             latest_rank = session.exec(
                 sqlmodel.select(Ranks)
-                .join(UserRankHistory, Ranks.id == UserRankHistory.rank_id)  # ✅ JOIN explícito
+                .join(UserRankHistory, Ranks.id == UserRankHistory.rank_id)
                 .where(
                     UserRankHistory.member_id == member_id,
                     sqlmodel.extract('year', UserRankHistory.achieved_on) == current_year,
                     sqlmodel.extract('month', UserRankHistory.achieved_on) == current_month
                 )
-                .order_by(sqlmodel.desc(UserRankHistory.rank_id))  # ✅ Ordenar por rank_id descendente
+                .order_by(sqlmodel.desc(UserRankHistory.rank_id))
             ).first()
 
-            return latest_rank.name if latest_rank else "Sin rango"  # ✅ Retornar name, no id
+            return latest_rank.name if latest_rank else "Sin rango"
 
         except Exception as e:
             print(f"❌ Error obteniendo rango mensual de usuario {member_id}: {e}")
+            import traceback
+            traceback.print_exc()
             return "Sin rango"
 
     @staticmethod
@@ -678,10 +692,12 @@ class MLMUserManager:
                 .order_by(sqlmodel.desc(UserRankHistory.rank_id))
             ).first()
 
-            return highest_rank.name if highest_rank else "Sin rango"  # ✅ Retornar name, no id
+            return highest_rank.name if highest_rank else "Sin rango"
 
         except Exception as e:
             print(f"❌ Error obteniendo rango máximo de usuario {member_id}: {e}")
+            import traceback
+            traceback.print_exc()
             return "Sin rango"
 
     @staticmethod
@@ -706,3 +722,32 @@ class MLMUserManager:
         except Exception as e:
             print(f"❌ Error obteniendo historial de rangos: {e}")
             return []
+
+    @staticmethod
+    def get_user_wallet_balance(session, member_id: int) -> tuple:
+        """
+        Obtiene el balance actual de la billetera virtual del usuario.
+
+        Args:
+            session: Sesión de base de datos
+            member_id: ID del usuario
+
+        Returns:
+            Tupla (balance, currency) - (0.0, "MXN") si no tiene wallet
+        """
+        try:
+            from database.wallet import Wallets
+
+            wallet = session.exec(
+                sqlmodel.select(Wallets).where(Wallets.member_id == member_id)
+            ).first()
+
+            if wallet:
+                return (wallet.balance, wallet.currency)
+            else:
+                # Retornar valores por defecto si no tiene wallet
+                return (0.0, "MXN")
+
+        except Exception as e:
+            print(f"❌ Error obteniendo balance de wallet para usuario {member_id}: {e}")
+            return (0.0, "MXN")

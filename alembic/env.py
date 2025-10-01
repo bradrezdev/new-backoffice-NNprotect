@@ -5,20 +5,28 @@ from sqlalchemy import pool
 
 from alembic import context
 
+# ✅ Import Reflex models
+import reflex as rx
+from NNProtect_new_website.utils.environment import Environment
+
+# ✅ Import all database models
+import database
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# ✅ Set database URL from environment
+DATABASE_URL = Environment.get_database_url()
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+# ✅ Use Reflex metadata for autogenerate support
+target_metadata = rx.Model.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
