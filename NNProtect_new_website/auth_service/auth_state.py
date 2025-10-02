@@ -64,15 +64,22 @@ class AuthenticationManager:
         """Crea un JWT token para el usuario autenticado."""
         try:
             jwt_secret_key = cls.get_jwt_secret()
+            print(f"🔑 Secret key para encode (primeros 20 chars): {jwt_secret_key[:20]}...")
             
             user_id = int(user.id) if user.id is not None else 0
             username = f"{user.first_name} {user.last_name}".strip() if user.first_name else "unknown"
             
+            # Convertir datetime a timestamp Unix (segundos desde epoch)
+            exp_datetime = get_mexico_now() + datetime.timedelta(minutes=60)
+            exp_timestamp = int(exp_datetime.timestamp())
+            
             login_token = {
                 "id": user_id,
                 "username": username,
-                "exp": get_mexico_now() + datetime.timedelta(minutes=60),  # ✅ MÉXICO TIMEZONE
+                "exp": exp_timestamp,  # ✅ Unix timestamp en lugar de datetime
             }
+            
+            print(f"📦 Payload a encodear: {login_token}")
             
             token = jwt.encode(login_token, jwt_secret_key, algorithm="HS256")
             
@@ -80,26 +87,37 @@ class AuthenticationManager:
                 token_str = token.decode('utf-8')
             else:
                 token_str = str(token)
-                
+            
+            print(f"✅ Token generado (primeros 50 chars): {token_str[:50]}...")
             return token_str
             
         except Exception as e:
+            print(f"🔥 Error generando token JWT: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             raise Exception(f"Error generando token JWT: {str(e)}")
 
     @classmethod
     def decode_jwt_token(cls, token: str) -> Dict[str, Any]:
         """Decodifica el JWT token para obtener los datos del usuario."""
         if not token or "." not in token:
+            print(f"🔴 decode_jwt_token: Token vacío o inválido (sin puntos)")
             return {}
             
         try:
             jwt_secret_key = cls.get_jwt_secret()
+            print(f"🔑 Secret key para decode (primeros 20 chars): {jwt_secret_key[:20]}...")
             decoded = jwt.decode(token, jwt_secret_key, algorithms=["HS256"])
+            print(f"✅ Token decodificado exitosamente: {decoded}")
             return decoded
             
         except jwt.ExpiredSignatureError:
+            print(f"⏰ Token expirado (ExpiredSignatureError)")
             return {}
         except Exception as e:
+            print(f"🔥 Error decodificando token: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {}
 
     @staticmethod
@@ -738,82 +756,176 @@ class AuthState(rx.State):
         self.new_state = new_state
 
     # Métodos principales de autenticación
-    @rx.event
+    @rx.event(background=True)
     async def login_user(self):
         """
         NUEVO: Login híbrido Supabase Auth + datos MLM.
         Ahora usa email como identificador principal.
+        
+        🔧 FIX: Marcado como background=True para evitar LockExpiredError
+        en operaciones de autenticación que toman >10s (queries a Supabase + BD MLM).
+        
+        ⏱️  PROFILING: Agregados timestamps para identificar bottlenecks.
         """
-        self.is_loading = True
-        self.error_message = ""
-        yield
+        import time
+        from datetime import datetime
+        
+        def _timestamp():
+            return datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        
+        t_start = time.time()
+        print(f"\n{'='*80}")
+        print(f"⏱️  [{_timestamp()}] LOGIN_USER - INICIO")
+        print(f"{'='*80}\n")
+        
+        async with self:
+            self.is_loading = True
+            self.error_message = ""
+            yield
+        
+        t_after_init = time.time()
+        print(f"⏱️  [{_timestamp()}] Fase 0: Init state = {t_after_init - t_start:.3f}s")
         
         try:
             await asyncio.sleep(0.1)
             
             # ✅ VALIDACIÓN BÁSICA - ahora usa email en lugar de username
-            login_identifier = self.email or self.username  # Backward compatibility
+            async with self:
+                login_identifier = self.email or self.username  # Backward compatibility
+            
             if not login_identifier or not self.password:
-                self.error_message = "El email y la contraseña no pueden estar vacíos."
-                self.is_loading = False
+                async with self:
+                    self.error_message = "El email y la contraseña no pueden estar vacíos."
+                    self.is_loading = False
                 return
 
-            # ✅ PASO 1: AUTENTICAR CON SUPABASE
+            # ⚡ FASE 1: AUTENTICAR CON SUPABASE
+            t_before_supabase = time.time()
+            print(f"⏱️  [{_timestamp()}] Fase 1: Supabase Auth - INICIO")
+            
             success, message, supabase_user_data = await SupabaseAuthManager.sign_in_user(
                 login_identifier, self.password
             )
             
+            t_after_supabase = time.time()
+            supabase_time = t_after_supabase - t_before_supabase
+            print(f"✅ [{_timestamp()}] Fase 1: Supabase Auth - COMPLETADO en {supabase_time:.3f}s")
+            
             if not success or not supabase_user_data:
-                self.error_message = message or "Credenciales incorrectas"
-                self.is_loading = False
+                async with self:
+                    self.error_message = message or "Credenciales incorrectas"
+                    self.is_loading = False
                 return
             
             supabase_user_id = supabase_user_data.get('id')
             if not supabase_user_id:
-                self.error_message = "Error al obtener ID de usuario de Supabase"
-                self.is_loading = False
+                async with self:
+                    self.error_message = "Error al obtener ID de usuario de Supabase"
+                    self.is_loading = False
                 return
-                
-            # ✅ PASO 2: CARGAR DATOS MLM
+            
+            # ⚡ FASE 2: CARGAR DATOS MLM (versión async)
+            t_before_mlm = time.time()
+            print(f"⏱️  [{_timestamp()}] Fase 2: MLM Data Load - INICIO")
+            
             try:
-                complete_user_data = MLMUserManager.load_complete_user_data(supabase_user_id)
+                complete_user_data = await MLMUserManager.load_complete_user_data_async(supabase_user_id)
+                
+                t_after_mlm = time.time()
+                mlm_time = t_after_mlm - t_before_mlm
+                print(f"✅ [{_timestamp()}] Fase 2: MLM Data Load - COMPLETADO en {mlm_time:.3f}s")
                 
                 if not complete_user_data:
-                    self.error_message = "Usuario no encontrado en el sistema MLM"
-                    self.is_loading = False
+                    async with self:
+                        self.error_message = "Usuario no encontrado en el sistema MLM"
+                        self.is_loading = False
                     return
                 
-                # ✅ PASO 3: ESTABLECER SESIÓN
-                self.is_logged_in = True
-                self.logged_user_data = {
-                    "id": complete_user_data["id"],
-                    "username": f"{complete_user_data['firstname']} {complete_user_data['lastname']}".strip(),
-                    "email": supabase_user_data.get('email', ''),
-                    "member_id": complete_user_data["member_id"],
-                    "status": complete_user_data["status"],
-                    "supabase_user_id": supabase_user_data.get('id'),
-                }
+                # ⚡ FASE 3: GENERAR TOKEN JWT
+                t_before_jwt = time.time()
+                print(f"⏱️  [{_timestamp()}] Fase 3: JWT Generation - INICIO")
                 
-                # Cargar datos extendidos del perfil
-                self.profile_data = complete_user_data
+                with rx.session() as session:
+                    user = session.exec(
+                        sqlmodel.select(Users).where(Users.id == complete_user_data["id"])
+                    ).first()
+                    
+                    if not user:
+                        async with self:
+                            self.error_message = "Error al obtener usuario para generar token"
+                            self.is_loading = False
+                        return
+                    
+                    # Generar token JWT
+                    token = AuthenticationManager.create_jwt_token(user)
                 
-                yield rx.redirect("/dashboard")
-                return
+                t_after_jwt = time.time()
+                jwt_time = t_after_jwt - t_before_jwt
+                print(f"✅ [{_timestamp()}] Fase 3: JWT Generation - COMPLETADO en {jwt_time:.3f}s")
+                
+                # ⚡ FASE 4: ESTABLECER SESIÓN
+                t_before_session = time.time()
+                print(f"⏱️  [{_timestamp()}] Fase 4: Session Setup - INICIO")
+                
+                async with self:
+                    self.is_logged_in = True
+                    self.auth_token = token  # 🔑 GUARDAR TOKEN EN COOKIE
+                    self.logged_user_data = {
+                        "id": complete_user_data["id"],
+                        "username": f"{complete_user_data['firstname']} {complete_user_data['lastname']}".strip(),
+                        "email": supabase_user_data.get('email', ''),
+                        "member_id": complete_user_data["member_id"],
+                        "status": complete_user_data["status"],
+                        "supabase_user_id": supabase_user_data.get('id'),
+                    }
+                    
+                    # Cargar datos extendidos del perfil
+                    self.profile_data = complete_user_data
+                    
+                    print(f"✅ Token guardado en cookie (primeros 50 chars): {token[:50]}...")
+                    print(f"✅ is_logged_in establecido a: {self.is_logged_in}")
+                    print(f"✅ profile_data keys: {list(self.profile_data.keys())}")
+                    
+                    self.is_loading = False
+                    yield rx.redirect("/dashboard")
+                
+                t_after_session = time.time()
+                session_time = t_after_session - t_before_session
+                print(f"✅ [{_timestamp()}] Fase 4: Session Setup - COMPLETADO en {session_time:.3f}s")
+                
+                # RESUMEN DE TIEMPOS
+                t_end = time.time()
+                total_time = t_end - t_start
+                
+                print(f"\n{'='*80}")
+                print(f"📊 RESUMEN DE TIEMPOS")
+                print(f"{'='*80}")
+                print(f"Fase 0 - Init:            {(t_after_init - t_start):.3f}s")
+                print(f"Fase 1 - Supabase Auth:   {supabase_time:.3f}s ({supabase_time/total_time*100:.1f}%)")
+                print(f"Fase 2 - MLM Data:        {mlm_time:.3f}s ({mlm_time/total_time*100:.1f}%)")
+                print(f"Fase 3 - JWT:             {jwt_time:.3f}s ({jwt_time/total_time*100:.1f}%)")
+                print(f"Fase 4 - Session:         {session_time:.3f}s ({session_time/total_time*100:.1f}%)")
+                print(f"{'-'*80}")
+                print(f"TOTAL:                    {total_time:.3f}s")
+                print(f"{'='*80}\n")
+                
+                # ⚠️ NO usar 'return' aquí - dejar que el evento termine naturalmente
+                # para que Reflex sincronice la cookie con el navegador
                 
             except Exception as mlm_error:
                 print(f"❌ Error cargando datos MLM: {mlm_error}")
-                self.error_message = "Error cargando datos del usuario"
-                self.is_loading = False
+                async with self:
+                    self.error_message = "Error cargando datos del usuario"
+                    self.is_loading = False
                 return
         
         except Exception as e:
             print(f"❌ ERROR login híbrido: {e}")
             import traceback
             traceback.print_exc()
-            self.error_message = f"Error de login: {str(e)}"
-        
-        finally:
-            self.is_loading = False
+            async with self:
+                self.error_message = f"Error de login: {str(e)}"
+                self.is_loading = False
 
     @rx.event
     async def new_register_sponsor(self):
@@ -1011,29 +1123,50 @@ class AuthState(rx.State):
     @rx.event
     def load_user_from_token(self):
         """Carga datos del usuario desde token."""
+        print("\n" + "="*80)
+        print("🔐 LOAD_USER_FROM_TOKEN EJECUTÁNDOSE")
+        print("="*80)
+        print(f"📍 Contexto: Página cargando, verificando autenticación desde cookie")
+        print(f"🍪 Token en cookie: {self.auth_token[:50] if self.auth_token else 'VACÍO'}...")
+        
         payload = AuthenticationManager.decode_jwt_token(self.auth_token)
+        print(f"🔓 Payload decodificado: {payload}")
+        
         if not payload:
+            print("❌ ERROR: No hay payload válido - token inválido o expirado")
             self.is_logged_in = False
             self.logged_user_data = {}
+            print("="*80 + "\n")
             return
 
         user_id = payload.get("id")
+        print(f"🆔 User ID extraído del token: {user_id}")
+        
         if not user_id:
+            print("❌ ERROR: No hay user_id en el payload")
+            print("="*80 + "\n")
             return
 
         try:
+            print(f"🔍 Buscando usuario con ID {user_id} en BD...")
             with rx.session() as session:
                 user = session.exec(
                     sqlmodel.select(Users).where(Users.id == user_id)
                 ).first()
 
                 if not user:
+                    print(f"❌ ERROR: Usuario con ID {user_id} no encontrado en BD")
                     self.is_logged_in = False
                     self.logged_user_data = {}
                     self.profile_data = {}
+                    print("="*80 + "\n")
                     return
 
+                print(f"✅ Usuario encontrado: {user.first_name} {user.last_name} (Member ID: {user.member_id})")
+                
                 self.is_logged_in = True
+                print(f"🔓 is_logged_in establecido a: {self.is_logged_in}")
+                
                 self.logged_user_data = {
                     "id": user.id,
                     "username": f"{user.first_name} {user.last_name}".strip(),
@@ -1041,23 +1174,38 @@ class AuthState(rx.State):
                     "member_id": user.member_id,
                     "status": user.status.value if hasattr(user.status, 'value') else str(user.status),
                 }
+                print(f"👤 logged_user_data cargado: {self.logged_user_data}")
 
                 # Cargar datos completos del perfil incluyendo rangos y datos MLM
+                print(f"📋 Supabase User ID: {user.supabase_user_id}")
                 if user.supabase_user_id:
+                    print(f"🔄 Cargando datos MLM completos...")
                     complete_data = MLMUserManager.load_complete_user_data(user.supabase_user_id)
                     if complete_data:
                         self.profile_data = complete_data
+                        print(f"✅ profile_data cargado con datos MLM: {list(complete_data.keys())}")
                     else:
+                        print(f"⚠️  No se pudieron cargar datos MLM, usando fallback")
                         # Fallback: cargar datos básicos manualmente
                         self.profile_data = self._build_basic_profile_data(session, user)
+                        print(f"✅ profile_data cargado con fallback: {list(self.profile_data.keys())}")
                 else:
+                    print(f"⚠️  Usuario sin supabase_user_id, usando fallback")
                     # Fallback para usuarios sin supabase_user_id
                     self.profile_data = self._build_basic_profile_data(session, user)
+                    print(f"✅ profile_data cargado con fallback: {list(self.profile_data.keys())}")
+                
+                print(f"\n🎯 RESULTADO FINAL:")
+                print(f"   • is_logged_in: {self.is_logged_in}")
+                print(f"   • member_id: {self.logged_user_data.get('member_id')}")
+                print(f"   • profile_data keys: {list(self.profile_data.keys()) if self.profile_data else 'VACÍO'}")
+                print("="*80 + "\n")
 
         except Exception as e:
-            print(f"DEBUG: Error cargando usuario desde token: {e}")
+            print(f"❌ EXCEPTION en load_user_from_token: {e}")
             import traceback
             traceback.print_exc()
+            print("="*80 + "\n")
 
     def _build_basic_profile_data(self, session, user: Users) -> dict:
         """Construye datos básicos del perfil cuando no hay supabase_user_id."""

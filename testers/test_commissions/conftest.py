@@ -15,19 +15,22 @@ from sqlmodel import Session, create_engine, SQLModel, select
 from sqlalchemy.pool import StaticPool
 
 # Agregar path del proyecto
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.insert(0, project_root)
 
-from database.users import Users
-from database.products import Products
+# Importar directamente de los archivos para evitar conflictos de metaclases
+from database.users import Users, UserStatus
+from database.products import Products, ProductType, ProductPresentation
 from database.orders import Orders, OrderStatus
 from database.order_items import OrderItems
 from database.ranks import Ranks
 from database.periods import Periods
 from database.usertreepaths import UserTreePath
 from database.user_rank_history import UserRankHistory
-from database.comissions import Commissions
+from database.comissions import Commissions, BonusType
 from database.wallet import Wallets
 from database.exchange_rates import ExchangeRates
+
 from NNProtect_new_website.mlm_service.genealogy_service import GenealogyService
 
 
@@ -255,28 +258,28 @@ def test_network_multi_country(create_test_user):
 @pytest.fixture
 def test_kit_full_protect(db_session):
     """
-    Kit Full Protect - Genera PV pero NO VN.
-    ⚠️ CRÍTICO: Kits solo pagan Bono Rápido, NO Uninivel.
+    Kit Full Protect - Genera PV Y VN (CORREGIDO).
+    ✅ Kits pagan Bono Rápido pero NO Uninivel.
     """
     product = Products(
         SKU="KIT-FULL-TEST",
         product_name="Full Protect Kit (Test)",
         description="Kit completo de protección",
         presentation="kit",
-        type="kit",
+        type="suplemento",  # type es la categoría, NO indica si es kit
         # México
         pv_mx=2930,
-        vn_mx=0,  # ⚠️ CRÍTICO: Kits NO generan VN
+        vn_mx=2930,  # ✅ CORREGIDO: Kits SÍ generan VN
         price_mx=5790,
         public_mx=7900,
         # USA
         pv_usa=2930,
-        vn_usa=0,
+        vn_usa=2930,
         price_usa=320,
         public_usa=440,
         # Colombia
         pv_colombia=2930,
-        vn_colombia=0,
+        vn_colombia=2930,
         price_colombia=1300000,
         public_colombia=1800000,
         is_new=False
@@ -292,13 +295,14 @@ def test_kit_full_protect(db_session):
 def test_product_dna_60(db_session):
     """
     Producto DNA 60 Cápsulas - Genera PV y VN.
-    ✅ Productos pagan todos los bonos (Rápido, Uninivel, Directo).
+    ✅ Productos regulares pagan todos los bonos (Directo, Uninivel).
+    ❌ Productos regulares NO pagan Bono Rápido.
     """
     product = Products(
         SKU="DNA-60-TEST",
         product_name="DNA 60 Cápsulas (Test)",
         description="Suplemento DNA",
-        presentation="capsulas",
+        presentation="cápsulas",  # Usar valor correcto del enum
         type="suplemento",
         # México
         pv_mx=1465,

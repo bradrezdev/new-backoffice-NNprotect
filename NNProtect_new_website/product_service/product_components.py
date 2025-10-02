@@ -12,6 +12,7 @@ def plusminus_buttons(product_id: int):
     """
     Botones con contador reactivo directo.
     Principio KISS: acceso directo a variables de estado.
+    Reflex 0.6+: Event handlers con parámetros se pasan directamente.
     """
     return rx.hstack(
         rx.button(
@@ -24,7 +25,7 @@ def plusminus_buttons(product_id: int):
             border_radius="100px",
             min_width="36px",
             height="36px",
-            on_click=lambda: CountProducts.decrement(product_id)
+            on_click=CountProducts.decrement(product_id)  # ✅ CORREGIDO: sin lambda
         ),
         rx.text(
             CountProducts.get_count_reactive.get(str(product_id), 0),
@@ -43,7 +44,7 @@ def plusminus_buttons(product_id: int):
             border_radius="100px",
             min_width="36px",
             height="36px",
-            on_click=lambda: CountProducts.increment(product_id)
+            on_click=CountProducts.increment(product_id)  # ✅ CORREGIDO: sin lambda
         ),
         justify="center",
         spacing="2",

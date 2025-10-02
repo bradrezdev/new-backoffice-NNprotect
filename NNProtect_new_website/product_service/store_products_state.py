@@ -21,6 +21,9 @@ class CountProducts(rx.State):
     # Sistema de carrito - Principio KISS: variables simples y claras
     cart_total: int = 0
     cart_items: Dict[str, int] = {}
+    
+    # User ID para obtener precios correctos por país
+    user_id: int = 1  # Por defecto usuario de prueba
 
     @rx.event
     def increment(self, product_id: int):
@@ -138,8 +141,11 @@ class CountProducts(rx.State):
 
     @rx.var
     def cart_shipping_cost(self) -> float:
-        """Costo de envío basado en el subtotal"""
-        return 99.00 if self.cart_subtotal < 1000 else 0.00
+        """
+        Costo de envío basado en el método seleccionado.
+        TEMPORALMENTE: Solo recolección disponible (costo = 0.00)
+        """
+        return 0.00  # Recolección gratis - Envío a domicilio deshabilitado temporalmente
 
     @rx.var
     def cart_final_total(self) -> float:

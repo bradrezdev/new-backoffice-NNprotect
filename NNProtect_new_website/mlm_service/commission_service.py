@@ -145,7 +145,7 @@ class CommissionService:
                 kit_pv = item.line_pv  # PV total del item (unit_pv * quantity)
 
                 # Procesar upline nivel por nivel
-                for level, sponsor in enumerate(upline[:3], start=1):
+                for level, sponsor_user in enumerate(upline[:3], start=1):
                     percentage = cls.FAST_START_BONUS_PERCENTAGES.get(level, 0)
 
                     if percentage == 0:
@@ -154,17 +154,12 @@ class CommissionService:
                     # Calcular comisión en PV
                     commission_pv = kit_pv * percentage
 
-                    # Obtener país y moneda del patrocinador
-                    sponsor_user = session.exec(
-                        sqlmodel.select(Users).where(Users.member_id == sponsor)
-                    ).first()
-
-                    if not sponsor_user:
-                        continue
+                    # sponsor_user ya es un objeto Users de get_upline()
+                    sponsor_member_id = sponsor_user.member_id
 
                     # Obtener moneda del comprador (origen) y patrocinador (destino)
                     buyer_currency = ExchangeService.get_country_currency(order.country)
-                    sponsor_currency = ExchangeService.get_country_currency(sponsor_user.country)
+                    sponsor_currency = ExchangeService.get_country_currency(sponsor_user.country_cache or sponsor_user.country)
 
                     # Convertir PV a VN en la moneda del patrocinador
                     # Si ambos tienen la misma moneda, no hay conversión
@@ -181,7 +176,7 @@ class CommissionService:
 
                     # Crear registro de comisión
                     commission = Commissions(
-                        member_id=sponsor,
+                        member_id=sponsor_member_id,
                         bonus_type=BonusType.BONO_RAPIDO.value,
                         source_member_id=buyer_id,
                         source_order_id=order_id,
@@ -201,7 +196,7 @@ class CommissionService:
                     session.flush()
                     commission_ids.append(commission.id)
 
-                    print(f"✅ Comisión Bono Rápido creada: ${commission_vn:.2f} para member_id={sponsor} (nivel {level})")
+                    print(f"✅ Comisión Bono Rápido creada: ${commission_vn:.2f} para member_id={sponsor_member_id} (nivel {level})")
 
             return commission_ids
 
