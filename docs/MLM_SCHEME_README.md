@@ -58,8 +58,8 @@ TÚ (Nivel 0)
 ```python
 # Kits de inicio
 kit_inicio = {
-    "genera_VN": False,  # ❌ NO generan Valor Negocio
-    "genera_PV": True,   # ✅ SÍ generan Puntos de Volumen
+    "genera_VN": True,  # ✅ Generan Valor Negocio
+    "genera_PV": True,   # ✅ Generan Puntos de Volumen
     "paga_bono_rapido": True,  # ✅ SÍ pagan Bono Rápido
     "paga_bono_uninivel": False,  # ❌ NO pagan Bono Uninivel
     "cuenta_para_rangos": True,  # ✅ SÍ cuentan para alcanzar rangos
@@ -298,9 +298,9 @@ def calcular_bono_rapido(nuevo_miembro, kit_comprado):
         # Calcular comisión en VP
         comision_vp = vp_kit * porcentaje
         
-        # ⚠️ IMPORTANTE: Los kits NO generan VN
-        # La comisión se paga como un monto fijo en la moneda del patrocinador
-        # basándose en el precio del kit en su país
+        # ⚠️ IMPORTANTE: Los kits SÍ generan VN
+        # Pero el Bono Rápido se calcula como un monto fijo en la moneda del patrocinador
+        # basándose en el precio del kit en su país (no en el VN)
         
         precio_kit_pais_patrocinador = get_kit_price(
             kit_comprado, 
@@ -974,8 +974,9 @@ def calcular_puntos_travels(member_id, campaign_period):
 # Kits de Inicio:
 kit = {
     "genera_PV": True,      # Para rangos
-    "genera_VN": False,     # ❌ NO paga uninivel
+    "genera_VN": True,      # ✅ Sí genera VN
     "paga_bono_rapido": True,  # ✅ Sí paga
+    "paga_bono_uninivel": False,  # ❌ NO paga uninivel
     "frecuencia": "una_vez"
 }
 
