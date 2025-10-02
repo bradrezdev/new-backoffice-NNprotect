@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  postgres-staging:
+    image: postgres:15
+    container_name: nnprotect-postgres-staging
+    environment:
+      POSTGRES_DB: nnprotect_staging
+      POSTGRES_USER: staging_user
+      POSTGRES_PASSWORD: staging_pass_CHANGE_ME
+    ports:
+      - "5433:5432"  # Puerto diferente a producción
+    volumes:
+      - staging_data:/var/lib/postgresql/data
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"  # Para load testing
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "log_statement=all"  # Para debugging
+      - "-c"
+      - "log_min_duration_statement=100"  # Log queries > 100ms
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U staging_user -d nnprotect_staging"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  staging_data:
+    name: nnprotect_staging_data

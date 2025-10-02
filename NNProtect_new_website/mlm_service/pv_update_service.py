@@ -88,7 +88,9 @@ class PVUpdateService:
             if rank_updated:
                 print(f"🎖️  Rango actualizado para member_id={buyer.member_id}")
 
-            session.commit()
+            # ⚠️ NO hacer commit aquí - el PaymentService hará el commit final
+            # Esto garantiza atomicidad: todo o nada
+            session.flush()  # Solo flush para verificar constraints
             return True
 
         except Exception as e:

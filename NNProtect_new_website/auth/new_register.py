@@ -151,6 +151,9 @@ def register() -> rx.Component:
                                         placeholder="Ejemplo: 28000",
                                         value=AuthState.new_zip_code,
                                         on_change=AuthState.set_new_zip_code,
+                                        type="tel",
+                                        input_mode="numeric",
+                                        pattern="[0-9]*",
                                         border_radius="14px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -164,6 +167,9 @@ def register() -> rx.Component:
                                         placeholder="Ejemplo: 3121234567",
                                         value=AuthState.new_phone_number,
                                         on_change=AuthState.set_new_phone_number,
+                                        type="tel",
+                                        input_mode="numeric",
+                                        pattern="[0-9]*",
                                         border_radius="12px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],
@@ -337,6 +343,9 @@ def register() -> rx.Component:
                                         placeholder="Ejemplo: 3121234567",
                                         value=AuthState.new_phone_number,
                                         on_change=AuthState.set_new_phone_number,
+                                        type="tel",
+                                        input_mode="numeric",
+                                        pattern="[0-9]*",
                                         border_radius="15px",
                                         bg=rx.color_mode_cond(
                                             light=Custom_theme().light_colors()["tertiary"],  # Corregido
@@ -405,6 +414,9 @@ def register() -> rx.Component:
                                                 placeholder="28000",
                                                 value=AuthState.new_zip_code,
                                                 on_change=AuthState.set_new_zip_code,
+                                                type="tel",
+                                                input_mode="numeric",
+                                                pattern="[0-9]*",
                                                 border_radius="15px",
                                                 bg=rx.color_mode_cond(
                                                     light=Custom_theme().light_colors()["tertiary"],
@@ -686,6 +698,9 @@ def register() -> rx.Component:
                             placeholder="Ejemplo: 3121234567",
                             value=AuthState.new_phone_number,
                             on_change=AuthState.set_new_phone_number,
+                            type="tel",
+                            input_mode="numeric",
+                            pattern="[0-9]*",
                             border_radius="15px",
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],  # Corregido
@@ -770,6 +785,9 @@ def register() -> rx.Component:
                                     placeholder="28000",
                                     value=AuthState.new_zip_code,
                                     on_change=AuthState.set_new_zip_code,
+                                    type="tel",
+                                    input_mode="numeric",
+                                    pattern="[0-9]*",
                                     border_radius="15px",
                                     bg=rx.color_mode_cond(
                                         light=Custom_theme().light_colors()["tertiary"],

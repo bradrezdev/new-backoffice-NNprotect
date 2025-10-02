@@ -669,7 +669,10 @@ class AuthState(rx.State):
     # Setters para campos de registro
     @rx.event
     def set_new_username(self, new_username: str):
-        self.new_username = new_username
+        """Valida y establece el username sin caracteres especiales."""
+        # Filtrar caracteres especiales - solo alfanuméricos y guiones bajos
+        sanitized = re.sub(r'[^a-zA-Z0-9_]', '', new_username)
+        self.new_username = sanitized
 
     @rx.event
     def set_new_email(self, new_email: str):
@@ -693,7 +696,10 @@ class AuthState(rx.State):
 
     @rx.event
     def set_new_phone_number(self, new_phone_number: str):
-        self.new_phone_number = new_phone_number
+        """Valida y establece el teléfono - solo números."""
+        # Filtrar solo dígitos
+        sanitized = re.sub(r'\D', '', new_phone_number)
+        self.new_phone_number = sanitized
 
     @rx.event
     def set_new_gender(self, new_gender: str):
@@ -717,7 +723,10 @@ class AuthState(rx.State):
 
     @rx.event
     def set_new_zip_code(self, new_zip_code: str):
-        self.new_zip_code = new_zip_code
+        """Valida y establece el código postal - solo números."""
+        # Filtrar solo dígitos
+        sanitized = re.sub(r'\D', '', new_zip_code)
+        self.new_zip_code = sanitized
 
     @rx.event
     def set_new_country(self, new_country: str):
@@ -1119,14 +1128,25 @@ class AuthState(rx.State):
 
     @rx.event
     def random_username(self):
-        """Genera nombre de usuario aleatorio."""
+        """Genera nombre de usuario aleatorio sin caracteres especiales."""
         first_part = UserDataManager.extract_first_word(self.new_user_firstname)
         last_part = UserDataManager.extract_first_word(self.new_user_lastname)
+        
+        # Sanitizar nombres - solo alfanuméricos
+        first_sanitized = re.sub(r'[^a-zA-Z0-9]', '', first_part)
+        last_sanitized = re.sub(r'[^a-zA-Z0-9]', '', last_part)
+        
         random_number = random.randint(100, 999)
-        self.new_username = f"{first_part.lower()}{last_part.lower()}{random_number}"
+        self.new_username = f"{first_sanitized.lower()}{last_sanitized.lower()}{random_number}"
 
     def _validate_registration_data(self) -> bool:
         """Valida datos de registro."""
+        # Validar formato de email
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, self.new_email):
+            self.error_message = "Por favor ingresa un correo electrónico válido (ej: usuario@dominio.com)."
+            return False
+        
         # Validar complejidad de contraseña
         is_valid, error_msg = PasswordValidator.validate_complexity(self.new_password)
         if not is_valid:

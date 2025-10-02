@@ -57,7 +57,12 @@ class RankService:
             # Obtener período actual (si existe)
             current_period = cls._get_current_period(session)
             period_id = current_period.id if current_period else None
-            
+
+            if current_period:
+                print(f"📅 Período actual encontrado: ID={current_period.id}, Nombre={current_period.name}")
+            else:
+                print(f"⚠️ No hay período actual activo, period_id será NULL")
+
             # Crear registro de rango inicial
             rank_history = UserRankHistory(
                 member_id=member_id,
@@ -65,11 +70,11 @@ class RankService:
                 achieved_on=datetime.now(timezone.utc),
                 period_id=period_id
             )
-            
+
             session.add(rank_history)
             session.flush()
-            
-            print(f"✅ Rango inicial asignado a usuario {member_id}: Sin rango (id={cls.DEFAULT_RANK_ID})")
+
+            print(f"✅ Rango inicial asignado a usuario {member_id}: Sin rango (id={cls.DEFAULT_RANK_ID}), period_id={period_id}")
             return True
             
         except Exception as e:

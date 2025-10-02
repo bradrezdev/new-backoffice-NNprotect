@@ -302,19 +302,26 @@ def store() -> rx.Component:
                     rx.text("Tienda", size="8", font_weight="bold", padding_x="0.5em"),
                     
                     # Categorías móvil
-                    rx.hstack(
-                        *[rx.button(
-                            categoria["name"],
-                            _hover={"border": f"2px solid {Custom_theme().light_colors()['primary']}"},  # Cambia el borde al pasar el mouse
-                            variant="outline",
-                            size="2",
-                            border_radius="15px",
-                            on_click=categoria["action"] if categoria["action"] else None
-                        ) for i, categoria in enumerate(categorias_data)],
-                        spacing="2",
-                        width="100%",
-                        margin_bottom="1.5em",
-                        padding="0 1em"
+                    rx.scroll_area(
+                        rx.hstack(
+                            *[rx.button(
+                                categoria["name"],
+                                _hover={"border": f"2px solid {Custom_theme().light_colors()['primary']}"},  # Cambia el borde al pasar el mouse
+                                variant="outline",
+                                size="2",
+                                border_radius="15px",
+                                on_click=categoria["action"] if categoria["action"] else None
+                            ) for i, categoria in enumerate(categorias_data)],
+                            spacing="2",
+                            width="100%",
+                            #margin_bottom="1.5em",
+                            padding="0 1em"
+                        ),
+                        scrollbars="horizontal",  # Scroll horizontal
+                        type="scroll",  # Aparece al hacer scroll
+                        height="auto",  # Altura automática
+                        width="100%",  # Ancho completo
+                        padding="0 0 1em 0",  # Padding vertical
                     ),
 
                     # Últimas novedades móvil

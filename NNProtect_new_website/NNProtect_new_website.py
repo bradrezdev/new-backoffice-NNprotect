@@ -30,6 +30,9 @@ from .finance_service.new_withdrawal import new_withdrawal
 # Payment Service
 from .payment_service.payment import payment
 
+# Admin App
+from .Admin_app.admin_page import admin_page
+
 # --- Components ---
 from .shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 from .shared_ui.theme import Custom_theme
@@ -660,6 +663,7 @@ app.add_page(new_withdrawal, title="NN Protect | Nuevo Retiro", route="/new_with
 app.add_page(shipment_method, title="NN Protect | Método de Envío", route="/shipment_method")
 app.add_page(shopping_cart, title="NN Protect | Carrito de Compras", route="/shopping_cart")
 app.add_page(payment, title="NN Protect | Método de Pago", route="/payment")
+app.add_page(admin_page, title="NN Protect | Admin Panel", route="/admin")
 
 # Inicializar base de datos (crear periodo inicial si no existe)
 initialize_database()

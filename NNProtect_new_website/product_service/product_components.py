@@ -17,8 +17,11 @@ def plusminus_buttons(product_id: int):
         rx.button(
             "-",
             size="1",
-            variant="soft",
-            border_radius="8px",
+            bg=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["secondary"],
+                dark=Custom_theme().dark_colors()["secondary"]
+            ),
+            border_radius="100px",
             min_width="36px",
             height="36px",
             on_click=lambda: CountProducts.decrement(product_id)
@@ -32,9 +35,12 @@ def plusminus_buttons(product_id: int):
         ),
         rx.button(
             "+",
-            size="1", 
-            variant="soft",
-            border_radius="8px",
+            size="1",
+            bg=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["primary"],
+                dark=Custom_theme().dark_colors()["primary"]
+            ),
+            border_radius="100px",
             min_width="36px",
             height="36px",
             on_click=lambda: CountProducts.increment(product_id)
@@ -42,7 +48,7 @@ def plusminus_buttons(product_id: int):
         justify="center",
         spacing="2",
         align="center",
-        margin_bottom="0.5em"
+        margin_bottom="2em"
     )
 
 
@@ -237,91 +243,86 @@ def new_products_card(product_data: Dict) -> rx.Component:
     Principio DRY: hereda propiedades de product_card_horizontal.
     """
     return rx.box(
+        # Badge de nuevo
+        rx.badge(
+            "Nuevo producto",
+            color_scheme="green",
+            size="2",
+            border_radius="12px",
+            position="absolute",
+            top="6px",
+            right="6px",
+            z_index="10"
+        ),
+
+        # Imagen del producto
+        rx.image(
+            src=f"/product_{product_data.get('id', 4)}.jpg",
+            height="100%",
+            width="100%",
+            object_fit="cover",
+            border_radius="15px",
+            bg="rgba(0,0,0,0.05)",
+            margin_bottom="0.5em"
+        ),
+
+        # Información del producto
         rx.vstack(
-            # Badge de nuevo
-            rx.badge(
-                "Nuevo producto",
-                color_scheme="green",
-                size="2",
-                border_radius="12px",
-                position="absolute",
-                top="12px",
-                right="12px",
-                z_index="10"
+            rx.text(
+                product_data.get("name"),
+                font_weight="bold",
+                font_size="1em",
+                text_align="center",
+                no_of_lines=2,
             ),
-
-            # Imagen del producto
-            rx.image(
-                src=f"/product_{product_data.get('id', 4)}.jpg",
-                height="100%",
-                width="100%",
-                object_fit="cover",
-                border_radius="15px",
-                bg="rgba(0,0,0,0.05)",
-                margin_bottom="0.5em"
-            ),
-
-            # Información del producto
-            rx.vstack(
-                rx.text(
-                    product_data.get("name"),
-                    font_weight="bold",
-                    font_size="1em",
-                    text_align="center",
-                    no_of_lines=2,
-                ),
-                rx.text(
-                    product_data.get("formatted_price"),
-                    font_weight="600",
-                    font_size="0.9em",
-                    color=rx.color_mode_cond(
-                        light=Custom_theme().light_colors()["primary"],
-                        dark=Custom_theme().dark_colors()["secondary"]
-                    ),
-                    text_align="center"
-                ),
-                rx.text(
-                    f"{product_data.get('pv')} PV",
-                    font_size="0.9em",
-                    color="gray",
-                    text_align="center",
-                ),
-                spacing="1",
-                align="center",
-                width="100%"
-            ),
-
-            # Controles de cantidad
-            plusminus_buttons(product_data.get("id", 1)),
-
-            # Botón agregar
-            rx.button(
-                rx.icon("shopping-cart", size=18),
-                "Agregar",
-                size="3",
-                width="100%",
-                variant="solid",
-                border_radius="19px",
-                bg=rx.color_mode_cond(
+            rx.text(
+                product_data.get("formatted_price"),
+                font_weight="600",
+                font_size="0.9em",
+                color=rx.color_mode_cond(
                     light=Custom_theme().light_colors()["primary"],
-                    dark=Custom_theme().dark_colors()["primary"]
+                    dark=Custom_theme().dark_colors()["secondary"]
                 ),
-                color="white",
-                _hover={"opacity": 0.9},
-                on_click=CountProducts.add_to_cart(product_data.get("id", 1))
+                text_align="center"
             ),
-            spacing="3",
+            rx.text(
+                f"{product_data.get('pv')} PV",
+                font_size="0.9em",
+                color="gray",
+                text_align="center",
+            ),
+            spacing="1",
             align="center",
             width="100%"
         ),
-        bg=rx.color_mode_cond(
-            light=Custom_theme().light_colors()["tertiary"],
-            dark=Custom_theme().dark_colors()["tertiary"]
+
+        # Controles de cantidad
+        plusminus_buttons(product_data.get("id", 1)),
+
+        # Botón agregar
+        rx.button(
+            rx.icon("shopping-cart", size=18),
+            "Agregar",
+            size="3",
+            width="100%",
+            variant="solid",
+            border_radius="19px",
+            bg=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["primary"],
+                dark=Custom_theme().dark_colors()["primary"]
+            ),
+            color="white",
+            _hover={"opacity": 0.9},
+            on_click=CountProducts.add_to_cart(product_data.get("id", 1))
         ),
-        border_radius="19px",
-        padding="6px",
+        #bg=rx.color_mode_cond(
+        #   light=Custom_theme().light_colors()["tertiary"],
+        #   dark=Custom_theme().dark_colors()["tertiary"]
+        #),
+        #border_radius="19px",
+        #padding="16px",
         min_height="360px",
-        width="60vw",
+        width="50vw",
         flex_shrink="0",
         position="relative"
     )
@@ -333,91 +334,86 @@ def most_requested_products_card(product_data: Dict) -> rx.Component:
     Principio DRY: hereda propiedades de product_card_horizontal.
     """
     return rx.box(
+        # Badge de más pedido
+        rx.badge(
+            "🔥 Popular",
+            color_scheme="red",
+            size="2",
+            border_radius="12px",
+            position="absolute",
+            top="6px",
+            right="6px",
+            z_index="10"
+        ),
+
+        # Imagen del producto
+        rx.image(
+            src=f"/product_{product_data.get('id', 4)}.jpg",
+            height="100%",
+            width="100%",
+            object_fit="cover",
+            border_radius="15px",
+            bg="rgba(0,0,0,0.05)",
+            margin_bottom="0.5em"
+        ),
+
+        # Información del producto
         rx.vstack(
-            # Badge de más pedido
-            rx.badge(
-                "🔥 Popular",
-                color_scheme="red",
-                size="2",
-                border_radius="12px",
-                position="absolute",
-                top="12px",
-                right="12px",
-                z_index="10"
+            rx.text(
+                product_data.get("name"),
+                font_weight="bold",
+                font_size="1em",
+                text_align="center",
+                no_of_lines=2,
             ),
-
-            # Imagen del producto
-            rx.image(
-                src=f"/product_{product_data.get('id', 4)}.jpg",
-                height="100%",
-                width="100%",
-                object_fit="cover",
-                border_radius="15px",
-                bg="rgba(0,0,0,0.05)",
-                margin_bottom="0.5em"
-            ),
-
-            # Información del producto
-            rx.vstack(
-                rx.text(
-                    product_data.get("name"),
-                    font_weight="bold",
-                    font_size="1em",
-                    text_align="center",
-                    no_of_lines=2,
-                ),
-                rx.text(
-                    product_data.get("formatted_price"),
-                    font_weight="600",
-                    font_size="0.9em",
-                    color=rx.color_mode_cond(
-                        light=Custom_theme().light_colors()["primary"],
-                        dark=Custom_theme().dark_colors()["secondary"]
-                    ),
-                    text_align="center"
-                ),
-                rx.text(
-                    f"{product_data.get('pv')} PV",
-                    font_size="0.9em",
-                    color="gray",
-                    text_align="center",
-                ),
-                spacing="1",
-                align="center",
-                width="100%"
-            ),
-
-            # Controles de cantidad
-            plusminus_buttons(product_data.get("id", 1)),
-
-            # Botón agregar
-            rx.button(
-                rx.icon("shopping-cart", size=18),
-                "Agregar",
-                size="3",
-                width="100%",
-                variant="solid",
-                border_radius="19px",
-                bg=rx.color_mode_cond(
+            rx.text(
+                product_data.get("formatted_price"),
+                font_weight="600",
+                font_size="0.9em",
+                color=rx.color_mode_cond(
                     light=Custom_theme().light_colors()["primary"],
-                    dark=Custom_theme().dark_colors()["primary"]
+                    dark=Custom_theme().dark_colors()["secondary"]
                 ),
-                color="white",
-                _hover={"opacity": 0.9},
-                on_click=CountProducts.add_to_cart(product_data.get("id", 1))
+                text_align="center"
             ),
-            spacing="3",
+            rx.text(
+                f"{product_data.get('pv')} PV",
+                font_size="0.9em",
+                color="gray",
+                text_align="center",
+            ),
+            spacing="1",
             align="center",
             width="100%"
         ),
-        bg=rx.color_mode_cond(
-            light=Custom_theme().light_colors()["tertiary"],
-            dark=Custom_theme().dark_colors()["tertiary"]
+
+        # Controles de cantidad
+        plusminus_buttons(product_data.get("id", 1)),
+
+        # Botón agregar
+        rx.button(
+            rx.icon("shopping-cart", size=18),
+            "Agregar",
+            size="3",
+            width="100%",
+            variant="solid",
+            border_radius="19px",
+            bg=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["primary"],
+                dark=Custom_theme().dark_colors()["primary"]
+            ),
+            color="white",
+            _hover={"opacity": 0.9},
+            on_click=CountProducts.add_to_cart(product_data.get("id", 1))
         ),
-        border_radius="19px",
-        padding="6px",
+        #bg=rx.color_mode_cond(
+        #    light=Custom_theme().light_colors()["tertiary"],
+        #    dark=Custom_theme().dark_colors()["tertiary"]
+        #),
+        #border_radius="19px",
+        #padding="6px",
         min_height="360px",
-        width="60vw",
+        width="50vw",
         flex_shrink="0",
         position="relative"
     )
@@ -429,89 +425,84 @@ def supplement_products_card(product_data: Dict) -> rx.Component:
     Principio DRY: hereda propiedades de product_card_horizontal.
     """
     return rx.box(
+        # Badge de suplemento
+        rx.badge(
+            "Suplemento",
+            color_scheme="blue",
+            size="2",
+            border_radius="12px",
+            position="absolute",
+            top="6px",
+            right="6px",
+            z_index="10"
+        ),
+
+        # Imagen del producto
+        rx.image(
+            src=f"/product_{product_data.get('id', 4)}.jpg",
+            height="100%",
+            width="100%",
+            object_fit="cover",
+            border_radius="15px",
+            bg="rgba(0,0,0,0.05)",
+            margin_bottom="0.5em"
+        ),
+
+        # Información del producto con PV destacado
         rx.vstack(
-            # Badge de suplemento
-            rx.badge(
-                "Suplemento",
-                color_scheme="blue",
-                size="2",
-                border_radius="12px",
-                position="absolute",
-                top="12px",
-                right="12px",
-                z_index="10"
+            rx.text(
+                product_data.get("name"),
+                font_weight="bold",
+                font_size="1em",
+                text_align="center",
+                no_of_lines="2",
             ),
-
-            # Imagen del producto
-            rx.image(
-                src=f"/product_{product_data.get('id', 4)}.jpg",
-                height="100%",
-                width="100%",
-                object_fit="cover",
-                border_radius="15px",
-                bg="rgba(0,0,0,0.05)",
-                margin_bottom="0.5em"
-            ),
-
-            # Información del producto con PV destacado
-            rx.vstack(
-                rx.text(
-                    product_data.get("name"),
-                    font_weight="bold",
-                    font_size="1em",
-                    text_align="center",
-                    no_of_lines="2",
-                ),
-                rx.text(
-                    product_data.get("formatted_price"),
-                    font_weight="600",
-                    font_size="1em",
-                    color=rx.color_mode_cond(
-                        light=Custom_theme().light_colors()["primary"],
-                        dark=Custom_theme().dark_colors()["secondary"]
-                    ),
-                    text_align="center"
-                ),
-                rx.text(
-                    f"{product_data.get('pv')} PV",
-                    font_size="0.9em",
-                    color="gray",
-                    text_align="center"
-                ),
-                spacing="1",
-                align="center",
-                width="100%"
-            ),
-
-            # Controles de cantidad
-            plusminus_buttons(product_data.get("id", 1)),
-
-            # Botón agregar
-            rx.button(
-                rx.icon("shopping-cart", size=18),
-                "Agregar",
-                size="3",
-                width="100%",
-                variant="solid",
-                border_radius="19px",
-                bg=rx.color_mode_cond(
+            rx.text(
+                product_data.get("formatted_price"),
+                font_weight="600",
+                font_size="1em",
+                color=rx.color_mode_cond(
                     light=Custom_theme().light_colors()["primary"],
-                    dark=Custom_theme().dark_colors()["primary"]
+                    dark=Custom_theme().dark_colors()["secondary"]
                 ),
-                color="white",
-                _hover={"opacity": 0.9},
-                on_click=CountProducts.add_to_cart(product_data.get("id", 1))
+                text_align="center"
             ),
-            spacing="3",
+            rx.text(
+                f"{product_data.get('pv')} PV",
+                font_size="0.9em",
+                color="gray",
+                text_align="center"
+            ),
+            spacing="1",
             align="center",
             width="100%"
         ),
-        bg=rx.color_mode_cond(
-            light=Custom_theme().light_colors()["tertiary"],
-            dark=Custom_theme().dark_colors()["tertiary"]
+
+        # Controles de cantidad
+        plusminus_buttons(product_data.get("id", 1)),
+
+        # Botón agregar
+        rx.button(
+            rx.icon("shopping-cart", size=18),
+            "Agregar",
+            size="3",
+            width="100%",
+            variant="solid",
+            border_radius="19px",
+            bg=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["primary"],
+                dark=Custom_theme().dark_colors()["primary"]
+            ),
+            color="white",
+            _hover={"opacity": 0.9},
+            on_click=CountProducts.add_to_cart(product_data.get("id", 1))
         ),
-        border_radius="19px",
-        padding="6px",
+        #bg=rx.color_mode_cond(
+        #    light=Custom_theme().light_colors()["tertiary"],
+        #    dark=Custom_theme().dark_colors()["tertiary"]
+        #),
+        #border_radius="19px",
+        #padding="6px",
         min_height="360px",
         width="45vw",
         flex_shrink="0",
@@ -525,89 +516,84 @@ def skincare_products_card(product_data: Dict) -> rx.Component:
     Principio DRY: hereda propiedades de product_card_horizontal.
     """
     return rx.box(
+        # Badge de cuidado de la piel
+        rx.badge(
+            "Cuidado de la piel",
+            color_scheme="violet",
+            size="2",
+            border_radius="12px",
+            position="absolute",
+            top="12px",
+            right="12px",
+            z_index="10"
+        ),
+
+        # Imagen del producto
+        rx.image(
+            src=f"/product_{product_data.get('id', 4)}.jpg",
+            height="100%",
+            width="100%",
+            object_fit="cover",
+            border_radius="15px",
+            bg="rgba(0,0,0,0.05)",
+            margin_bottom="0.5em"
+        ),
+
+        # Información del producto con PV destacado
         rx.vstack(
-            # Badge de cuidado de la piel
-            rx.badge(
-                "Cuidado de la piel",
-                color_scheme="violet",
-                size="2",
-                border_radius="12px",
-                position="absolute",
-                top="12px",
-                right="12px",
-                z_index="10"
+            rx.text(
+                product_data.get("name"),
+                font_weight="bold",
+                font_size="1em",
+                text_align="center",
+                no_of_lines="2",
             ),
-
-            # Imagen del producto
-            rx.image(
-                src=f"/product_{product_data.get('id', 4)}.jpg",
-                height="100%",
-                width="100%",
-                object_fit="cover",
-                border_radius="15px",
-                bg="rgba(0,0,0,0.05)",
-                margin_bottom="0.5em"
-            ),
-
-            # Información del producto con PV destacado
-            rx.vstack(
-                rx.text(
-                    product_data.get("name"),
-                    font_weight="bold",
-                    font_size="1em",
-                    text_align="center",
-                    no_of_lines="2",
-                ),
-                rx.text(
-                    product_data.get("formatted_price"),
-                    font_weight="600",
-                    font_size="1em",
-                    color=rx.color_mode_cond(
-                        light=Custom_theme().light_colors()["primary"],
-                        dark=Custom_theme().dark_colors()["secondary"]
-                    ),
-                    text_align="center"
-                ),
-                rx.text(
-                    f"{product_data.get('pv')} PV",
-                    font_size="0.9em",
-                    color="gray",
-                    text_align="center"
-                ),
-                spacing="1",
-                align="center",
-                width="100%"
-            ),
-
-            # Controles de cantidad
-            plusminus_buttons(product_data.get("id", 1)),
-
-            # Botón agregar
-            rx.button(
-                rx.icon("shopping-cart", size=18),
-                "Agregar",
-                size="3",
-                width="100%",
-                variant="solid",
-                border_radius="19px",
-                bg=rx.color_mode_cond(
+            rx.text(
+                product_data.get("formatted_price"),
+                font_weight="600",
+                font_size="1em",
+                color=rx.color_mode_cond(
                     light=Custom_theme().light_colors()["primary"],
-                    dark=Custom_theme().dark_colors()["primary"]
+                    dark=Custom_theme().dark_colors()["secondary"]
                 ),
-                color="white",
-                _hover={"opacity": 0.9},
-                on_click=CountProducts.add_to_cart(product_data.get("id", 1))
+                text_align="center"
             ),
-            spacing="3",
+            rx.text(
+                f"{product_data.get('pv')} PV",
+                font_size="0.9em",
+                color="gray",
+                text_align="center"
+            ),
+            spacing="1",
             align="center",
             width="100%"
         ),
-        bg=rx.color_mode_cond(
-            light=Custom_theme().light_colors()["tertiary"],
-            dark=Custom_theme().dark_colors()["tertiary"]
+
+        # Controles de cantidad
+        plusminus_buttons(product_data.get("id", 1)),
+
+        # Botón agregar
+        rx.button(
+            rx.icon("shopping-cart", size=18),
+            "Agregar",
+            size="3",
+            width="100%",
+            variant="solid",
+            border_radius="19px",
+            bg=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["primary"],
+                dark=Custom_theme().dark_colors()["primary"]
+            ),
+            color="white",
+            _hover={"opacity": 0.9},
+            on_click=CountProducts.add_to_cart(product_data.get("id", 1))
         ),
-        border_radius="19px",
-        padding="6px",
+        #bg=rx.color_mode_cond(
+        #    light=Custom_theme().light_colors()["tertiary"],
+        #    dark=Custom_theme().dark_colors()["tertiary"]
+        #),
+        #border_radius="19px",
+        #padding="6px",
         min_height="360px",
         width="45vw",
         flex_shrink="0",
@@ -620,89 +606,84 @@ def sanitized_products_card(product_data: Dict) -> rx.Component:
     Principio DRY: reutiliza componente base con badge personalizado.
     """
     return rx.box(
+        # Badge de desinfectante
+        rx.badge(
+            "Desinfectante",
+            color_scheme="green",
+            size="2",
+            border_radius="12px",
+            position="absolute",
+            top="12px",
+            right="12px",
+            z_index="10"
+        ),
+
+        # Imagen del producto
+        rx.image(
+            src=f"/product_{product_data.get('id', 4)}.jpg",
+            height="100%",
+            width="100%",
+            object_fit="cover",
+            border_radius="15px",
+            bg="rgba(0,0,0,0.05)",
+            margin_bottom="0.5em"
+        ),
+
+        # Información del producto con PV destacado
         rx.vstack(
-            # Badge de desinfectante
-            rx.badge(
-                "Desinfectante",
-                color_scheme="green",
-                size="2",
-                border_radius="12px",
-                position="absolute",
-                top="12px",
-                right="12px",
-                z_index="10"
+            rx.text(
+                product_data.get("name"),
+                font_weight="bold",
+                font_size="1em",
+                text_align="center",
+                no_of_lines="2",
             ),
-
-            # Imagen del producto
-            rx.image(
-                src=f"/product_{product_data.get('id', 4)}.jpg",
-                height="100%",
-                width="100%",
-                object_fit="cover",
-                border_radius="15px",
-                bg="rgba(0,0,0,0.05)",
-                margin_bottom="0.5em"
-            ),
-
-            # Información del producto con PV destacado
-            rx.vstack(
-                rx.text(
-                    product_data.get("name"),
-                    font_weight="bold",
-                    font_size="1em",
-                    text_align="center",
-                    no_of_lines="2",
-                ),
-                rx.text(
-                    product_data.get("formatted_price"),
-                    font_weight="600",
-                    font_size="1em",
-                    color=rx.color_mode_cond(
-                        light=Custom_theme().light_colors()["primary"],
-                        dark=Custom_theme().dark_colors()["secondary"]
-                    ),
-                    text_align="center"
-                ),
-                rx.text(
-                    f"{product_data.get('pv')} PV",
-                    font_size="0.9em",
-                    color="gray",
-                    text_align="center"
-                ),
-                spacing="1",
-                align="center",
-                width="100%"
-            ),
-
-            # Controles de cantidad
-            plusminus_buttons(product_data.get("id", 1)),
-
-            # Botón agregar
-            rx.button(
-                rx.icon("shopping-cart", size=18),
-                "Agregar",
-                size="3",
-                width="100%",
-                variant="solid",
-                border_radius="19px",
-                bg=rx.color_mode_cond(
+            rx.text(
+                product_data.get("formatted_price"),
+                font_weight="600",
+                font_size="1em",
+                color=rx.color_mode_cond(
                     light=Custom_theme().light_colors()["primary"],
-                    dark=Custom_theme().dark_colors()["primary"]
+                    dark=Custom_theme().dark_colors()["secondary"]
                 ),
-                color="white",
-                _hover={"opacity": 0.9},
-                on_click=CountProducts.add_to_cart(product_data.get("id", 1))
+                text_align="center"
             ),
-            spacing="3",
+            rx.text(
+                f"{product_data.get('pv')} PV",
+                font_size="0.9em",
+                color="gray",
+                text_align="center"
+            ),
+            spacing="1",
             align="center",
             width="100%"
         ),
-        bg=rx.color_mode_cond(
-            light=Custom_theme().light_colors()["tertiary"],
-            dark=Custom_theme().dark_colors()["tertiary"]
+
+        # Controles de cantidad
+        plusminus_buttons(product_data.get("id", 1)),
+
+        # Botón agregar
+        rx.button(
+            rx.icon("shopping-cart", size=18),
+            "Agregar",
+            size="3",
+            width="100%",
+            variant="solid",
+            border_radius="19px",
+            bg=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["primary"],
+                dark=Custom_theme().dark_colors()["primary"]
+            ),
+            color="white",
+            _hover={"opacity": 0.9},
+            on_click=CountProducts.add_to_cart(product_data.get("id", 1))
         ),
-        border_radius="19px",
-        padding="6px",
+        #bg=rx.color_mode_cond(
+        #    light=Custom_theme().light_colors()["tertiary"],
+        #    dark=Custom_theme().dark_colors()["tertiary"]
+        #),
+        #border_radius="19px",
+        #padding="6px",
         min_height="360px",
         width="45vw",
         flex_shrink="0",

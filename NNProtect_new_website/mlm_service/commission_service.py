@@ -115,14 +115,14 @@ class CommissionService:
                 print(f"⚠️  Orden {order_id} no tiene items")
                 return []
 
-            # 3. Filtrar solo kits
+            # 3. Filtrar solo kits (por presentation, NO por type)
             kit_items = []
             for item in order_items:
                 product = session.exec(
                     sqlmodel.select(Products).where(Products.id == item.product_id)
                 ).first()
 
-                if product and product.type == "kit":
+                if product and product.presentation == "kit":
                     kit_items.append((item, product))
 
             if not kit_items:
@@ -208,6 +208,112 @@ class CommissionService:
         except Exception as e:
             print(f"❌ Error procesando Bono Rápido para orden {order_id}: {e}")
             return []
+
+    @classmethod
+    def process_direct_bonus(
+        cls,
+        session,
+        buyer_id: int,
+        order_id: int,
+        vn_amount: float
+    ) -> Optional[int]:
+        """
+        Procesa Bono Directo (25% del VN) al patrocinador directo.
+        Reglas:
+        - Solo aplica si hay patrocinador directo (sponsor_id)
+        - 25% del VN total de la orden
+        - Se paga en la moneda del patrocinador
+        - Aplica tanto para kits como productos regulares
+
+        Principio KISS: Cálculo directo y simple.
+
+        Args:
+            session: Sesión de base de datos
+            buyer_id: ID del comprador (source)
+            order_id: ID de la orden
+            vn_amount: Monto total de VN de la orden
+
+        Returns:
+            ID de la comisión creada, o None si no aplica
+        """
+        try:
+            # 1. Obtener comprador
+            buyer = session.exec(
+                sqlmodel.select(Users).where(Users.member_id == buyer_id)
+            ).first()
+
+            if not buyer:
+                print(f"❌ Comprador {buyer_id} no encontrado")
+                return None
+
+            # 2. Verificar que tenga patrocinador
+            if not buyer.sponsor_id:
+                print(f"⚠️  Comprador {buyer_id} no tiene patrocinador directo")
+                return None
+
+            # 3. Obtener patrocinador
+            sponsor = session.exec(
+                sqlmodel.select(Users).where(Users.member_id == buyer.sponsor_id)
+            ).first()
+
+            if not sponsor:
+                print(f"❌ Patrocinador {buyer.sponsor_id} no encontrado")
+                return None
+
+            # 4. Calcular comisión (25% del VN)
+            DIRECT_BONUS_PERCENTAGE = 0.25
+            commission_vn = vn_amount * DIRECT_BONUS_PERCENTAGE
+
+            # 5. Obtener monedas
+            buyer_currency = ExchangeService.get_country_currency(buyer.country_cache)
+            sponsor_currency = ExchangeService.get_country_currency(sponsor.country_cache)
+
+            # 6. Convertir a moneda del patrocinador si es necesario
+            order = session.exec(
+                sqlmodel.select(Orders).where(Orders.id == order_id)
+            ).first()
+
+            commission_converted = ExchangeService.convert_amount(
+                session=session,
+                amount=commission_vn,
+                from_currency=buyer_currency,
+                to_currency=sponsor_currency,
+                as_of_date=order.payment_confirmed_at if order else datetime.now(timezone.utc)
+            )
+
+            # 7. Obtener período actual
+            period = cls._get_current_period(session)
+
+            # 8. Crear registro de comisión
+            commission = Commissions(
+                member_id=sponsor.member_id,
+                bonus_type=BonusType.BONO_DIRECTO.value,
+                source_member_id=buyer_id,
+                source_order_id=order_id,
+                period_id=period.id if period else None,
+                level_depth=1,  # Siempre nivel 1 (directo)
+                amount_vn=commission_vn,
+                currency_origin=buyer_currency,
+                amount_converted=commission_converted,
+                currency_destination=sponsor_currency,
+                exchange_rate=1.0,  # TODO: Get actual exchange rate
+                calculated_at=datetime.now(timezone.utc),
+                paid_at=None,
+                notes=f"Bono Directo 25% VN - Orden #{order_id}"
+            )
+
+            session.add(commission)
+            session.flush()
+
+            print(f"✅ Bono Directo creado: {commission_converted:.2f} {sponsor_currency} para sponsor {sponsor.member_id}")
+
+            return commission.id
+
+        except Exception as e:
+            print(f"❌ Error procesando Bono Directo para orden {order_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
 
     @classmethod
     def calculate_unilevel_bonus(cls, session, member_id: int, period_id: int) -> List[int]:
