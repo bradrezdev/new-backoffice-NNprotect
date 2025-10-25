@@ -153,15 +153,25 @@ def mobile_product_item(product: dict) -> rx.Component:
 		rx.hstack con el nombre y cantidad del producto
 	"""
 	return rx.hstack(
-		rx.text(product['name'], font_size="1em"),
+		rx.text(
+			product['name'],
+			font_size="0.9em",
+			color=rx.color_mode_cond(
+				light="gray.600",
+				dark="gray.400"
+			)
+		),
 		rx.text(
 			f"Cantidad: {product['quantity']}",
 			font_size="0.9em",
-			color="gray",
-			margin_left="0.9em"
+			font_weight="medium",
+			color=rx.color_mode_cond(
+				light="gray.700",
+				dark="gray.300"
+			)
 		),
 		justify="between",
-		width="100%",
+		width="100%"
 	)
 
 
@@ -261,6 +271,7 @@ def mobile_order_card(order: dict) -> rx.Component:
 					light="gray.600",
 					dark="gray.400"
 				),
+				white_space="pre",  # Respeta saltos de línea (\n)
 				width="100%"
 			),
 

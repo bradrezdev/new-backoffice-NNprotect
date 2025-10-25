@@ -429,10 +429,10 @@ class OrderState(rx.State):
             # 6. Obtener productos de la orden
             products = self._get_order_products(order.id, session)
 
-            # Formatear productos como string para mobile
-            products_summary = ", ".join([
-                f"{p['name']} (x{p['quantity']})" for p in products
-            ]) if products else "Sin productos"
+            # Formatear productos como string para mobile con saltos de línea
+            products_summary = "\n".join([
+                f"{p['name']}" + " — " + f"Cantidad:{p['quantity']}" for p in products
+            ]) if products else "Sin productos en la orden"
 
             # 7. Construir diccionario completo
             formatted_order = {

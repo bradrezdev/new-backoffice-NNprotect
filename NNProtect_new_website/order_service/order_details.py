@@ -5,6 +5,146 @@ from ..shared_ui.theme import Custom_theme
 from rxconfig import config
 from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_sidebar, mobile_sidebar, header
 
+# Importar OrderDetailState para datos dinámicos
+from .orders_state import OrderDetailState
+
+# ============================================================================
+# COMPONENTES REUTILIZABLES
+# ============================================================================
+
+def product_row_desktop(item: dict) -> rx.Component:
+    """Renderiza una fila de producto en el detalle de orden (desktop)
+    
+    Args:
+        item: Dict con datos del producto (product_name, quantity, unit_price_formatted, 
+              line_total_formatted, unit_pv, line_pv, presentation)
+    """
+    return rx.flex(
+        rx.vstack(
+            rx.text(
+                f"{item['product_name']} {item.get('presentation', '')}",
+                font_size="1em",
+                font_weight="bold"
+            ),
+            rx.flex(
+                rx.text(
+                    f"Cantidad: {item['quantity']}",
+                    font_size="0.8em",
+                    color="#6B7280"
+                ),
+                rx.text(
+                    f"Precio unitario: {item['unit_price_formatted']}",
+                    font_size="0.8em",
+                    color="#6B7280"
+                ),
+                rx.text(
+                    f"{item['unit_pv']} PV por producto",
+                    font_size="0.8em",
+                    color="#6B7280"
+                ),
+                spacing="3",
+            ),
+        ),
+        rx.vstack(
+            rx.text(
+                item['line_total_formatted'],
+                font_size="1em",
+                font_weight="bold"
+            ),
+            rx.badge(
+                f"{item['line_pv']} PV",
+                color_scheme="green",
+                font_size="0.8em",
+                border_radius="12px",
+            ),
+            align="end",
+        ),
+        bg=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["background"],
+            dark=Custom_theme().dark_colors()["background"]
+        ),
+        border_radius="16px",
+        padding="1em",
+        width="100%",
+        justify="between",
+    )
+
+def product_row_mobile(item: dict) -> rx.Component:
+    """Renderiza una fila de producto en el detalle de orden (mobile)
+    
+    Args:
+        item: Dict con datos del producto
+    """
+    return rx.box(
+        rx.hstack(
+            rx.text(
+                f"{item['product_name']} {item.get('presentation', '')}",
+                font_size="1em"
+            ),
+            spacing="1",
+        ),
+        rx.hstack(
+            rx.vstack(
+                rx.text(
+                    f"Cantidad: {item['quantity']}",
+                    font_size="0.9em",
+                    color="gray",
+                    margin_bottom="-1em"
+                ),
+                rx.text(
+                    f"Precio: {item['unit_price_formatted']}",
+                    font_size="0.9em",
+                    color="gray",
+                    margin_bottom="-1em"
+                ),
+                rx.hstack(
+                    rx.text(
+                        f"{item['unit_pv']} PV",
+                        font_size="0.9em",
+                        color=rx.color("green", 9)
+                    ),
+                    rx.text(
+                        f"{item['unit_vn']} VN",
+                        font_size="0.9em",
+                        color=rx.color("blue", 9)
+                    ),
+                    spacing="2",
+                )
+            ),
+            rx.vstack(
+                rx.text(
+                    item['line_total_formatted'],
+                    font_size="0.9em",
+                    font_weight="600",
+                    margin_bottom="-1em"
+                ),
+                rx.text(
+                    f"{item['line_pv']} PV",
+                    font_size="0.9em",
+                    color=rx.color("blue", 9),
+                    margin_bottom="-1em"
+                ),
+                rx.text(
+                    f"{item['line_vn']} VN",
+                    font_size="0.9em",
+                    color=rx.color("green", 9)
+                ),
+                align="end",
+            ),
+            align="center",
+            justify="between",
+        ),
+        bg=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["tertiary"],
+            dark=Custom_theme().dark_colors()["tertiary"]
+        ),
+        justify="between",
+        border_radius="32px",
+        padding="1em",
+        width="100%",
+        spacing="2",
+    )
+
 def order_details() -> rx.Component:
     return rx.center(
         rx.desktop_only(
@@ -20,36 +160,70 @@ def order_details() -> rx.Component:
                                 font_weight="bold",
                             ),
 
-                            # Contenedor de una orden
-                            rx.box(
-                                rx.hstack(
-                                    rx.heading(
-                                        "Orden #12345",
-                                        size="6",
+                            # Mostrar loading, error o contenido
+                            rx.cond(
+                                OrderDetailState.is_loading,
+                                # Estado: Cargando
+                                rx.center(
+                                    rx.vstack(
+                                        rx.spinner(size="3"),
+                                        rx.text("Cargando detalles de la orden...", font_size="1em", color="gray"),
+                                        spacing="3",
+                                        align="center"
                                     ),
-                                    rx.heading(
-                                        "$1746.50 MXN",
-                                        color=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["secondary"],
-                                            dark=Custom_theme().light_colors()["secondary"],
+                                    width="100%",
+                                    padding="4em"
+                                ),
+                                rx.cond(
+                                    OrderDetailState.error_message != "",
+                                    # Estado: Error
+                                    rx.center(
+                                        rx.vstack(
+                                            rx.icon("circle-x", size=48, color="red"),
+                                            rx.heading("Error al cargar orden", size="5", color="red"),
+                                            rx.text(OrderDetailState.error_message, font_size="1em", color="gray"),
+                                            rx.button(
+                                                "Volver a órdenes",
+                                                on_click=lambda: rx.redirect("/orders"),
+                                                variant="solid",
+                                                color_scheme="blue"
+                                            ),
+                                            spacing="3",
+                                            align="center"
                                         ),
-                                        size="6",
+                                        width="100%",
+                                        padding="4em"
                                     ),
-                                    justify="between",
-                                    margin_bottom="1em"
-                                ),
-                                rx.separator(
-                                    orientation="horizontal",
-                                    margin_bottom="1em"
-                                ),
+                                    # Estado: Contenido cargado
+                                    rx.box(
+                                        rx.hstack(
+                                            rx.heading(
+                                                f"Orden #{OrderDetailState.order_data['order_id']}",
+                                                size="6",
+                                            ),
+                                            rx.heading(
+                                                f"{OrderDetailState.order_data['total_formatted']} {OrderDetailState.order_data['currency']}",
+                                                color=rx.color_mode_cond(
+                                                    light=Custom_theme().light_colors()["secondary"],
+                                                    dark=Custom_theme().light_colors()["secondary"],
+                                                ),
+                                                size="6",
+                                            ),
+                                            justify="between",
+                                            margin_bottom="1em"
+                                        ),
+                                        rx.separator(
+                                            orientation="horizontal",
+                                            margin_bottom="1em"
+                                        ),
 
-                                # Detalles de la compra
+                                        # Detalles de la compra
                                 rx.flex(
                                     rx.flex(
                                         rx.hstack(
                                             rx.icon("calendar", size=20, color="#6B7280"),
                                             rx.text(
-                                                "10 de septiembre de 2025 - 09:53",
+                                                OrderDetailState.order_data['created_at_display'],
                                                 font_size="0.9em",
                                                 color="#6B7280"
                                             ),
@@ -57,7 +231,7 @@ def order_details() -> rx.Component:
                                         rx.hstack(
                                             rx.icon("map-pinned", size=20, color="#6B7280"),
                                             rx.text(
-                                                "México",
+                                                OrderDetailState.order_data['address_alias'],
                                                 font_size="0.9em",
                                                 color="#6B7280"
                                             ),
@@ -65,7 +239,7 @@ def order_details() -> rx.Component:
                                         rx.hstack(
                                             rx.icon("credit-card", size=20, color="#6B7280"),
                                             rx.text(
-                                                "Tarjeta de crédito",
+                                                OrderDetailState.order_data['payment_method'],
                                                 font_size="0.9em",
                                                 color="#6B7280"
                                             ),
@@ -73,7 +247,7 @@ def order_details() -> rx.Component:
                                         rx.hstack(
                                             rx.icon("container", size=20, color="#6B7280"),
                                             rx.text(
-                                                "CEDIS: Oficina de Guadalajara",
+                                                "CEDIS: Por definir",
                                                 font_size="0.9em",
                                                 color="#6B7280"
                                             ),
@@ -82,7 +256,13 @@ def order_details() -> rx.Component:
                                         direction="row",
                                     ),
                                     rx.flex(
-                                        rx.badge("Pendiente", color_scheme="orange", font_size="0.8em", border_radius="12px", padding="0.2em 1em"),
+                                        rx.badge(
+                                            OrderDetailState.order_data['status'],
+                                            color_scheme=OrderDetailState.order_data['badge_color'],
+                                            font_size="0.8em",
+                                            border_radius="12px",
+                                            padding="0.2em 1em"
+                                        ),
                                         rx.button(
                                             rx.icon("download", size=16),
                                             "PDF",
@@ -161,160 +341,25 @@ def order_details() -> rx.Component:
                                 ),
 
                                 rx.vstack(
-
-                                    # Detalle de un producto comprado
-                                    rx.flex(
-                                        rx.vstack(
-                                            rx.text("Citrus Nanodispersión 30 ml", font_size="1em", font_weight="bold"),
-                                            rx.flex(
-                                                rx.text("Cantidad: 1", font_size="0.8em", color="#6B7280"),
-                                                rx.text("Precio unitario: $349.30 MXN", font_size="0.8em", color="#6B7280"),
-                                                rx.text("293 PV por producto", font_size="0.8em", color="#6B7280"),
-                                                spacing="3",
-                                            ),
-                                        ),
-                                        rx.vstack(
-                                            rx.text(
-                                                "$349.30 MXN",
-                                                font_size="1em",
-                                                font_weight="bold"
-                                            ),
-                                            rx.badge(
-                                                "293 PV",
-                                                color_scheme="green",
-                                                font_size="0.8em",
-                                                border_radius="12px",
-                                            ),
-                                            align="end",
-                                        ),
-                                        bg=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["background"],
-                                            dark=Custom_theme().dark_colors()["background"]
-                                        ),
-                                        border_radius="16px",
-                                        padding="1em",
-                                        width="100%",
-                                        justify="between",
+                                    rx.foreach(
+                                        OrderDetailState.order_items,
+                                        product_row_desktop
                                     ),
-
-                                    # Detalle de otro producto comprado
-                                    rx.flex(
-                                        rx.vstack(
-                                            rx.text("Chia Nanodispersión 30 ml", font_size="1em", font_weight="bold"),
-                                            rx.flex(
-                                                rx.text("Cantidad: 1", font_size="0.8em", color="#6B7280"),
-                                                rx.text("Precio unitario: $349.30 MXN", font_size="0.8em", color="#6B7280"),
-                                                rx.text("293 PV por producto", font_size="0.8em", color="#6B7280"),
-                                                spacing="3",
-                                            ),
-                                        ),
-                                        rx.vstack(
-                                            rx.text(
-                                                "$349.30 MXN",
-                                                font_size="1em",
-                                                font_weight="bold"
-                                            ),
-                                            rx.badge(
-                                                "293 PV",
-                                                color_scheme="green",
-                                                font_size="0.8em",
-                                                border_radius="12px",
-                                            ),
-                                            align="end",
-                                        ),
-                                        bg=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["background"],
-                                            dark=Custom_theme().dark_colors()["background"]
-                                        ),
-                                        border_radius="16px",
-                                        padding="1em",
-                                        width="100%",
-                                        justify="between",
-                                    ),
-
-                                    # Detalle de un producto comprado
-                                    rx.flex(
-                                        rx.vstack(
-                                            rx.text("Jengibre Nanodispersión 30 ml", font_size="1em", font_weight="bold"),
-                                            rx.flex(
-                                                rx.text("Cantidad: 2", font_size="0.8em", color="#6B7280"),
-                                                rx.text("Precio unitario: $349.30 MXN", font_size="0.8em", color="#6B7280"),
-                                                rx.text("293 PV por producto", font_size="0.8em", color="#6B7280"),
-                                                spacing="3",
-                                            ),
-                                        ),
-                                        rx.vstack(
-                                            rx.text(
-                                                "$698.60 MXN",
-                                                font_size="1em",
-                                                font_weight="bold"
-                                            ),
-                                            rx.badge(
-                                                "586 PV",
-                                                color_scheme="green",
-                                                font_size="0.8em",
-                                                border_radius="12px",
-                                            ),
-                                            align="end",
-                                        ),
-                                        bg=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["background"],
-                                            dark=Custom_theme().dark_colors()["background"]
-                                        ),
-                                        border_radius="16px",
-                                        padding="1em",
-                                        width="100%",
-                                        justify="between",
-                                    ),
-
-                                    # Detalle de otro producto comprado
-                                    rx.flex(
-                                        rx.vstack(
-                                            rx.text("Granada Nanodispersión 30 ml", font_size="1em", font_weight="bold"),
-                                            rx.flex(
-                                                rx.text("Cantidad: 1", font_size="0.8em", color="#6B7280"),
-                                                rx.text("Precio unitario: $349.30 MXN", font_size="0.8em", color="#6B7280"),
-                                                rx.text("293 PV por producto", font_size="0.8em", color="#6B7280"),
-                                                spacing="3",
-                                            ),
-                                        ),
-                                        rx.vstack(
-                                            rx.text(
-                                                "$349.30 MXN",
-                                                font_size="1em",
-                                                font_weight="bold"
-                                            ),
-                                            rx.badge(
-                                                "293 PV",
-                                                color_scheme="green",
-                                                font_size="0.8em",
-                                                border_radius="12px",
-                                            ),
-                                            align="end",
-                                        ),
-                                        bg=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["background"],
-                                            dark=Custom_theme().dark_colors()["background"]
-                                        ),
-                                        border_radius="16px",
-                                        padding="1em",
-                                        width="100%",
-                                        justify="between",
-                                    ),
-
                                 ),
 
 
-                                bg=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["tertiary"],
-                                    dark=Custom_theme().dark_colors()["tertiary"]
-                                ),
-                                border_radius="24px",
-                                margin_bottom="32px",
-                                padding="16px",
-                                min_width="240px",
-                                width="100%",
-                            ),
+                                        bg=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["tertiary"],
+                                            dark=Custom_theme().dark_colors()["tertiary"]
+                                        ),
+                                        border_radius="24px",
+                                        margin_bottom="32px",
+                                        padding="16px",
+                                        min_width="240px",
+                                        width="100%",
+                                    )  # Cierra rx.box del contenido
+                                )  # Cierra rx.cond del error
+                            ),  # Cierra rx.cond del loading
 
                             width="100%",
                         ),
@@ -333,129 +378,159 @@ def order_details() -> rx.Component:
                 mobile_header(),
                 
                 # Contenido principal móvil
-                rx.vstack(
-                    rx.text(
-                        f"Detalles de Orden #orden_id",
-                        font_size="1.5rem",
-                        font_weight="bold",
-                        margin_bottom="1rem",
-                        text_align="center"
-                    ),
-                    
-                    # Lista de órdenes móvil
-                    *[rx.box(
+                rx.cond(
+                    OrderDetailState.is_loading,
+                    # Estado: Cargando
+                    rx.center(
                         rx.vstack(
-                            # Detalles de la orden
-                            rx.vstack(
-                                rx.vstack(
-                                    rx.hstack(
-                                        rx.text("$1,746.50", font_weight="bold", font_size="1.5em", color=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["primary"],
-                                            dark=Custom_theme().dark_colors()["primary"]
-                                        )),
-                                        rx.text("1465 PV", font_weight="bold", font_size="1.5em", color=rx.color_mode_cond(
-                                            light=Custom_theme().light_colors()["success"],
-                                            dark=Custom_theme().dark_colors()["success"]
-                                        )),
-                                    ),
-                                    rx.hstack(
-                                        rx.badge("En camino", color_scheme="yellow", size="2", radius="full"),
-                                        rx.badge("Pagado", color_scheme="green", size="2", radius="full"),
-                                        spacing="1",
-                                    ),
-                                    spacing="1",
-                                    width="100%",
-                                    align="end",
-                                ),
-
-                                rx.divider(margin_y="0.5em"),
-
-                                rx.hstack(
-                                    rx.icon("calendar", size=16, color=rx.color("gray", 11)),
-                                    rx.text(fecha, font_size="1em", color=rx.color("gray", 11)),
-                                    align="center",
-                                    spacing="1"
-                                ),
-                                rx.hstack(
-                                    rx.icon("credit-card", size=16, color=rx.color("gray", 11)),
-                                    rx.text(metodo, font_size="1em", color=rx.color("gray", 11)),
-                                    align="center",
-                                    spacing="1"
-                                ),
-                                rx.hstack(
-                                    rx.icon("map-pin", size=16, color=rx.color("gray", 11)),
-                                    rx.text("Rey Felipe 429\nColinas del Rey\n28039\nVilla de Álvarez, Colima", font_size="1em", color=rx.color("gray", 11), white_space="pre", margin_top="-0.2em"),
-                                    spacing="1"
-                                ),
-                                spacing="2",
-                                width="100%"
-                            ),
-                            
-                            rx.divider(margin_y="0.5em"),
-                            
-                            # Productos
-                            rx.text("Productos", font_weight="bold", font_size="1.25em"),
-                            *[rx.box(
-                                rx.hstack(
-                                    rx.text(f"{producto}", font_size="1em"),
-                                    rx.text("30 ml", font_size="1em"),
-                                    spacing="1",
-                                ),
-                                rx.hstack(
-                                    rx.vstack(
-                                        rx.text(f"Cantidad: {cantidad}", font_size="0.9em", color="gray", margin_bottom="-1em"),
-                                        rx.text(f"Precio: {precio}", font_size="0.9em", color="gray", margin_bottom="-1em"),
-                                        rx.hstack(
-                                            rx.text("293 PV", font_size="0.9em", color=rx.color("green", 9)),
-                                            rx.text("293 VN", font_size="0.9em", color=rx.color("blue", 9)),
-                                            spacing="2",
-                                        )
-                                    ),
-                                    rx.vstack(
-                                        rx.text(precio, font_size="0.9em", font_weight="600", margin_bottom="-1em"),
-                                        rx.text("586 PV", font_size="0.9em", color=rx.color("blue", 9), margin_bottom="-1em"),
-                                        rx.text("586 VN", font_size="0.9em", color=rx.color("green", 9)),
-                                        align="end",
-                                    ),
-                                    align="center",
-                                    justify="between",
-                                ),
-                                bg=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["tertiary"],
-                                    dark=Custom_theme().dark_colors()["tertiary"]
-                                ),
-                                justify="between",
-                                border_radius="32px",
-                                padding="1em",
-                                width="100%",
-                                spacing="2",
-                            ) for producto, cantidad, precio in productos],
-                            
-                            # Botón de detalles
-                            rx.button(
-                                rx.icon("eye", size=20),
-                                "Ver PDF",
-                                margin_top="1rem",
-                                variant="outline",
-                                width="100%",
-                                size="3",
-                                font_size="1em",
-                                radius="full",
-                            ),
-                            spacing="2",
-                            width="100%"
+                            rx.spinner(size="3"),
+                            rx.text("Cargando...", font_size="1em", color="gray"),
+                            spacing="3",
+                            align="center"
                         ),
                         width="100%",
-                    ) for orden_id, total, fecha, metodo, estado_envio, productos in [
-                        ("12345", "$1,746.50", "10 sept 2025 - 09:53", "Tarjeta de crédito", "En camino", 
-                        [("Dreaming Deep", "2", "$698.60"), ("Cúrcuma", "1", "$349.30"), ("Granada", "2", "$698.60")]),
-                    ]],
-                    spacing="4",
-                    width="100%",
-                    padding="1rem",
-                    margin_top="80px",
-                    margin_bottom="2rem",
-                    height="100%"
+                        padding="4em"
+                    ),
+                    rx.cond(
+                        OrderDetailState.error_message != "",
+                        # Estado: Error
+                        rx.center(
+                            rx.vstack(
+                                rx.icon("circle-x", size=48, color="red"),
+                                rx.heading("Error", size="5", color="red"),
+                                rx.text(OrderDetailState.error_message, font_size="1em", color="gray"),
+                                rx.button(
+                                    "Volver",
+                                    on_click=lambda: rx.redirect("/orders"),
+                                    variant="solid"
+                                ),
+                                spacing="3",
+                                align="center"
+                            ),
+                            width="100%",
+                            padding="4em"
+                        ),
+                        # Estado: Contenido
+                        rx.vstack(
+                            rx.text(
+                                f"Detalles de orden #{OrderDetailState.order_data['order_id']}",
+                                font_size="1.5rem",
+                                font_weight="bold",
+                                margin_bottom="1rem",
+                                text_align="center"
+                            ),
+                            
+                            rx.box(
+                                rx.vstack(
+                                    # Detalles de la orden
+                                    rx.vstack(
+                                        rx.vstack(
+                                            rx.hstack(
+                                                rx.text(
+                                                    f"{OrderDetailState.order_data['total_formatted']} {OrderDetailState.order_data['currency']}",
+                                                    font_weight="bold",
+                                                    font_size="1.5em",
+                                                    color=rx.color_mode_cond(
+                                                        light=Custom_theme().light_colors()["primary"],
+                                                        dark=Custom_theme().dark_colors()["primary"]
+                                                    )
+                                                ),
+                                                rx.text(
+                                                    f"{OrderDetailState.order_data['total_pv']} PV",
+                                                    font_weight="bold",
+                                                    font_size="1.5em",
+                                                    color=rx.color_mode_cond(
+                                                        light=Custom_theme().light_colors()["success"],
+                                                        dark=Custom_theme().dark_colors()["success"]
+                                                    )
+                                                ),
+                                            ),
+                                            rx.badge(
+                                                OrderDetailState.order_data['status'],
+                                                color_scheme=OrderDetailState.order_data['badge_color'],
+                                                size="2",
+                                                radius="full"
+                                            ),
+                                            spacing="1",
+                                            width="100%",
+                                            align="end",
+                                        ),
+
+                                        rx.divider(margin_y="0.5em"),
+
+                                        rx.hstack(
+                                            rx.icon("calendar", size=16, color=rx.color("gray", 11)),
+                                            rx.text(
+                                                OrderDetailState.order_data['created_at_display'],
+                                                font_size="1em",
+                                                color=rx.color("gray", 11)
+                                            ),
+                                            align="center",
+                                            spacing="1"
+                                        ),
+                                        rx.hstack(
+                                            rx.icon("credit-card", size=16, color=rx.color("gray", 11)),
+                                            rx.text(
+                                                OrderDetailState.order_data['payment_method'],
+                                                font_size="1em",
+                                                color=rx.color("gray", 11)
+                                            ),
+                                            align="center",
+                                            spacing="1"
+                                        ),
+                                        rx.hstack(
+                                            rx.icon("map-pin", size=16, color=rx.color("gray", 11)),
+                                            rx.text(
+                                                OrderDetailState.order_data['shipping_address'],
+                                                font_size="1em",
+                                                color=rx.color("gray", 11),
+                                                white_space="pre-line",
+                                                margin_top="-0.2em"
+                                            ),
+                                            align="start",
+                                            spacing="1"
+                                        ),
+                                        spacing="2",
+                                        width="100%"
+                                    ),
+                                    
+                                    rx.divider(margin_y="0.5em"),
+                                    
+                                    # Productos
+                                    rx.text("Productos", font_weight="bold", font_size="1.25em"),
+                                    rx.vstack(
+                                        rx.foreach(
+                                            OrderDetailState.order_items,
+                                            product_row_mobile
+                                        ),
+                                        spacing="2",
+                                        width="100%"
+                                    ),
+                                    
+                                    # Botón de detalles
+                                    rx.button(
+                                        rx.icon("eye", size=20),
+                                        "Ver PDF",
+                                        margin_top="1rem",
+                                        variant="outline",
+                                        width="100%",
+                                        size="3",
+                                        font_size="1em",
+                                        radius="full",
+                                    ),
+                                    spacing="2",
+                                    width="100%"
+                                ),
+                                width="100%",
+                            ),
+                            spacing="4",
+                            width="100%",
+                            padding="1rem",
+                            margin_top="80px",
+                            margin_bottom="2rem",
+                            height="100%"
+                        )
+                    )
                 ),
             ),
             height="100%",
@@ -467,4 +542,5 @@ def order_details() -> rx.Component:
             dark=Custom_theme().dark_colors()["background"]
         ),
         width="100%",
+        on_mount=OrderDetailState.load_order_from_url
     )

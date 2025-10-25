@@ -244,7 +244,35 @@ class OrderDetailState(rx.State):
     error_message: str = ""
 
     @rx.event
-    def load_order_details(self, order_id: int):
+    async def load_order_from_url(self):
+        """
+        Carga la orden desde el parámetro 'id' en la URL.
+        Se llama en on_mount de la página order_details.
+        """
+        try:
+            # Obtener el parámetro 'id' de la URL
+            order_id_str = self.router.page.params.get("id", "")
+            
+            if not order_id_str:
+                self.error_message = "No se especificó ID de orden en la URL"
+                print("⚠️ No hay parámetro 'id' en la URL")
+                return
+            
+            # Convertir a int y cargar
+            order_id = int(order_id_str)
+            await self.load_order_details(order_id)
+            
+        except ValueError as e:
+            self.error_message = "ID de orden inválido"
+            print(f"⚠️ ID de orden inválido: {order_id_str if 'order_id_str' in locals() else 'N/A'}")
+        except Exception as e:
+            self.error_message = f"Error cargando orden: {str(e)}"
+            print(f"❌ Error en load_order_from_url: {e}")
+            import traceback
+            traceback.print_exc()
+
+    @rx.event
+    async def load_order_details(self, order_id: int):
         """
         Carga los detalles completos de una orden específica.
         Incluye información de la orden y sus items.

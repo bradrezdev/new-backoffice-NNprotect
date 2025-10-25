@@ -12,7 +12,7 @@ from database.products import Products
 from database.addresses import Addresses
 from database.users import Users
 from database.engine_config import get_configured_engine
-from NNProtect_new_website.utils.timezone_mx import convert_utc_to_mexico
+from NNProtect_new_website.utils.timezone_mx import convert_to_mexico_time
 
 
 class OrderService:
@@ -229,9 +229,9 @@ class OrderService:
             address_alias = "No disponible"
 
         # Convertir timestamps a timezone México
-        created_at_mx = convert_utc_to_mexico(order.created_at) if order.created_at else None
-        submitted_at_mx = convert_utc_to_mexico(order.submitted_at) if order.submitted_at else None
-        payment_confirmed_at_mx = convert_utc_to_mexico(order.payment_confirmed_at) if order.payment_confirmed_at else None
+        created_at_mx = convert_to_mexico_time(order.created_at) if order.created_at else None
+        submitted_at_mx = convert_to_mexico_time(order.submitted_at) if order.submitted_at else None
+        payment_confirmed_at_mx = convert_to_mexico_time(order.payment_confirmed_at) if order.payment_confirmed_at else None
 
         # Formatear fecha de compra (para display)
         purchase_date = created_at_mx.strftime("%d/%m/%Y") if created_at_mx else "N/A"
