@@ -503,4 +503,5 @@ def store() -> rx.Component:
         position="absolute",
         width="100%",
         height="max-content",
+        on_mount=StoreState.on_load,  # ✅ Carga productos cuando el usuario visita la página
     )

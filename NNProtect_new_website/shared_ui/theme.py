@@ -1,7 +1,5 @@
 '''Archivo que contiene los colores oficiales del tema personalizado de la página'''
 
-import reflex as rx
-
 class Custom_theme():
     def light_colors(self):
         return {
@@ -13,7 +11,15 @@ class Custom_theme():
             "traslucid-background-blue": "rgba(0, 57, 242, 0.8)",
             "text": "#000000",
             "border": "#0039F2",
-            "box_shadow": "0px 0px 16px 3px #5E79FF10"
+            "box_shadow": "0px 0px 16px 3px #5E79FF10",
+            "success": "#10B981",
+            "success_light": "#D1FAE5",
+            "warning": "#F59E0B",
+            "warning_light": "#FEF3C7",
+            "error": "#EF4444",
+            "error_light": "#FEE2E2",
+            "info": "#3B82F6",
+            "info_light": "#DBEAFE",
         }
     
     def dark_colors(self):
@@ -25,5 +31,13 @@ class Custom_theme():
             "traslucid-background": "rgba(0, 0, 0, 0.6)",
             "text": "#FFFFFF",
             "border": "#D8B4FE",
-            "box_shadow": "0px 0px 16px 2px #1A155C90"
+            "box_shadow": "0px 0px 16px 2px #1A155C90",
+            "success": "#10B981",
+            "success_light": "#D1FAE5",
+            "warning": "#F59E0B",
+            "warning_light": "#FEF3C7",
+            "error": "#EF4444",
+            "error_light": "#FEE2E2",
+            "info": "#3B82F6",
+            "info_light": "#DBEAFE",
         }

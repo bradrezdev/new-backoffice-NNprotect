@@ -3,7 +3,7 @@ Estado para la tienda de productos NN Protect.
 Maneja la carga y visualización de productos con precios por país.
 """
 import reflex as rx
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from database.addresses import Countries
 from .product_data.product_data_service import ProductDataService
 from ..auth_service.auth_state import UserDataManager
@@ -20,7 +20,7 @@ class CountProducts(rx.State):
     
     # Sistema de carrito - Principio KISS: variables simples y claras
     cart_total: int = 0
-    cart_items: Dict[str, int] = {}
+    cart_items: Dict[str, int] = {}  # Keys son strings: str(product_id)
     
     # User ID para obtener precios correctos por país
     user_id: int = 1  # Por defecto usuario de prueba
@@ -39,7 +39,7 @@ class CountProducts(rx.State):
             self.counts[product_id] = current - 1
 
     @rx.var
-    def get_count_reactive(self) -> Dict[str, int]:
+    def get_count_reactive(self) -> dict:
         """
         Método reactivo que devuelve un diccionario con todos los contadores.
         Principio DRY: un solo método para acceder a todos los contadores de forma reactiva.
@@ -83,7 +83,7 @@ class CountProducts(rx.State):
         self.cart_items = {}
 
     @rx.var
-    def cart_items_detailed(self) -> List[Dict]:
+    def cart_items_detailed(self) -> List[Dict[str, Any]]:
         """
         Propiedad computada que devuelve los productos del carrito con información completa.
         Principio DRY: un solo lugar para obtener datos completos del carrito.
@@ -197,32 +197,32 @@ class StoreState(rx.State):
     """
     
     # Lista de productos suplementos
-    _products: List[Dict] = []
+    _products: List[Dict[str, Any]] = []
     _products_loaded: bool = False
 
     # Lista de productos de cuidado de la piel
-    _skincare_products: List[Dict] = []
+    _skincare_products: List[Dict[str, Any]] = []
     _skincare_products_loaded: bool = False
 
     # Productos más nuevos
-    _latest_products: List[Dict] = []
+    _latest_products: List[Dict[str, Any]] = []
     _latest_products_loaded: bool = False
 
     # Productos más populares
-    _popular_products: List[Dict] = []
+    _popular_products: List[Dict[str, Any]] = []
     _popular_products_loaded: bool = False
 
     # Productos por tipo
-    _kit_inicio_products: List[Dict] = []
+    _kit_inicio_products: List[Dict[str, Any]] = []
     _kit_inicio_products_loaded: bool = False
     
-    _supplement_products: List[Dict] = []
+    _supplement_products: List[Dict[str, Any]] = []
     _supplement_products_loaded: bool = False
     
-    _skincare_products_new: List[Dict] = []
+    _skincare_products_new: List[Dict[str, Any]] = []
     _skincare_products_new_loaded: bool = False
     
-    _sanitize_products: List[Dict] = []
+    _sanitize_products: List[Dict[str, Any]] = []
     _sanitize_products_loaded: bool = False
 
     # País del usuario para mostrar precios correctos
@@ -233,28 +233,21 @@ class StoreState(rx.State):
     error_message: str = ""
 
     @rx.var
-    def products(self) -> List[Dict]:
+    def products(self) -> List[Dict[str, Any]]:
         """
-        Propiedad computada que carga productos automáticamente.
-        Se ejecuta la primera vez que se accede a los productos.
+        Propiedad que retorna productos cargados.
+        Ya NO carga automáticamente - usar load_products() explícitamente.
         """
-        if not self._products_loaded:
-            try:
-                self._products = ProductDataService.get_products_for_store(self.user_id)
-                self._products_loaded = True
-            except Exception as e:
-                print(f"❌ Error cargando productos: {e}")
-                self._products = []
         return self._products
 
-
-
+    @rx.event
     def on_load(self):
         """
         Evento que se ejecuta al cargar la página.
-        Carga los productos automáticamente.
+        Carga los productos automáticamente cuando el usuario visita la tienda.
         """
         self.load_products()
+        self.load_category_products()
 
     def load_products(self):
         """
@@ -280,29 +273,65 @@ class StoreState(rx.State):
         finally:
             self.is_loading = False
 
-    def get_supplements(self) -> List[Dict]:
+    def get_supplements(self) -> List[Dict[str, Any]]:
         """
         Obtiene solo productos de tipo suplemento.
         Principio DRY: reutiliza productos cargados.
         """
         return [p for p in self._products if p["type"] == "suplemento"]
     
-    def get_skincare_products(self) -> List[Dict]:
+    def get_skincare_products(self) -> List[Dict[str, Any]]:
         """
         Obtiene solo productos de cuidado de la piel.
         """
         return [p for p in self._products if p["type"] == "skincare"]
     
-    def get_latest_products(self, limit: int = 6) -> List[Dict]:
+    def get_latest_products(self, limit: int = 6):
         """
         Obtiene los últimos productos (primeros N productos).
         Principio YAGNI: implementación simple sin fecha de creación.
         """
         return self._products[:limit]
     
+    # ✅ CRÍTICO: Cambiados a rx.var computed pero SIN ejecutar queries durante evaluación
+    # Las queries se ejecutan solo cuando load_category_products() es llamado explícitamente
+    
     @rx.var
-    def latest_products(self) -> List[Dict]:
-        """Productos más nuevos (is_new = True)"""
+    def latest_products(self) -> List[Dict[str, Any]]:
+        """Productos más nuevos (is_new = True) - cargados bajo demanda"""
+        return self._latest_products
+
+    @rx.var
+    def popular_products(self) -> List[Dict[str, Any]]:
+        """Top 5 productos más vendidos - cargados bajo demanda"""
+        return self._popular_products
+
+    @rx.var
+    def kit_inicio_products(self) -> List[Dict[str, Any]]:
+        """Productos del tipo 'kit de inicio' - cargados bajo demanda"""
+        return self._kit_inicio_products
+
+    @rx.var
+    def supplement_products(self) -> List[Dict[str, Any]]:
+        """Productos del tipo 'suplemento' - cargados bajo demanda"""
+        return self._supplement_products
+
+    @rx.var
+    def skincare_products(self) -> List[Dict[str, Any]]:
+        """Productos del tipo 'skincare' - cargados bajo demanda"""
+        return self._skincare_products
+
+    @rx.var
+    def sanitize_products(self) -> List[Dict[str, Any]]:
+        """Productos del tipo 'desinfectante' - cargados bajo demanda"""
+        return self._sanitize_products
+    
+    @rx.event
+    def load_category_products(self):
+        """
+        Carga productos por categoría de forma lazy (solo cuando se necesitan).
+        Se ejecuta cuando el usuario visita la tienda, NO durante compilación.
+        """
         if not self._latest_products_loaded:
             try:
                 self._latest_products = ProductManager.get_latest_products_formatted(self.user_id)
@@ -310,11 +339,7 @@ class StoreState(rx.State):
             except Exception as e:
                 print(f"❌ Error cargando productos nuevos: {e}")
                 self._latest_products = []
-        return self._latest_products
-
-    @rx.var  
-    def popular_products(self) -> List[Dict]:
-        """Top 5 productos más vendidos"""
+        
         if not self._popular_products_loaded:
             try:
                 self._popular_products = ProductManager.get_popular_products_formatted(self.user_id, limit=5)
@@ -322,11 +347,7 @@ class StoreState(rx.State):
             except Exception as e:
                 print(f"❌ Error cargando productos populares: {e}")
                 self._popular_products = []
-        return self._popular_products
-
-    @rx.var
-    def kit_inicio_products(self) -> List[Dict]:
-        """Productos del tipo 'kit de inicio'"""
+        
         if not self._kit_inicio_products_loaded:
             try:
                 self._kit_inicio_products = ProductManager.get_kit_inicio_products_formatted(self.user_id)
@@ -334,11 +355,7 @@ class StoreState(rx.State):
             except Exception as e:
                 print(f"❌ Error cargando kits de inicio: {e}")
                 self._kit_inicio_products = []
-        return self._kit_inicio_products
-
-    @rx.var
-    def supplement_products(self) -> List[Dict]:
-        """Productos del tipo 'suplemento'"""
+        
         if not self._supplement_products_loaded:
             try:
                 self._supplement_products = ProductManager.get_supplement_products_formatted(self.user_id)
@@ -346,11 +363,7 @@ class StoreState(rx.State):
             except Exception as e:
                 print(f"❌ Error cargando suplementos: {e}")
                 self._supplement_products = []
-        return self._supplement_products
-
-    @rx.var
-    def skincare_products(self) -> List[Dict]:
-        """Productos del tipo 'skincare'"""
+        
         if not self._skincare_products_loaded:
             try:
                 self._skincare_products = ProductManager.get_skincare_products_formatted(self.user_id)
@@ -358,11 +371,7 @@ class StoreState(rx.State):
             except Exception as e:
                 print(f"❌ Error cargando productos skincare: {e}")
                 self._skincare_products = []
-        return self._skincare_products
-
-    @rx.var
-    def sanitize_products(self) -> List[Dict]:
-        """Productos del tipo 'desinfectante'"""
+        
         if not self._sanitize_products_loaded:
             try:
                 self._sanitize_products = ProductManager.get_sanitize_products_formatted(self.user_id)
@@ -370,4 +379,3 @@ class StoreState(rx.State):
             except Exception as e:
                 print(f"❌ Error cargando productos desinfectantes: {e}")
                 self._sanitize_products = []
-        return self._sanitize_products

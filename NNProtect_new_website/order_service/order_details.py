@@ -335,7 +335,7 @@ def order_details() -> rx.Component:
                 # Contenido principal móvil
                 rx.vstack(
                     rx.text(
-                        "Compras",
+                        f"Detalles de Orden #orden_id",
                         font_size="1.5rem",
                         font_weight="bold",
                         margin_bottom="1rem",
@@ -345,93 +345,126 @@ def order_details() -> rx.Component:
                     # Lista de órdenes móvil
                     *[rx.box(
                         rx.vstack(
-                            # Encabezado de orden
-                            rx.hstack(
-                                rx.text(f"Orden #{orden_id}", font_weight="bold", font_size="1rem"),
-                                rx.text(total, font_weight="bold", font_size="1rem", color=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["secondary"],
-                                    dark=Custom_theme().light_colors()["secondary"]
-                                )),
-                                justify="between",
-                                width="100%"
-                            ),
-                            
-                            rx.divider(margin_y="0.5rem"),
-                            
                             # Detalles de la orden
                             rx.vstack(
+                                rx.vstack(
+                                    rx.hstack(
+                                        rx.text("$1,746.50", font_weight="bold", font_size="1.5em", color=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["primary"],
+                                            dark=Custom_theme().dark_colors()["primary"]
+                                        )),
+                                        rx.text("1465 PV", font_weight="bold", font_size="1.5em", color=rx.color_mode_cond(
+                                            light=Custom_theme().light_colors()["success"],
+                                            dark=Custom_theme().dark_colors()["success"]
+                                        )),
+                                    ),
+                                    rx.hstack(
+                                        rx.badge("En camino", color_scheme="yellow", size="2", radius="full"),
+                                        rx.badge("Pagado", color_scheme="green", size="2", radius="full"),
+                                        spacing="1",
+                                    ),
+                                    spacing="1",
+                                    width="100%",
+                                    align="end",
+                                ),
+
+                                rx.divider(margin_y="0.5em"),
+
                                 rx.hstack(
-                                    rx.icon("calendar", size=16, color="#6B7280"),
-                                    rx.text(fecha, font_size="0.8rem", color="#6B7280"),
+                                    rx.icon("calendar", size=16, color=rx.color("gray", 11)),
+                                    rx.text(fecha, font_size="1em", color=rx.color("gray", 11)),
+                                    align="center",
                                     spacing="1"
                                 ),
                                 rx.hstack(
-                                    rx.icon("credit-card", size=16, color="#6B7280"),
-                                    rx.text(metodo, font_size="0.8rem", color="#6B7280"),
+                                    rx.icon("credit-card", size=16, color=rx.color("gray", 11)),
+                                    rx.text(metodo, font_size="1em", color=rx.color("gray", 11)),
+                                    align="center",
                                     spacing="1"
                                 ),
                                 rx.hstack(
-                                    rx.icon("truck", size=16, color="#6B7280"),
-                                    rx.text(estado_envio, font_size="0.8rem", color="#6B7280"),
+                                    rx.icon("map-pin", size=16, color=rx.color("gray", 11)),
+                                    rx.text("Rey Felipe 429\nColinas del Rey\n28039\nVilla de Álvarez, Colima", font_size="1em", color=rx.color("gray", 11), white_space="pre", margin_top="-0.2em"),
                                     spacing="1"
                                 ),
                                 spacing="2",
                                 width="100%"
                             ),
                             
-                            rx.divider(margin_y="0.5rem"),
+                            rx.divider(margin_y="0.5em"),
                             
                             # Productos
-                            rx.text("Productos:", font_weight="600", font_size="0.9rem"),
-                            *[rx.hstack(
-                                rx.text(f"• {producto}", font_size="0.85rem"),
-                                rx.text(f"x{cantidad}", font_size="0.85rem", color="gray"),
-                                rx.spacer(),
-                                rx.text(precio, font_size="0.85rem", font_weight="600"),
-                                width="100%"
+                            rx.text("Productos", font_weight="bold", font_size="1.25em"),
+                            *[rx.box(
+                                rx.hstack(
+                                    rx.text(f"{producto}", font_size="1em"),
+                                    rx.text("30 ml", font_size="1em"),
+                                    spacing="1",
+                                ),
+                                rx.hstack(
+                                    rx.vstack(
+                                        rx.text(f"Cantidad: {cantidad}", font_size="0.9em", color="gray", margin_bottom="-1em"),
+                                        rx.text(f"Precio: {precio}", font_size="0.9em", color="gray", margin_bottom="-1em"),
+                                        rx.hstack(
+                                            rx.text("293 PV", font_size="0.9em", color=rx.color("green", 9)),
+                                            rx.text("293 VN", font_size="0.9em", color=rx.color("blue", 9)),
+                                            spacing="2",
+                                        )
+                                    ),
+                                    rx.vstack(
+                                        rx.text(precio, font_size="0.9em", font_weight="600", margin_bottom="-1em"),
+                                        rx.text("586 PV", font_size="0.9em", color=rx.color("blue", 9), margin_bottom="-1em"),
+                                        rx.text("586 VN", font_size="0.9em", color=rx.color("green", 9)),
+                                        align="end",
+                                    ),
+                                    align="center",
+                                    justify="between",
+                                ),
+                                bg=rx.color_mode_cond(
+                                    light=Custom_theme().light_colors()["tertiary"],
+                                    dark=Custom_theme().dark_colors()["tertiary"]
+                                ),
+                                justify="between",
+                                border_radius="32px",
+                                padding="1em",
+                                width="100%",
+                                spacing="2",
                             ) for producto, cantidad, precio in productos],
                             
                             # Botón de detalles
                             rx.button(
-                                "Ver detalles",
-                                size="2",
+                                rx.icon("eye", size=20),
+                                "Ver PDF",
+                                margin_top="1rem",
+                                variant="outline",
                                 width="100%",
-                                variant="soft",
-                                margin_top="0.5rem"
+                                size="3",
+                                font_size="1em",
+                                radius="full",
                             ),
-                            
                             spacing="2",
                             width="100%"
                         ),
-                        bg=rx.color_mode_cond(
-                            light=Custom_theme().light_colors()["tertiary"],
-                            dark=Custom_theme().dark_colors()["tertiary"]
-                        ),
-                        border_radius="12px",
-                        padding="1rem",
                         width="100%",
-                        margin_bottom="1rem"
                     ) for orden_id, total, fecha, metodo, estado_envio, productos in [
                         ("12345", "$1,746.50", "10 sept 2025 - 09:53", "Tarjeta de crédito", "En camino", 
-                        [("Producto 1", "2", "$500.00"), ("Producto 2", "1", "$746.50"), ("Producto 3", "3", "$500.00")]),
-                        ("12344", "$2,890.00", "8 sept 2025 - 14:20", "PayPal", "Entregado",
-                        [("Producto 4", "1", "$1,890.00"), ("Producto 5", "2", "$1,000.00")]),
+                        [("Dreaming Deep", "2", "$698.60"), ("Cúrcuma", "1", "$349.30"), ("Granada", "2", "$698.60")]),
                     ]],
-                    
                     spacing="4",
                     width="100%",
                     padding="1rem",
                     margin_top="80px",
-                    margin_bottom="2rem"
+                    margin_bottom="2rem",
+                    height="100%"
                 ),
             ),
+            height="100%",
             width="100%",
         ),
-
+        height="100%",
         bg=rx.color_mode_cond(
             light=Custom_theme().light_colors()["background"],
             dark=Custom_theme().dark_colors()["background"]
         ),
         width="100%",
-        position="absolute",
     )

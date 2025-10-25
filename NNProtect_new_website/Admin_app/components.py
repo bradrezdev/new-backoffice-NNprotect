@@ -3,24 +3,24 @@ Componentes reutilizables para Admin App
 """
 
 import reflex as rx
-from .theme import COLORS, CARD_STYLE, INPUT_STYLE, SELECT_STYLE, BUTTON_STYLE, BADGE_STYLE, HEADING_STYLE
+from .theme import Custom_theme
 
 
 def admin_card(title: str, *children, **kwargs) -> rx.Component:
     """Card con título y contenido"""
     return rx.box(
-        rx.heading(title, **HEADING_STYLE["h3"]),
-        rx.divider(margin_y="1rem", border_color=COLORS["gray_200"]),
+        rx.heading(title),
+        rx.divider(margin_y="1rem", border_color=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["text"],
+            dark=Custom_theme().dark_colors()["text"]
+        )),
         *children,
-        **CARD_STYLE,
         **kwargs
     )
 
 
 def admin_input(
     label: str,
-    placeholder: str = "",
-    value = None,
     on_change = None,
     input_type: str = "text",
     **kwargs
@@ -29,32 +29,21 @@ def admin_input(
     return rx.vstack(
         rx.text(
             label,
-            font_weight="600",
-            font_size="0.9375rem",
-            color=COLORS["gray_700"],
+            font_weight="medium",
+            font_size="1em",
         ),
         rx.input(
-            placeholder=placeholder,
-            value=value,
             on_change=on_change,
             type=input_type,
             border_radius="15px",
             height="48px",
             width="100%",
             font_size="1rem",
-            background=COLORS["bg_input"],
-            border=f"2px solid {COLORS['gray_200']}",
+            background=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["tertiary"],
+                dark=Custom_theme().dark_colors()["tertiary"]
+            ),
             padding="0.875rem 1rem",
-            transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            color=COLORS["gray_900"],
-            _focus={
-                "outline": "none",
-                "border_color": COLORS["primary"],
-                "box_shadow": f"0 0 0 4px {COLORS['primary_ultra_light']}",
-            },
-            _hover={
-                "border_color": COLORS["gray_300"],
-            },
             **kwargs
         ),
         spacing="2",
@@ -66,7 +55,6 @@ def admin_input(
 def admin_select(
     label: str,
     options: list,
-    value = None,
     on_change = None,
     **kwargs
 ) -> rx.Component:
@@ -74,17 +62,18 @@ def admin_select(
     return rx.vstack(
         rx.text(
             label,
-            font_weight="600",
-            font_size="0.9375rem",
-            color=COLORS["gray_700"],
+            font_weight="medium",
+            font_size="1em",
         ),
         rx.select(
             options,
-            value=value,
             on_change=on_change,
             radius="large",
             size="3",
-            background=COLORS["bg_input"],
+            background=rx.color_mode_cond(
+                light=Custom_theme().light_colors()["tertiary"],
+                dark=Custom_theme().dark_colors()["tertiary"]
+            ),
             width="100%",
             **kwargs
         ),
@@ -103,8 +92,15 @@ def admin_button(
     """Botón con variantes"""
     return rx.button(
         text,
+        bg=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["primary"],
+            dark=Custom_theme().dark_colors()["primary"]
+        ),
+        color="white",
+        border_radius="24px",
+        font_size="1.1em",
+        font_weight="bold",
         on_click=on_click,
-        **BUTTON_STYLE.get(variant, BUTTON_STYLE["primary"]),
         **kwargs
     )
 
@@ -113,7 +109,6 @@ def admin_badge(text: str, variant: str = "info") -> rx.Component:
     """Badge de estado"""
     return rx.box(
         text,
-        **BADGE_STYLE.get(variant, BADGE_STYLE["info"])
     )
 
 
@@ -126,14 +121,12 @@ def admin_stat_card(label: str, value: str, icon: str = "📊") -> rx.Component:
                 rx.text(
                     label,
                     font_size="0.875rem",
-                    color=COLORS["gray_600"],
                     font_weight="500"
                 ),
                 rx.text(
                     value,
                     font_size="1.5rem",
                     font_weight="700",
-                    color=COLORS["gray_900"]
                 ),
                 spacing="0",
                 align_items="start"
@@ -141,7 +134,6 @@ def admin_stat_card(label: str, value: str, icon: str = "📊") -> rx.Component:
             spacing="4",
             align_items="center"
         ),
-        **CARD_STYLE,
         padding="1rem"
     )
 
@@ -149,17 +141,17 @@ def admin_stat_card(label: str, value: str, icon: str = "📊") -> rx.Component:
 def admin_alert(message: str, variant: str = "info") -> rx.Component:
     """Alerta de mensaje"""
     bg_colors = {
-        "success": f"{COLORS['success']}10",
-        "warning": f"{COLORS['warning']}10",
-        "error": f"{COLORS['error']}10",
-        "info": f"{COLORS['info']}10",
+        "success": f"{rx.color_mode_cond(light=Custom_theme().light_colors()['success'], dark=Custom_theme().dark_colors()['success'])}10",
+        "warning": f"{rx.color_mode_cond(light=Custom_theme().light_colors()['warning'], dark=Custom_theme().dark_colors()['warning'])}10",
+        "error": f"{rx.color_mode_cond(light=Custom_theme().light_colors()['error'], dark=Custom_theme().dark_colors()['error'])}10",
+        "info": f"{rx.color_mode_cond(light=Custom_theme().light_colors()['info'], dark=Custom_theme().dark_colors()['info'])}10",
     }
 
     border_colors = {
-        "success": COLORS['success'],
-        "warning": COLORS['warning'],
-        "error": COLORS['error'],
-        "info": COLORS['info'],
+        "success": rx.color_mode_cond(light=Custom_theme().light_colors()['success'], dark=Custom_theme().dark_colors()['success']),
+        "warning": rx.color_mode_cond(light=Custom_theme().light_colors()['warning'], dark=Custom_theme().dark_colors()['warning']),
+        "error": rx.color_mode_cond(light=Custom_theme().light_colors()['error'], dark=Custom_theme().dark_colors()['error']),
+        "info": rx.color_mode_cond(light=Custom_theme().light_colors()['info'], dark=Custom_theme().dark_colors()['info']),
     }
 
     icons = {
@@ -194,12 +186,15 @@ def admin_alert(message: str, variant: str = "info") -> rx.Component:
 def admin_section_header(title: str, subtitle: str = "") -> rx.Component:
     """Header de sección"""
     return rx.vstack(
-        rx.heading(title, **HEADING_STYLE["h2"]),
+        rx.heading(title),
         rx.cond(
             subtitle != "",
             rx.text(
                 subtitle,
-                color=COLORS["gray_600"],
+                color=rx.color_mode_cond(
+                    light=Custom_theme().light_colors()["text"],
+                    dark=Custom_theme().dark_colors()["text"]
+                ),
                 font_size="0.875rem"
             )
         ),
@@ -225,5 +220,8 @@ def admin_divider() -> rx.Component:
     """Divider con estilo"""
     return rx.divider(
         margin_y="1.5rem",
-        border_color=COLORS["gray_200"]
+        border_color=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["border"],
+            dark=Custom_theme().dark_colors()["border"]
+        )
     )

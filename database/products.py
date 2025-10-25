@@ -38,11 +38,13 @@ class Products(rx.Model, table=True):
     
     # Información básica del producto
     product_name: str = Field(max_length=255, nullable=False)
+    active_ingredient: str = Field(default=None, max_length=255)
     SKU: Optional[str] = Field(default=None, max_length=100)
     description: Optional[str] = Field(default=None, max_length=500)
     presentation: str = Field(max_length=50, nullable=False)
     type: str = Field(max_length=50, nullable=False)
-    
+    quantity: str = Field(default=None)
+
     # Puntos de valor por país
     pv_mx: int = Field(default=0, nullable=False)
     pv_usa: int = Field(default=0, nullable=False)

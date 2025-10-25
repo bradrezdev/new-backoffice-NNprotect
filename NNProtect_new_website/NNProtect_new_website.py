@@ -614,7 +614,7 @@ def index() -> rx.Component:
                     ),
                     spacing="4",
                     width="100%",
-                    padding="1rem",
+                    padding="1em",
                     margin_top="80px",
                     margin_bottom="0.2em",
                 ),
@@ -627,43 +627,67 @@ def index() -> rx.Component:
             width="100%",
         ),
         # Propiedades del contenedor principal.
+        height="100%",
         bg=rx.color_mode_cond(
             light=Custom_theme().light_colors()["background"],
             dark=Custom_theme().dark_colors()["background"]
-        ),                              # Fondo según modo
-        position="absolute",            # Posición absoluta
+        ),
         width="100%",                  # Ancho de la ventana
         on_mount=[AuthState.load_user_from_token],
     )
 
-pwa_meta = rx.el.meta(
-    name="apple-mobile-web-app-status-bar-style",
-    content="black-translucent"
-)
+# Meta tags para PWA y configuración móvil
+meta = [
+    # 1. CLAVE: Se agrega el viewport con 'viewport-fit=cover' para que la PWA abrace la muesca.
+    {"name": "viewport", "content": "initial-scale=1, viewport-fit=cover, width=device-width"},
+    
+    # 2. Requisitos de la PWA de Apple para modo app y estilo de barra.
+    {"name": "apple-mobile-web-app-status-bar-style", "content": "black-translucent"}, 
+    {"name": "apple-mobile-web-app-capable", "content": "yes"},
+]
+
 app = rx.App(
-    theme=rx.theme(appearance="inherit"),
-    head_components=[
-        pwa_meta
-    ]
+    theme=rx.theme(appearance="inherit")
 )
 
-app.add_page(index, title="NN Protect | Dashboard", route="/dashboard")
-app.add_page(login, title="NN Protect | Iniciar sesión", route="/")
-app.add_page(register, title="NN Protect | Nuevo registro", route="/register")
-app.add_page(register_noSponsor, title="NN Protect | Registro sin patrocinador", route="/register_noSponsor")
-app.add_page(welcome_page, title="NN Protect | Bienvenido", route="/welcome")
-app.add_page(network, title="NN Protect | Red", route="/network")
-app.add_page(network_reports, title="NN Protect | Reportes de Red", route="/network_reports")
-app.add_page(income_reports, title="NN Protect | Reportes de Ingresos", route="/income_reports")
-app.add_page(store, title="NN Protect | Tienda", route="/store")
-app.add_page(orders, title="NN Protect | Órdenes", route="/orders")
-app.add_page(order_details, title="NN Protect | Detalles de Orden", route="/order_details")
-app.add_page(withdrawals, title="NN Protect | Retiros", route="/withdrawals")
-app.add_page(new_withdrawal, title="NN Protect | Nuevo Retiro", route="/new_withdrawal")
-app.add_page(shipment_method, title="NN Protect | Método de Envío", route="/shipment_method")
-app.add_page(shopping_cart, title="NN Protect | Carrito de Compras", route="/shopping_cart")
-app.add_page(payment, title="NN Protect | Método de Pago", route="/payment")
-app.add_page(admin_page, title="NN Protect | Admin Panel", route="/admin")
+app.add_page(
+    index,
+    title="NN Protect | Dashboard",
+    route="/dashboard",
+    meta=meta,
+)
+
+# Login y Registro
+app.add_page(login, title="NN Protect | Iniciar sesión", route="/", meta=meta)
+app.add_page(register, title="NN Protect | Nuevo registro", route="/register", meta=meta)
+app.add_page(register_noSponsor, title="NN Protect | Registro sin patrocinador", route="/register_noSponsor", meta=meta)
+app.add_page(welcome_page, title="NN Protect | Bienvenido", route="/welcome", meta=meta)
+
+# Servicio de red
+app.add_page(network, title="NN Protect | Red", route="/network", meta=meta)
+app.add_page(network_reports, title="NN Protect | Reportes de Red", route="/network_reports", meta=meta)
+app.add_page(income_reports, title="NN Protect | Reportes de Ingresos", route="/income_reports", meta=meta)
+
+# Servicio de tienda
+app.add_page(store, title="NN Protect | Tienda", route="/store", meta=meta)
+app.add_page(shopping_cart, title="NN Protect | Carrito de Compras", route="/shopping_cart", meta=meta)
+
+# Servicio de órdenes
+app.add_page(orders, title="NN Protect | Órdenes", route="/orders", meta=meta)
+app.add_page(order_details, title="NN Protect | Detalles de Orden", route="/orders/order_details", meta=meta)
+
+# Servicio de retiros
+app.add_page(withdrawals, title="NN Protect | Retiros", route="/withdrawals", meta=meta)
+app.add_page(new_withdrawal, title="NN Protect | Nuevo Retiro", route="/new_withdrawal", meta=meta)
+
+# Servicio de envíos
+app.add_page(shipment_method, title="NN Protect | Método de Envío", route="/shipment_method", meta=meta)
+
+# Servicio de pagos
+app.add_page(payment, title="NN Protect | Método de Pago", route="/payment", meta=meta)
+
+# Admin Panel
+app.add_page(admin_page, title="NN Protect | Admin Panel", route="/admin", meta=meta)
 
 # Inicializar base de datos (crear periodo inicial si no existe)
 initialize_database()
