@@ -21,6 +21,7 @@ from .product_service.shopping_cart import shopping_cart
 # Order Service
 from .order_service.orders import orders
 from .order_service.order_details import order_details
+from .order_service.order_confirmation import order_confirmation
 from .order_service.shipment import shipment_method
 
 # Finance Service
@@ -518,14 +519,14 @@ def index() -> rx.Component:
                             bg="#0039F2",
                             color="white",
                             padding="16px",
-                            border_radius="29px",
+                            border_radius="32px",
                             width="100%"
                         ),
                         rx.hstack(
                             rx.box(
                                 rx.vstack(
                                     rx.text("Billetera", font_size="0.8rem", text_align="center"),
-                                    rx.text(AuthState.profile_data.get("wallet_balance", 0), font_size="1rem", font_weight="bold", text_align="center"),
+                                    rx.text(f"${AuthState.profile_data.get("wallet_balance", 0):,.0f}", font_size="1rem", font_weight="bold", text_align="center"),
                                     spacing="1"
                                 ),
                                 bg=rx.color_mode_cond(
@@ -533,7 +534,7 @@ def index() -> rx.Component:
                                     dark=Custom_theme().dark_colors()["tertiary"]
                                 ),
                                 padding="16px",
-                                border_radius="29px",
+                                border_radius="32px",
                                 width="49%"
                             ),
                             rx.box(
@@ -675,6 +676,7 @@ app.add_page(shopping_cart, title="NN Protect | Carrito de Compras", route="/sho
 # Servicio de órdenes
 app.add_page(orders, title="NN Protect | Órdenes", route="/orders", meta=meta)
 app.add_page(order_details, title="NN Protect | Detalles de Orden", route="/orders/order_details", meta=meta)
+app.add_page(order_confirmation, title="NN Protect | Confirmación de Orden", route="/order_confirmation", meta=meta)
 
 # Servicio de retiros
 app.add_page(withdrawals, title="NN Protect | Retiros", route="/withdrawals", meta=meta)

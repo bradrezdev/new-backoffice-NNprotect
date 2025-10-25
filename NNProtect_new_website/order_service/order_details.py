@@ -528,12 +528,13 @@ def order_details() -> rx.Component:
                             padding="1rem",
                             margin_top="80px",
                             margin_bottom="2rem",
-                            height="100%"
-                        )
-                    )
+                            height="100%",
+                        ),
+                    ),
                 ),
+                height="100%",
             ),
-            height="100%",
+            height="100vh",
             width="100%",
         ),
         height="100%",
