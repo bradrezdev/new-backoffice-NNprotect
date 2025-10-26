@@ -50,6 +50,9 @@ class Users(rx.Model, table=True):
     # Cache de PV acumulado (Personal Volume)
     pv_cache: int = Field(default=0, index=True)
 
+    # Cache de VN acumulado (Volumen de Negocio)
+    vn_cache: float = Field(default=0.0, index=True)
+
     # Cache de PVG acumulado (Puntos de Volumen Grupal)
     pvg_cache: int = Field(default=0, index=True)
 

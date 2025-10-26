@@ -326,9 +326,58 @@ class RankService:
         except Exception as e:
             print(f"❌ Error calculando rango de usuario {member_id}: {e}")
             return None
+    
+    @classmethod
+    def calculate_rank_from_cache(cls, session, member_id: int) -> Optional[int]:
+        """
+        Calcula el rango usando pv_cache y pvg_cache (más eficiente).
+        Usado cuando se actualizan los caches en tiempo real.
+        
+        Args:
+            session: Sesión de base de datos
+            member_id: ID del miembro
+        
+        Returns:
+            rank_id del rango alcanzado o None si no cumple requisitos
+        """
+        try:
+            # Obtener usuario con sus caches
+            user = session.exec(
+                sqlmodel.select(Users).where(Users.member_id == member_id)
+            ).first()
+            
+            if not user:
+                print(f"❌ Usuario {member_id} no encontrado")
+                return None
+            
+            # Verificar PV mínimo personal
+            if user.pv_cache < 1465:
+                return cls.DEFAULT_RANK_ID  # "Sin rango"
+            
+            # Usar pvg_cache para determinar rango
+            pvg = user.pvg_cache
+            
+            # Obtener todos los rangos ordenados por PVG requerido (descendente)
+            ranks = session.exec(
+                sqlmodel.select(Ranks)
+                .where(Ranks.pvg_required > 0)
+                .order_by(sqlmodel.desc(Ranks.pvg_required))
+            ).all()
+            
+            # Encontrar el rango más alto que cumple el requisito
+            for rank in ranks:
+                if pvg >= rank.pvg_required:
+                    return rank.id
+            
+            # Si tiene PV suficiente pero no cumple ningún umbral de PVG
+            return cls.DEFAULT_RANK_ID
+        
+        except Exception as e:
+            print(f"❌ Error calculando rango desde cache de usuario {member_id}: {e}")
+            return None
 
     @classmethod
-    def check_and_update_rank(cls, session, member_id: int) -> bool:
+    def check_and_update_rank(cls, session, member_id: int, use_cache: bool = True) -> bool:
         """
         Verifica si el usuario califica para nuevo rango y lo actualiza.
         Principio POO: Encapsula lógica de detección y actualización.
@@ -336,17 +385,19 @@ class RankService:
         Args:
             session: Sesión de base de datos
             member_id: ID del miembro
+            use_cache: Si True, usa pv_cache/pvg_cache (más rápido); si False, recalcula desde órdenes
 
         Returns:
             True si hubo promoción, False si no
         """
         try:
-            # Obtener período actual
-            current_period = cls._get_current_period(session)
-            period_id = current_period.id if current_period else None
-
-            # Calcular rango que corresponde
-            calculated_rank_id = cls.calculate_rank(session, member_id, period_id)
+            # Calcular rango que corresponde (usando cache o recalculando)
+            if use_cache:
+                calculated_rank_id = cls.calculate_rank_from_cache(session, member_id)
+            else:
+                current_period = cls._get_current_period(session)
+                period_id = current_period.id if current_period else None
+                calculated_rank_id = cls.calculate_rank(session, member_id, period_id)
 
             if not calculated_rank_id:
                 return False

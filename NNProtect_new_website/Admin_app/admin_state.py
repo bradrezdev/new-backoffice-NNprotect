@@ -1001,6 +1001,48 @@ class AdminState(rx.State):
                             order_item.calculate_totals()
                             session.add(order_item)
 
+                        # ✅ Actualizar PV y VN del usuario
+                        user.pv_cache += total_pv
+                        user.vn_cache += total_vn
+                        
+                        # ✅ CRÍTICO: El PVG del usuario incluye su propio PV
+                        user.pvg_cache += total_pv
+                        
+                        # Calificar usuario si alcanza el mínimo
+                        if user.pv_cache >= 1465:  # PV_MINIMO_CALIFICACION
+                            user.status = UserStatus.QUALIFIED
+                        
+                        session.add(user)
+                        
+                        # ✅ CRÍTICO: Propagar PVG a ancestros
+                        ancestor_paths = session.exec(
+                            sqlmodel.select(UserTreePath)
+                            .where(UserTreePath.descendant_id == user.member_id)
+                            .where(UserTreePath.depth > 0)
+                        ).all()
+                        
+                        for path in ancestor_paths:
+                            ancestor = session.exec(
+                                sqlmodel.select(Users).where(Users.member_id == path.ancestor_id)
+                            ).first()
+                            
+                            if ancestor:
+                                ancestor.pvg_cache += total_pv
+                                session.add(ancestor)
+                        
+                        print(f"  ✅ Orden: {total_pv} PV → User {user.member_id} (PVG: +{total_pv}, propagado a {len(ancestor_paths)} ancestros)")
+                        
+                        # ✅ CRÍTICO: Verificar y actualizar rango del usuario tras cambio de PVG
+                        rank_updated = RankService.check_and_update_rank(session, user.member_id)
+                        if rank_updated:
+                            print(f"  🎉 User {user.member_id} promovido a nuevo rango")
+                        
+                        # ✅ CRÍTICO: Verificar y actualizar rango de cada ancestro tras cambio de PVG
+                        for path in ancestor_paths:
+                            ancestor_rank_updated = RankService.check_and_update_rank(session, path.ancestor_id)
+                            if ancestor_rank_updated:
+                                print(f"  🎉 Ancestro {path.ancestor_id} promovido a nuevo rango")
+
                         total_orders += 1
 
                 session.commit()
@@ -1311,7 +1353,7 @@ class AdminState(rx.State):
         return user
     
     def _create_mlm_order(self, session, user: Users, country: str, products_map: dict, current_period):
-        """Crea orden con 5 productos"""
+        """Crea orden con 5 productos y actualiza PV/PVG"""
         currency = self._get_currency(country)
         
         order = Orders(
@@ -1371,6 +1413,47 @@ class AdminState(rx.State):
         order.total = subtotal + order.shipping_cost
         order.total_pv = total_pv
         order.total_vn = total_vn
+        
+        session.flush()
+        
+        # ✅ Actualizar pv_cache y vn_cache del usuario
+        user.pv_cache += total_pv
+        user.vn_cache += total_vn
+        
+        # ✅ CRÍTICO: El PVG del usuario incluye su propio PV
+        user.pvg_cache += total_pv
+        
+        session.add(user)
+        
+        # ✅ Propagar pvg_cache a ancestros
+        ancestor_paths = session.exec(
+            sqlmodel.select(UserTreePath)
+            .where(UserTreePath.descendant_id == user.member_id)
+            .where(UserTreePath.depth > 0)
+        ).all()
+        
+        for path in ancestor_paths:
+            ancestor = session.exec(
+                sqlmodel.select(Users).where(Users.member_id == path.ancestor_id)
+            ).first()
+            
+            if ancestor:
+                ancestor.pvg_cache += total_pv
+                session.add(ancestor)
+        
+        print(f"  ✅ Orden creada: {total_pv} PV → User {user.member_id} (PVG: +{total_pv}, propagado a {len(ancestor_paths)} ancestros)")
+        
+        # ✅ CRÍTICO: Verificar y actualizar rango del usuario tras cambio de PVG
+        rank_updated = RankService.check_and_update_rank(session, user.member_id)
+        if rank_updated:
+            print(f"  🎉 User {user.member_id} promovido a nuevo rango")
+        
+        # ✅ CRÍTICO: Verificar y actualizar rango de cada ancestro tras cambio de PVG
+        for path in ancestor_paths:
+            ancestor_rank_updated = RankService.check_and_update_rank(session, path.ancestor_id)
+            if ancestor_rank_updated:
+                print(f"  🎉 Ancestro {path.ancestor_id} promovido a nuevo rango")
+
     
     def _get_currency(self, country: str) -> str:
         """Retorna moneda según país"""
@@ -1706,3 +1789,192 @@ class AdminState(rx.State):
             self.is_loading_loyalty = False
             print("DEBUG: add_loyalty_points - FIN")
             print("="*60 + "\n")
+
+    # ===================== TAB 7: TEST COMISIONES =====================
+    
+    is_loading_commissions: bool = False
+    commission_results: dict = {}
+    
+    @rx.event
+    def process_period_end_and_commissions(self):
+        """
+        Cierra el período actual, crea uno nuevo y procesa bonos Uninivel + Match.
+        Deposita todas las comisiones PENDING en las wallets de los usuarios.
+        """
+        self.is_loading_commissions = True
+        
+        try:
+            from database.engine_config import get_configured_engine
+            from database.periods import Periods
+            from database.comissions import Commissions, CommissionStatus
+            import sys
+            import os
+            import importlib.util
+            
+            # Importar dinámicamente el módulo plan_compensacion.py
+            plan_comp_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                "plan de comisiones",
+                "plan_compensacion.py"
+            )
+            
+            spec = importlib.util.spec_from_file_location("plan_compensacion", plan_comp_path)
+            if spec is None or spec.loader is None:
+                raise ImportError(f"No se pudo cargar plan_compensacion.py desde {plan_comp_path}")
+                
+            plan_comp_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(plan_comp_module)
+            CompensationPlanV2 = plan_comp_module.CompensationPlanV2
+            
+            from NNProtect_new_website.mlm_service.wallet_service import WalletService
+            
+            engine = get_configured_engine()
+            
+            with sqlmodel.Session(engine) as session:
+                print("\n" + "="*80)
+                print("🔄 INICIANDO PROCESAMIENTO DE CIERRE DE PERÍODO Y COMISIONES")
+                print("="*80 + "\n")
+                
+                # 1. Obtener período actual activo (sin usar .desc())
+                all_periods = session.exec(
+                    sqlmodel.select(Periods)
+                    .where(Periods.closed_at == None)
+                ).all()
+                
+                if not all_periods:
+                    self.show_error("❌ No hay un período activo para cerrar")
+                    return
+                
+                # Ordenar manualmente por starts_on descendente
+                current_period = max(all_periods, key=lambda p: p.starts_on)
+                
+                if not current_period:
+                    self.show_error("❌ No hay un período activo para cerrar")
+                    return
+                
+                print(f"📅 Período actual encontrado: {current_period.name}")
+                print(f"   ID: {current_period.id}")
+                print(f"   Inicio: {current_period.starts_on}")
+                print(f"   Fin: {current_period.ends_on}\n")
+                
+                # 2. Ejecutar process_end_of_month (calcula Match y Auto)
+                print("💰 Ejecutando process_end_of_month...")
+                end_of_month_results = CompensationPlanV2.process_end_of_month(
+                    session, current_period.id
+                )
+                
+                print(f"\n✅ process_end_of_month completado:")
+                print(f"   - Match bonuses: {end_of_month_results.get('match', {}).get('bonuses_calculated', 0)}")
+                print(f"   - Auto bonuses: {end_of_month_results.get('auto', {}).get('processed', 0)}")
+                print(f"   - Volúmenes reseteados: {end_of_month_results.get('volumes_reset', False)}\n")
+                
+                # 3. Obtener todas las comisiones PENDING del período
+                pending_commissions = session.exec(
+                    sqlmodel.select(Commissions)
+                    .where(Commissions.period_id == current_period.id)
+                    .where(Commissions.status == CommissionStatus.PENDING.value)
+                ).all()
+                
+                print(f"💸 Comisiones PENDING encontradas: {len(pending_commissions)}\n")
+                
+                # 4. Depositar cada comisión en la wallet del usuario
+                deposited_count = 0
+                deposited_total = 0.0
+                failed_count = 0
+                
+                for commission in pending_commissions:
+                    if commission.id is None:
+                        failed_count += 1
+                        continue
+                        
+                    success = WalletService.deposit_commission(
+                        session=session,
+                        member_id=commission.member_id,
+                        commission_id=commission.id,
+                        amount=commission.amount_converted,
+                        currency=commission.currency_destination,
+                        description=commission.notes
+                    )
+                    
+                    if success:
+                        deposited_count += 1
+                        deposited_total += commission.amount_converted
+                    else:
+                        failed_count += 1
+                
+                session.commit()
+                
+                print(f"\n💰 RESUMEN DE DEPÓSITOS:")
+                print(f"   ✅ Exitosos: {deposited_count}")
+                print(f"   ❌ Fallidos: {failed_count}")
+                print(f"   💵 Total depositado: ${deposited_total:.2f}\n")
+                
+                # 5. Cerrar el período actual
+                current_period.closed_at = datetime.now(timezone.utc)
+                session.add(current_period)
+                
+                print(f"🔒 Período {current_period.name} cerrado exitosamente")
+                
+                # 6. Crear nuevo período (si no existe)
+                now = datetime.now(timezone.utc)
+                next_month = now.month + 1 if now.month < 12 else 1
+                next_year = now.year if now.month < 12 else now.year + 1
+                
+                new_period_name = f"{next_year}-{next_month:02d}"
+                
+                # Verificar si ya existe el período
+                existing_period = session.exec(
+                    sqlmodel.select(Periods).where(Periods.name == new_period_name)
+                ).first()
+                
+                if existing_period:
+                    print(f"⚠️  Período {new_period_name} ya existe (ID: {existing_period.id})")
+                    new_period = existing_period
+                else:
+                    new_period = Periods(
+                        name=new_period_name,
+                        description=f"Período {new_period_name}",
+                        starts_on=now,
+                        ends_on=datetime(next_year, next_month, 28, 23, 59, 59, tzinfo=timezone.utc)
+                    )
+                    
+                    session.add(new_period)
+                    session.commit()
+                    
+                    print(f"✨ Nuevo período creado: {new_period.name} (ID: {new_period.id})")
+                
+                # Guardar resultados
+                self.commission_results = {
+                    "closed_period": current_period.name,
+                    "new_period": new_period.name,
+                    "match_bonuses": end_of_month_results.get('match_processed', 0),
+                    "auto_bonuses": 0,
+                    "commissions_deposited": deposited_count,
+                    "commissions_failed": failed_count,
+                    "total_amount": round(deposited_total, 2)
+                }
+                
+                print("\n" + "="*80)
+                print("✅ PROCESAMIENTO COMPLETADO EXITOSAMENTE")
+                print("="*80 + "\n")
+                
+                self.show_success(
+                    f"✅ Período cerrado: {current_period.name} | "
+                    f"Nuevo período: {new_period.name} | "
+                    f"Comisiones depositadas: {deposited_count} (${deposited_total:.2f})"
+                )
+                
+        except ImportError as e:
+            error_msg = f"Error importando módulos: {str(e)}"
+            print(f"❌ {error_msg}")
+            self.show_error(error_msg)
+            import traceback
+            traceback.print_exc()
+        except Exception as e:
+            error_msg = f"Error procesando comisiones: {str(e)}"
+            print(f"❌ {error_msg}")
+            self.show_error(error_msg)
+            import traceback
+            traceback.print_exc()
+        finally:
+            self.is_loading_commissions = False

@@ -1044,6 +1044,229 @@ def tab_loyalty() -> rx.Component:
     )
 
 
+# ===================== TAB 7: TEST COMISIONES =====================
+
+def tab_test_commissions() -> rx.Component:
+    """Tab para ejecutar cierre de período y cálculo de comisiones"""
+    return rx.vstack(
+        section_title(
+            "Procesamiento de Comisiones",
+            "Cierra el período actual, crea uno nuevo y ejecuta bonos Uninivel + Match"
+        ),
+        
+        # Explicación
+        rx.box(
+            rx.vstack(
+                rx.heading(
+                    "⚠️ ¿Qué hace este botón?",
+                    size="5",
+                    color=rx.color_mode_cond(
+                        light=Custom_theme().light_colors()["text"],
+                        dark=Custom_theme().dark_colors()["text"]
+                    ),
+                ),
+                rx.text(
+                    "Este proceso ejecuta las siguientes acciones en orden:",
+                    font_weight="600",
+                    color=rx.color_mode_cond(light="#6B7280", dark="#9CA3AF")
+                ),
+                rx.list(
+                    rx.list.item("1. Calcula el Bono Uninivel para todos los usuarios calificados"),
+                    rx.list.item("2. Calcula el Bono Match (Igualación) para embajadores"),
+                    rx.list.item("3. Procesa el Bono de Auto para rangos elegibles"),
+                    rx.list.item("4. Deposita todas las comisiones PENDING en las wallets de los usuarios"),
+                    rx.list.item("5. Resetea los volúmenes mensuales (PV)"),
+                    rx.list.item("6. Cierra el período actual"),
+                    rx.list.item("7. Crea un nuevo período para el siguiente mes"),
+                    color=rx.color_mode_cond(light="#6B7280", dark="#9CA3AF"),
+                    spacing="2"
+                ),
+                rx.callout(
+                    "Este proceso NO puede revertirse. Úsalo solo al finalizar el mes.",
+                    icon="triangle_alert",
+                    color_scheme="yellow",
+                    size="2",
+                    margin_top="1rem"
+                ),
+                spacing="3",
+                align="start"
+            ),
+            padding="1.5rem",
+            border_radius="12px",
+            border=f"1px solid {rx.color_mode_cond(light='#E5E7EB', dark='#374151')}",
+            background=rx.color_mode_cond(light="#F9FAFB", dark="#1F2937"),
+            margin_bottom="2rem"
+        ),
+        
+        # Resultados (mostrar solo si hay datos)
+        rx.cond(
+            AdminState.commission_results != {},
+            rx.box(
+                rx.vstack(
+                    rx.heading(
+                        "📊 Resultados del Procesamiento",
+                        size="5",
+                        color=rx.color_mode_cond(
+                            light=Custom_theme().light_colors()["text"],
+                            dark=Custom_theme().dark_colors()["text"]
+                        ),
+                    ),
+                    
+                    # Grid de estadísticas
+                    rx.grid(
+                        # Período cerrado
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Período Cerrado", font_size="0.875rem", color=rx.color_mode_cond(light="#6B7280", dark="#9CA3AF")),
+                                rx.text(
+                                    AdminState.commission_results.get("closed_period", "N/A"),
+                                    font_size="1.5rem",
+                                    font_weight="700",
+                                    color=rx.color_mode_cond(
+                                        light=Custom_theme().light_colors()["text"],
+                                        dark=Custom_theme().dark_colors()["text"]
+                                    ),
+                                ),
+                                spacing="1",
+                                align="start"
+                            ),
+                            padding="1rem",
+                            border_radius="8px",
+                            background=rx.color_mode_cond(light="#FEF3C7", dark="#78350F"),
+                        ),
+                        
+                        # Nuevo período
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Nuevo Período", font_size="0.875rem", color=rx.color_mode_cond(light="#6B7280", dark="#9CA3AF")),
+                                rx.text(
+                                    AdminState.commission_results.get("new_period", "N/A"),
+                                    font_size="1.5rem",
+                                    font_weight="700",
+                                    color=rx.color_mode_cond(
+                                        light=Custom_theme().light_colors()["text"],
+                                        dark=Custom_theme().dark_colors()["text"]
+                                    ),
+                                ),
+                                spacing="1",
+                                align="start"
+                            ),
+                            padding="1rem",
+                            border_radius="8px",
+                            background=rx.color_mode_cond(light="#D1FAE5", dark="#065F46"),
+                        ),
+                        
+                        # Comisiones depositadas
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Comisiones Depositadas", font_size="0.875rem", color=rx.color_mode_cond(light="#6B7280", dark="#9CA3AF")),
+                                rx.text(
+                                    AdminState.commission_results.get("commissions_deposited", 0),
+                                    font_size="1.5rem",
+                                    font_weight="700",
+                                    color=rx.color_mode_cond(
+                                        light=Custom_theme().light_colors()["text"],
+                                        dark=Custom_theme().dark_colors()["text"]
+                                    ),
+                                ),
+                                spacing="1",
+                                align="start"
+                            ),
+                            padding="1rem",
+                            border_radius="8px",
+                            background=rx.color_mode_cond(light="#DBEAFE", dark="#1E3A8A"),
+                        ),
+                        
+                        # Monto total
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Monto Total Depositado", font_size="0.875rem", color=rx.color_mode_cond(light="#6B7280", dark="#9CA3AF")),
+                                rx.text(
+                                    f"${AdminState.commission_results.get('total_amount', 0):,.2f}",
+                                    font_size="1.5rem",
+                                    font_weight="700",
+                                    color=rx.color_mode_cond(
+                                        light=Custom_theme().light_colors()["text"],
+                                        dark=Custom_theme().dark_colors()["text"]
+                                    ),
+                                ),
+                                spacing="1",
+                                align="start"
+                            ),
+                            padding="1rem",
+                            border_radius="8px",
+                            background=rx.color_mode_cond(light="#E0E7FF", dark="#3730A3"),
+                        ),
+                        
+                        columns="2",
+                        spacing="4",
+                        width="100%"
+                    ),
+                    
+                    # Detalles de bonos
+                    rx.hstack(
+                        rx.box(
+                            rx.text(
+                                f"Match: {AdminState.commission_results.get('match_bonuses', 0)}",
+                                font_weight="600",
+                                color=rx.color_mode_cond(light="#6B7280", dark="#9CA3AF")
+                            ),
+                            padding="0.5rem 1rem",
+                            border_radius="6px",
+                            background=rx.color_mode_cond(light="#F3F4F6", dark="#374151"),
+                        ),
+                        rx.box(
+                            rx.text(
+                                f"Auto: {AdminState.commission_results.get('auto_bonuses', 0)}",
+                                font_weight="600",
+                                color=rx.color_mode_cond(light="#6B7280", dark="#9CA3AF")
+                            ),
+                            padding="0.5rem 1rem",
+                            border_radius="6px",
+                            background=rx.color_mode_cond(light="#F3F4F6", dark="#374151"),
+                        ),
+                        rx.box(
+                            rx.text(
+                                f"Fallidos: {AdminState.commission_results.get('commissions_failed', 0)}",
+                                font_weight="600",
+                                color=rx.color_mode_cond(light="#EF4444", dark="#DC2626")
+                            ),
+                            padding="0.5rem 1rem",
+                            border_radius="6px",
+                            background=rx.color_mode_cond(light="#F3F4F6", dark="#374151"),
+                        ),
+                        spacing="3",
+                        wrap="wrap"
+                    ),
+                    
+                    spacing="4",
+                    align="start",
+                    width="100%"
+                ),
+                padding="1.5rem",
+                border_radius="12px",
+                border=f"2px solid {rx.color_mode_cond(light='#10B981', dark='#059669')}",
+                background=rx.color_mode_cond(light="#ECFDF5", dark="#064E3B"),
+                margin_bottom="2rem"
+            )
+        ),
+        
+        # Botón principal
+        admin_button(
+            "🚀 Ejecutar Cierre de Período y Calcular Comisiones",
+            on_click=AdminState.process_period_end_and_commissions,
+            disabled=AdminState.is_loading_commissions,
+            height="68px",
+            width="100%",
+            color_scheme="red"  # Rojo para indicar precaución
+        ),
+        
+        spacing="4",
+        width="100%",
+        max_width="800px",
+    )
+
+
 # ===================== PÁGINA PRINCIPAL =====================
 
 def admin_page() -> rx.Component:
@@ -1059,11 +1282,12 @@ def admin_page() -> rx.Component:
                 rx.tabs.root(
                     rx.tabs.list(
                         rx.tabs.trigger("👤 Cuenta", value="create_account"),
-                        rx.tabs.trigger("� Buscar Usuario", value="search_user"),
+                        rx.tabs.trigger("🔍 Buscar Usuario", value="search_user"),
                         rx.tabs.trigger("📦 Órdenes", value="create_orders"),
                         rx.tabs.trigger("🌳 Red", value="network_tree"),
                         rx.tabs.trigger("💰 Wallet", value="wallet"),
                         rx.tabs.trigger("🎁 Lealtad", value="loyalty"),
+                        rx.tabs.trigger("💸 Test Comisiones", value="test_commissions"),
                         color_scheme="purple",
                     ),
 
@@ -1073,6 +1297,7 @@ def admin_page() -> rx.Component:
                     rx.tabs.content(tab_network_tree(), value="network_tree"),
                     rx.tabs.content(tab_wallet(), value="wallet"),
                     rx.tabs.content(tab_loyalty(), value="loyalty"),
+                    rx.tabs.content(tab_test_commissions(), value="test_commissions"),
 
                     default_value="create_account",
                     variant="line",

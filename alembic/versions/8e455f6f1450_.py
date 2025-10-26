@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 42befdf4ac21
+Revision ID: 8e455f6f1450
 Revises: 
-Create Date: 2025-10-21 21:57:27.923753
+Create Date: 2025-10-25 19:17:59.838279
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = '42befdf4ac21'
+revision: str = '8e455f6f1450'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -129,6 +129,7 @@ def upgrade() -> None:
     sa.Column('sponsor_id', sa.Integer(), nullable=True),
     sa.Column('referral_link', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('pv_cache', sa.Integer(), nullable=False),
+    sa.Column('vn_cache', sa.Float(), nullable=False),
     sa.Column('pvg_cache', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
@@ -147,6 +148,7 @@ def upgrade() -> None:
         batch_op.create_index(batch_op.f('ix_users_pvg_cache'), ['pvg_cache'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_referral_link'), ['referral_link'], unique=True)
         batch_op.create_index(batch_op.f('ix_users_supabase_user_id'), ['supabase_user_id'], unique=True)
+        batch_op.create_index(batch_op.f('ix_users_vn_cache'), ['vn_cache'], unique=False)
 
     op.create_table('authcredentials',
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -815,6 +817,7 @@ def downgrade() -> None:
     op.drop_table('loyaltypoints')
     op.drop_table('authcredentials')
     with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_users_vn_cache'))
         batch_op.drop_index(batch_op.f('ix_users_supabase_user_id'))
         batch_op.drop_index(batch_op.f('ix_users_referral_link'))
         batch_op.drop_index(batch_op.f('ix_users_pvg_cache'))
