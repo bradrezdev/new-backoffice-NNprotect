@@ -181,7 +181,7 @@ def store() -> rx.Component:
                         rx.box(
                             # Imagen de fondo (fondo absoluto)
                             rx.image(
-                                src="/hero_dreamingdeep.jpg",
+                                src="image",
                                 height="100%",
                                 width="100%",
                                 object_fit="cover",
@@ -309,7 +309,7 @@ def store() -> rx.Component:
                                 _hover={"border": f"2px solid {Custom_theme().light_colors()['primary']}"},  # Cambia el borde al pasar el mouse
                                 variant="outline",
                                 size="2",
-                                border_radius="15px",
+                                border_radius="32px",
                                 on_click=categoria["action"] if categoria["action"] else None
                             ) for i, categoria in enumerate(categorias_data)],
                             spacing="2",

@@ -365,31 +365,9 @@ def payment() -> rx.Component:
                                     flex="1"
                                 ),
 
-                                align="start",
+                                align="center",
                                 width="100%",
                                 spacing="0"
-                            ),
-
-                            # Radio button indicator
-                            rx.box(
-                                rx.cond(
-                                    PaymentState.payment_method == "wallet",
-                                    # Seleccionado
-                                    rx.box(
-                                        width="12px",
-                                        height="12px",
-                                        border_radius="15px",
-                                        bg="#059669",
-                                    ),
-                                    # No seleccionado
-                                    rx.box(
-                                        width="12px",
-                                        height="12px",
-                                        border_radius="15px",
-                                        border="2px solid #d1d5db",
-                                        bg="transparent",
-                                    ),
-                                ),
                             ),
 
                             # Estilos de la tarjeta
@@ -402,7 +380,7 @@ def payment() -> rx.Component:
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            border_radius="29px",
+                            border_radius="32px",
                             padding="1em",
                             #border="2px solid transparent",
                             _hover={"border": "2px solid #059669"},
@@ -454,25 +432,7 @@ def payment() -> rx.Component:
                                     flex="1"
                                 ),
 
-                                # Botón de selección (deshabilitado por ahora)
-                                rx.box(
-                                    rx.box(
-                                        width="20px",
-                                        height="20px",
-                                        border_radius="50%",
-                                        border="2px solid #d1d5db",
-                                        bg="transparent",
-                                        opacity="0.5",
-                                        transition="all 0.2s ease"
-                                    ),
-                                    width="32px",
-                                    height="32px",
-                                    display="flex",
-                                    align_items="center",
-                                    justify_content="center"
-                                ),
-
-                                align="start",
+                                align="center",
                                 width="100%",
                                 spacing="0"
                             ),
@@ -482,7 +442,7 @@ def payment() -> rx.Component:
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            border_radius="29px",
+                            border_radius="32px",
                             padding="1em",
                             border="2px solid transparent",
                             _hover={"border": "2px solid #d1d5db"},
@@ -492,8 +452,76 @@ def payment() -> rx.Component:
                             cursor="not-allowed",
                             opacity="0.7"
                         ),
+                        spacing="0",
+                        width="100%",
+                        margin_bottom="2em"
+                    ),
 
-                        # Opción 3: Pago en OXXO
+                    # Métodos de pago alternativos
+                    rx.vstack(
+                        rx.text(
+                            "Otros métodos",
+                            size="4",
+
+                            text_align="center"
+                        ),
+                        rx.text(
+                            "Los siguientes pagos pueden tardar más en procesarse",
+                            font_size="0.85em",
+                            color="gray",
+                            margin_bottom="1em",
+                        ),
+
+                        # Opción 1: Transferencia bancaria
+                        rx.box(
+                            rx.hstack(
+                                rx.box(
+                                    rx.icon("dollar-sign", size=24, color="#059669"),
+                                    width="48px",
+                                    height="48px",
+                                    bg="rgba(5, 150, 105, 0.1)",
+                                    border_radius="12px",
+                                    display="flex",
+                                    align_items="center",
+                                    justify_content="center",
+                                    margin_right="1em"
+                                ),
+
+                                rx.vstack(
+                                    rx.text("Transferencia bancaria", font_weight="semibold", font_size="1rem"),
+                                    rx.text(
+                                        "Confirmación de pago\nentre 48-72 horas hábiles",
+                                        font_size="0.85rem",
+                                        color="gray",
+                                        white_space="pre"
+                                    ),
+                                    align="start",
+                                    spacing="1",
+                                    flex="1"
+                                ),
+
+                                align="center",
+                                width="100%",
+                                spacing="0"
+                            ),
+
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["tertiary"],
+                                dark=Custom_theme().dark_colors()["tertiary"]
+                            ),
+                            border_radius="32px",
+                            padding="1em",
+                            border="2px solid transparent",
+                            _hover={"border": "2px solid #059669"},
+                            transition="all 0.2s ease",
+                            margin_bottom="12px",
+                            width="100%",
+                            cursor="not-allowed",
+                            opacity="0.7"
+                        ),
+
+
+                        # Opción 2: Pago en OXXO
                         rx.box(
                             rx.hstack(
                                 # Icono de OXXO
@@ -526,7 +554,7 @@ def payment() -> rx.Component:
 
                                     rx.vstack(
                                         rx.text(
-                                            "Paga en cualquier tienda OXXO",
+                                            "Paga en cualquier tienda OXXO\n",
                                             size="1",
                                             color="gray"
                                         ),
@@ -539,7 +567,7 @@ def payment() -> rx.Component:
                                     flex="1"
                                 ),
 
-                                align="start",
+                                align="center",
                                 width="100%",
                                 spacing="0"
                             ),
@@ -549,93 +577,17 @@ def payment() -> rx.Component:
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            border_radius="29px",
+                            border_radius="32px",
                             padding="1em",
                             border="2px solid transparent",
                             _hover={"border": "2px solid #d32f2f"},
                             transition="all 0.2s ease",
                             margin_bottom="16px",
                             width="100%",
-                            cursor="pointer"
+                            cursor="not-allowed",
+                            opacity="0.7"
                         ),
 
-                        spacing="0",
-                        width="100%",
-                        margin_bottom="2em"
-                    ),
-
-                    # Métodos de pago alternativos
-                    rx.vstack(
-                        rx.text(
-                            "Otros métodos",
-                            size="4",
-                            font_weight="semibold",
-                            margin_bottom="1em",
-                            text_align="center"
-                        ),
-
-                        # Pago en efectivo
-                        rx.box(
-                            rx.hstack(
-                                rx.box(
-                                    rx.icon("dollar-sign", size=24, color="#059669"),
-                                    width="48px",
-                                    height="48px",
-                                    bg="rgba(5, 150, 105, 0.1)",
-                                    border_radius="12px",
-                                    display="flex",
-                                    align_items="center",
-                                    justify_content="center",
-                                    margin_right="1em"
-                                ),
-
-                                rx.vstack(
-                                    rx.text("Pago en efectivo", font_weight="semibold", font_size="1rem"),
-                                    rx.text(
-                                        "Paga al recibir tu pedido",
-                                        font_size="0.85rem",
-                                        color="gray"
-                                    ),
-                                    align="start",
-                                    spacing="1",
-                                    flex="1"
-                                ),
-
-                                rx.box(
-                                    rx.box(
-                                        width="20px",
-                                        height="20px",
-                                        border_radius="50%",
-                                        border="2px solid #059669",
-                                        bg="transparent",
-                                        _hover={"bg": "#059669"},
-                                        transition="all 0.2s ease"
-                                    ),
-                                    width="32px",
-                                    height="32px",
-                                    display="flex",
-                                    align_items="center",
-                                    justify_content="center"
-                                ),
-
-                                align="start",
-                                width="100%",
-                                spacing="0"
-                            ),
-
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["tertiary"],
-                                dark=Custom_theme().dark_colors()["tertiary"]
-                            ),
-                            border_radius="16px",
-                            padding="1em",
-                            border="2px solid transparent",
-                            _hover={"border": "2px solid #059669"},
-                            transition="all 0.2s ease",
-                            margin_bottom="12px",
-                            width="100%",
-                            cursor="pointer"
-                        ),
                         spacing="0",
                         width="100%",
                         margin_bottom="2em"
@@ -738,7 +690,7 @@ def payment() -> rx.Component:
                                 bg=Custom_theme().light_colors()["primary"],
                                 color="white",
                                 size="4",
-                                border_radius="15px",
+                                border_radius="32px",
                                 padding="16px",
                                 width="100%",
                                 _hover={"opacity": 0.9, "transform": "translateY(-1px)"},

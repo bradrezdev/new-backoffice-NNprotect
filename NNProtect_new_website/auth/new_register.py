@@ -926,7 +926,7 @@ def register() -> rx.Component:
                                 "He leído los ", rx.link("terminos y condiciones.", href="#"),
                                 font_size="0.85em"  # --- Propiedades rx.text ---
                             ),
-                            margin_bottom="1.5rem",
+                            margin_bottom="2rem",
                             spacing="1"  # --- Propiedades rx.hstack ---
                         ),
                         
@@ -937,7 +937,7 @@ def register() -> rx.Component:
                                 dark=Custom_theme().dark_colors()["primary"]
                             ),
                             color="white",
-                            border_radius="24px",
+                            border_radius="32px",
                             width="100%",
                             height="64px",
                             font_size="1.1rem",
@@ -951,10 +951,10 @@ def register() -> rx.Component:
                         width="100%"
                     ),
                     width="100%",
-                    margin_bottom="15px"
+                    margin_bottom="1em"
                 ),
                 align="center",
-                padding="0 1em 2em 1em",
+                padding="0 1em 1em 1em",
                 width="100%",
                 min_height="100vh",
                 bg=rx.color_mode_cond(

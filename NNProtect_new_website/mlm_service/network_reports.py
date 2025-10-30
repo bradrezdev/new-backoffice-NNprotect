@@ -50,6 +50,7 @@ class NetworkReportsState(rx.State):
 	"""State para manejar datos de reportes de red."""
 	todays_registrations: List[Dict[str, Any]] = []
 	monthly_registrations: List[Dict[str, Any]] = []
+	all_registrations: List[Dict[str, Any]] = []
 	is_loading: bool = False
 
 	@rx.var
@@ -61,6 +62,11 @@ class NetworkReportsState(rx.State):
 	def monthly_registrations_count(self) -> str:
 		"""Cuenta de inscripciones del mes."""
 		return str(len(self.monthly_registrations))
+	
+	@rx.var
+	def all_registrations_count(self) -> str:
+		"""Cuenta de todas las inscripciones (histórico completo)."""
+		return str(len(self.all_registrations))
 	
 	@rx.event
 	async def load_todays_registrations(self):
@@ -126,7 +132,7 @@ class NetworkReportsState(rx.State):
 
 	@rx.event
 	async def load_all_registrations(self):
-		"""Carga tanto las inscripciones del día como del mes."""
+		"""Carga TODAS las inscripciones de la red del usuario autenticado (histórico completo)."""
 		self.is_loading = True
 		yield
 		
@@ -138,29 +144,22 @@ class NetworkReportsState(rx.State):
 			member_id = auth_state.profile_data.get("member_id") if auth_state.profile_data else None
 			if not member_id:
 				print("❌ Usuario no autenticado o member_id no encontrado")
-				self.todays_registrations = []
-				self.monthly_registrations = []
+				self.all_registrations = []
 				return
 				
-			print(f"🔄 Cargando inscripciones para member_id: {member_id}")
+			print(f"🔄 Cargando TODAS las inscripciones para member_id: {member_id}")
 			
-			# Cargar ambos tipos de inscripciones
-			daily_registrations = MLMUserManager.get_todays_registrations(member_id)
-			monthly_registrations = MLMUserManager.get_monthly_registrations(member_id)
+			# Obtener TODAS las inscripciones de la red (sin filtro de fecha)
+			registrations = MLMUserManager.get_all_registrations(member_id)
+			self.all_registrations = registrations
 			
-			self.todays_registrations = daily_registrations
-			self.monthly_registrations = monthly_registrations
-			
-			print(f"✅ Cargadas {len(daily_registrations)} inscripciones del día")
-			print(f"✅ Cargadas {len(monthly_registrations)} inscripciones del mes")
+			print(f"✅ Cargadas {len(registrations)} inscripciones totales")
 			
 		except Exception as e:
-			print(f"❌ Error cargando inscripciones: {e}")
-			self.todays_registrations = []
-			self.monthly_registrations = []
+			print(f"❌ Error cargando todas las inscripciones: {e}")
+			self.all_registrations = []
 		finally:
 			self.is_loading = False
-
 
 def network_reports() -> rx.Component:
 	"""Página de reportes de red"""
@@ -466,7 +465,7 @@ def network_reports() -> rx.Component:
 									rx.hstack(
 										rx.vstack(
 											rx.text("Total de miembros:", font_weight="bold"),
-											rx.text("47", color=rx.color("blue", 11), font_size="2rem"),
+											rx.text(NetworkReportsState.all_registrations_count, color=rx.color("blue", 11), font_size="2rem"),
 											align="center",
 											spacing="1"
 										),
@@ -564,7 +563,6 @@ def network_reports() -> rx.Component:
 				margin_bottom="2em",
 				max_width="1920px",
 				width="100%",
-				on_mount=[AuthState.load_user_from_token, NetworkReportsState.load_all_registrations],
 			),
 			#width="100%",
 		),
@@ -691,13 +689,13 @@ def network_reports() -> rx.Component:
 						rx.vstack(
 							rx.hstack(
 								rx.text("Volumen personal:", font_weight="bold", font_size="0.9rem"),
-								rx.text(AuthState.profile_data.get("pv_cache"), color="#32D74B", font_size="1.2rem", font_weight="bold"),
+								rx.text(AuthState.profile_data.get("pv_cache", 0), color="#32D74B", font_size="1.2rem", font_weight="bold"),
 								justify="between",
 								width="100%"
 							),
 							rx.hstack(
 								rx.text("Volumen grupal:", font_weight="bold", font_size="0.9rem"),
-								rx.text("754,654", color="#0039F2", font_size="1.2rem", font_weight="bold"),
+								rx.text(AuthState.profile_data.get("pvg_cache", 0), color="#0039F2", font_size="1.2rem", font_weight="bold"),
 								justify="between",
 								width="100%"
 							),
@@ -918,7 +916,7 @@ def network_reports() -> rx.Component:
 						rx.vstack(
 							rx.hstack(
 								rx.text("Total de miembros:", font_weight="bold", font_size="0.9rem"),
-								rx.text("47", color=rx.color("blue", 11), font_size="1.5rem", font_weight="bold"),
+								rx.text(NetworkReportsState.all_registrations_count, color=rx.color("blue", 11), font_size="1.5rem", font_weight="bold"),
 								justify="between",
 								width="100%"
 							),
@@ -986,7 +984,7 @@ def network_reports() -> rx.Component:
 															text_align="center"
 														),
 														rx.table.cell(
-															"2000",
+															user["pv_cache"],
 															font_size="0.8rem",
 															color=rx.color("green", 11),
 															min_width="70px",
@@ -1107,7 +1105,7 @@ def network_reports() -> rx.Component:
 			),
 			width="100%",
 		),
-		
+		on_mount=NetworkReportsState.load_all_registrations,
 		bg=rx.color_mode_cond(
 			light=Custom_theme().light_colors()["background"],
 			dark=Custom_theme().dark_colors()["background"]

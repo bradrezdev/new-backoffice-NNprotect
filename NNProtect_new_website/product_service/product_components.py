@@ -18,9 +18,9 @@ def plusminus_buttons(product_id: int):
         rx.button(
             "-",
             size="1",
-            bg=rx.color_mode_cond(
-                light=Custom_theme().light_colors()["secondary"],
-                dark=Custom_theme().dark_colors()["secondary"]
+            variant=rx.color_mode_cond(
+                light="soft",
+                dark="outline",
             ),
             border_radius="100px",
             min_width="36px",
@@ -83,7 +83,8 @@ def product_card(product_data: Dict, is_popular: bool = False) -> rx.Component:
 
             # Imagen del producto (usar ID para consistencia)
             rx.image(
-                src=f"/product_{product_data.get('id', 1)}.jpg",
+                src="image",
+                #src=f"/product_{product_data.get('id', 1)}.jpg",
                 height="100%",
                 width="100%",
                 object_fit="cover",
@@ -170,7 +171,8 @@ def product_card_horizontal(product_data: Dict) -> rx.Component:
         rx.vstack(
             # Imagen del producto
             rx.image(
-                src=f"/product_{product_data.get('id', 4)}.jpg",
+                src="image",
+                #src=f"/product_{product_data.get('id', 4)}.jpg",
                 height="100%",
                 width="100%",
                 object_fit="cover",
@@ -258,7 +260,8 @@ def new_products_card(product_data: Dict) -> rx.Component:
 
         # Imagen del producto
         rx.image(
-            src=f"/product_{product_data.get('id', 4)}.jpg",
+            src="image",
+            #src=f"/product_{product_data.get('id', 4)}.jpg",
             height="100%",
             width="100%",
             object_fit="cover",
@@ -349,7 +352,8 @@ def most_requested_products_card(product_data: Dict) -> rx.Component:
 
         # Imagen del producto
         rx.image(
-            src=f"/product_{product_data.get('id', 4)}.jpg",
+            src="image",
+            #src=f"/product_{product_data.get('id', 4)}.jpg",
             height="100%",
             width="100%",
             object_fit="cover",
@@ -440,7 +444,8 @@ def supplement_products_card(product_data: Dict) -> rx.Component:
 
         # Imagen del producto
         rx.image(
-            src=f"/product_{product_data.get('id', 4)}.jpg",
+            src="image",
+            #src=f"/product_{product_data.get('id', 4)}",
             height="100%",
             width="100%",
             object_fit="cover",
@@ -531,7 +536,8 @@ def skincare_products_card(product_data: Dict) -> rx.Component:
 
         # Imagen del producto
         rx.image(
-            src=f"/product_{product_data.get('id', 4)}.jpg",
+            src="image",
+            #src=f"/product_{product_data.get('id', 4)}.jpg",
             height="100%",
             width="100%",
             object_fit="cover",
@@ -621,7 +627,8 @@ def sanitized_products_card(product_data: Dict) -> rx.Component:
 
         # Imagen del producto
         rx.image(
-            src=f"/product_{product_data.get('id', 4)}.jpg",
+            src="image",
+            #src=f"/product_{product_data.get('id', 4)}.jpg",
             height="100%",
             width="100%",
             object_fit="cover",

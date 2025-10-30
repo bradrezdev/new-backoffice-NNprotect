@@ -751,6 +751,146 @@ class MLMUserManager:
             traceback.print_exc()
             return []
 
+    @staticmethod
+    def get_all_registrations(sponsor_member_id: int) -> list:
+        """
+        Obtiene TODAS las inscripciones de la red de un sponsor usando CTE recursivo,
+        sin importar el período o fecha de registro.
+        
+        Usa el mismo enfoque que tu query SQL - recursión directa sobre sponsor_id
+        en lugar de depender de UserTreePath.
+
+        Args:
+            sponsor_member_id: member_id del sponsor principal
+
+        Returns:
+            Lista de TODOS los usuarios registrados en la red (histórico completo)
+        """
+        try:
+            print(f"🔄 Obteniendo TODAS las inscripciones para member_id: {sponsor_member_id}")
+            
+            with rx.session() as session:
+                # CTE recursivo - Igual que tu SQL
+                # Busca todos los descendientes usando sponsor_id
+                recursive_query = sqlmodel.text("""
+                    WITH RECURSIVE network_tree AS (
+                        -- Caso base: el usuario raíz
+                        SELECT 
+                            u.id,
+                            u.member_id,
+                            u.first_name,
+                            u.last_name,
+                            u.email_cache,
+                            u.sponsor_id,
+                            u.status,
+                            u.created_at,
+                            1 AS level,
+                            ARRAY[u.member_id] AS path
+                        FROM users u
+                        WHERE u.member_id = :root_member_id
+                        
+                        UNION ALL
+                        
+                        -- Caso recursivo: todos los referidos directos e indirectos
+                        SELECT 
+                            u.id,
+                            u.member_id,
+                            u.first_name,
+                            u.last_name,
+                            u.email_cache,
+                            u.sponsor_id,
+                            u.status,
+                            u.created_at,
+                            nt.level + 1 AS level,
+                            nt.path || u.member_id AS path
+                        FROM users u
+                        INNER JOIN network_tree nt ON u.sponsor_id = nt.member_id
+                        WHERE NOT (u.member_id = ANY(nt.path))  -- Evitar ciclos
+                    )
+                    SELECT 
+                        id,
+                        member_id,
+                        first_name,
+                        last_name,
+                        email_cache,
+                        sponsor_id,
+                        status,
+                        created_at,
+                        level
+                    FROM network_tree
+                    WHERE level > 1  -- Excluir el usuario raíz
+                    ORDER BY level, member_id
+                """)
+                
+                # Ejecutar query con parámetros
+                result = session.execute(
+                    recursive_query.bindparams(root_member_id=sponsor_member_id)
+                )
+                
+                # Procesar resultados
+                descendants = []
+                sponsor_cache = {}  # Cache para sponsors
+                
+                for row in result:
+                    # Obtener datos del sponsor (con cache)
+                    sponsor_data = {}
+                    if row.sponsor_id:
+                        if row.sponsor_id not in sponsor_cache:
+                            sponsor_result = session.exec(
+                                sqlmodel.select(Users, UserProfiles)
+                                .outerjoin(UserProfiles, Users.id == UserProfiles.user_id)
+                                .where(Users.member_id == row.sponsor_id)
+                            ).first()
+
+                            if sponsor_result:
+                                sponsor_user, sponsor_profile = sponsor_result
+                                sponsor_cache[row.sponsor_id] = {
+                                    "id": sponsor_user.id,
+                                    "member_id": sponsor_user.member_id,
+                                    "first_name": sponsor_user.first_name or "",
+                                    "last_name": sponsor_user.last_name or "",
+                                    "full_name": f"{sponsor_user.first_name or ''} {sponsor_user.last_name or ''}".strip(),
+                                    "phone": sponsor_profile.phone_number if sponsor_profile else "",
+                                    "email": sponsor_user.email_cache or ""
+                                }
+
+                        sponsor_data = sponsor_cache.get(row.sponsor_id, {})
+                    
+                    # Obtener teléfono del usuario
+                    user_profile = session.exec(
+                        sqlmodel.select(UserProfiles)
+                        .where(UserProfiles.user_id == row.id)
+                    ).first()
+                    
+                    # Formatear fecha
+                    formatted_date = row.created_at.strftime("%d/%m/%Y") if row.created_at else "N/A"
+                    
+                    user_data = {
+                        "id": row.id,
+                        "member_id": row.member_id,
+                        "first_name": row.first_name or "",
+                        "last_name": row.last_name or "",
+                        "full_name": f"{row.first_name or ''} {row.last_name or ''}".strip() if (row.first_name or row.last_name) else "N/A",
+                        "email": row.email_cache or "",
+                        "status": row.status if isinstance(row.status, str) else row.status.value,
+                        "created_at": formatted_date,
+                        "phone": user_profile.phone_number if user_profile else "",
+                        "sponsor_member_id": sponsor_data.get("member_id", None),
+                        "level": row.level,
+                        "sponsor_full_name": sponsor_data.get("full_name", "N/A"),
+                        "sponsor_phone": sponsor_data.get("phone", "N/A")
+                    }
+                    descendants.append(user_data)
+                
+                print(f"✅ Obtenidas {len(descendants)} inscripciones totales en la red")
+                return descendants
+            
+        except Exception as e:
+            print(f"❌ Error obteniendo todas las inscripciones: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
     # 🎯 MÉTODOS PARA GESTIÓN AUTOMÁTICA DE RANGOS
     @staticmethod
     def get_user_current_month_rank(session, member_id: int) -> str:
