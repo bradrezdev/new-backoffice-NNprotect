@@ -44,9 +44,328 @@ from .auth_service.auth_state import AuthState
 
 from database import *
 from database import initialize_database
+from database.users import Users, UserStatus
+import sqlmodel
+from datetime import datetime, timezone
 
 # Importar SchedulerService para tareas automáticas
 from .mlm_service.scheduler_service import SchedulerService
+
+
+class DashboardState(rx.State):
+    """Estado para el dashboard con datos dinámicos de usuarios."""
+    
+    # Contadores de usuarios
+    qualified_count: int = 0
+    non_qualified_count: int = 0
+    total_users: int = 0
+    
+    # Porcentajes para las barras
+    qualified_percentage: float = 0.0
+    non_qualified_percentage: float = 0.0
+    
+    # Progresión de rango
+    current_pvg: int = 0
+    next_rank_pvg: int = 0
+    rank_progress_percentage: int = 0
+    
+    # Proyección de ganancias mensuales
+    estimated_monthly_earnings: float = 0.0
+    estimated_earnings_currency: str = "MXN"
+    
+    def load_user_stats(self):
+        """Carga estadísticas de usuarios desde la base de datos."""
+        try:
+            with rx.session() as session:
+                # Contar usuarios calificados
+                self.qualified_count = session.exec(
+                    sqlmodel.select(sqlmodel.func.count(Users.id))
+                    .where(Users.status == UserStatus.QUALIFIED)
+                ).first() or 0
+                
+                # Contar usuarios no calificados
+                self.non_qualified_count = session.exec(
+                    sqlmodel.select(sqlmodel.func.count(Users.id))
+                    .where(Users.status == UserStatus.NO_QUALIFIED)
+                ).first() or 0
+                
+                # Total de usuarios
+                self.total_users = self.qualified_count + self.non_qualified_count
+                
+                # Calcular porcentajes
+                if self.total_users > 0:
+                    self.qualified_percentage = (self.qualified_count / self.total_users) * 100
+                    self.non_qualified_percentage = (self.non_qualified_count / self.total_users) * 100
+                else:
+                    self.qualified_percentage = 0.0
+                    self.non_qualified_percentage = 0.0
+                
+                print(f"📊 Usuarios cargados - Calificados: {self.qualified_count}, No calificados: {self.non_qualified_count}")
+                
+        except Exception as e:
+            print(f"❌ Error cargando estadísticas de usuarios: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    async def load_rank_progression(self):
+        """
+        Carga la progresión del usuario hacia el siguiente rango.
+        
+        ACTUALIZADO: Ahora también dispara el recálculo de ganancias estimadas
+        cuando detecta cambios en el PVG (principio reactivo).
+        """
+        try:
+            from database.user_rank_history import UserRankHistory
+            from database.ranks import Ranks
+            from datetime import datetime, timezone
+            
+            # Obtener member_id desde AuthState (acceso async)
+            auth_state = await self.get_state(AuthState)
+            profile_data = auth_state.profile_data
+            
+            # Validar que profile_data existe y tiene member_id
+            if not isinstance(profile_data, dict) or "member_id" not in profile_data:
+                print("⚠️  No se pudo obtener member_id del usuario")
+                return
+            
+            member_id = profile_data["member_id"]
+            
+            with rx.session() as session:
+                # Obtener PVG actual del usuario
+                user = session.exec(
+                    sqlmodel.select(Users).where(Users.member_id == member_id)
+                ).first()
+                
+                if not user:
+                    print(f"⚠️  Usuario {member_id} no encontrado")
+                    return
+                
+                # Guardar PVG anterior para detectar cambios
+                previous_pvg = self.current_pvg
+                self.current_pvg = user.pvg_cache or 0
+                
+                # Obtener rank_id actual del período corriendo (no por fecha, sino por period_id)
+                from database.periods import Periods
+                from .utils.timezone_mx import get_mexico_now
+                
+                now = get_mexico_now()
+                current_period = session.exec(
+                    sqlmodel.select(Periods)
+                    .where(
+                        (Periods.starts_on <= now) &
+                        (Periods.ends_on >= now)
+                    )
+                ).first()
+                
+                if not current_period:
+                    print(f"⚠️  No hay período activo")
+                    return
+                
+                current_rank_history = session.exec(
+                    sqlmodel.select(UserRankHistory)
+                    .where(
+                        (UserRankHistory.member_id == member_id) &
+                        (UserRankHistory.period_id == current_period.id)
+                    )
+                    .order_by(sqlmodel.desc(UserRankHistory.rank_id))
+                ).first()
+                
+                current_rank_id = current_rank_history.rank_id if current_rank_history else 1
+                
+                # Obtener siguiente rango
+                next_rank = session.exec(
+                    sqlmodel.select(Ranks)
+                    .where(Ranks.id == current_rank_id + 1)
+                    .order_by(Ranks.id)
+                ).first()
+                
+                if next_rank:
+                    self.next_rank_pvg = next_rank.pvg_required
+                    
+                    # Calcular porcentaje de progreso
+                    if self.next_rank_pvg > 0:
+                        self.rank_progress_percentage = int((self.current_pvg / self.next_rank_pvg) * 100)
+                    else:
+                        self.rank_progress_percentage = 0
+                else:
+                    # Usuario está en el rango máximo
+                    current_rank = session.exec(
+                        sqlmodel.select(Ranks).where(Ranks.id == current_rank_id)
+                    ).first()
+                    self.next_rank_pvg = current_rank.pvg_required if current_rank else 0
+                    self.rank_progress_percentage = 100
+                
+                print(f"📊 Progresión de rango - PVG: {self.current_pvg}/{self.next_rank_pvg} ({self.rank_progress_percentage:.1f}%)")
+                
+                # ✅ NUEVO: Si el PVG cambió, recalcular ganancias estimadas automáticamente
+                if self.current_pvg != previous_pvg:
+                    print(f"🔄 PVG cambió de {previous_pvg} a {self.current_pvg} - Recalculando ganancias...")
+                    await self.load_estimated_monthly_earnings()
+                
+        except Exception as e:
+            print(f"❌ Error cargando progresión de rango: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    async def load_estimated_monthly_earnings(self):
+        """
+        Calcula la proyección REAL de ganancias mensuales.
+        
+        ESTRATEGIA SIMPLE (Principio KISS de Adrian):
+        1. Sumar TODAS las comisiones YA CALCULADAS del período
+        2. Esto incluye Uninivel, Matching y Alcance que ya están en BD
+        
+        La ventaja: NO re-calcular, solo mostrar lo que YA existe.
+        Si quieres proyección futura, las comisiones deben calcularse primero.
+        
+        ACTUALIZADO: Retorna $0 si PVG=0 (cuando los usuarios fueron reseteados).
+        
+        Arquitectura: Adrian (KISS) + Giovanni (QA Financial)
+        """
+        try:
+            from database.comissions import Commissions, BonusType
+            from database.periods import Periods
+            from .mlm_service.exchange_service import ExchangeService
+            
+            # Obtener member_id desde AuthState
+            auth_state = await self.get_state(AuthState)
+            profile_data = auth_state.profile_data
+            
+            if not isinstance(profile_data, dict) or "member_id" not in profile_data:
+                print("⚠️  No se pudo obtener member_id del usuario")
+                return
+            
+            member_id = profile_data["member_id"]
+            
+            with rx.session() as session:
+                # Obtener usuario para moneda y PVG
+                user = session.exec(
+                    sqlmodel.select(Users).where(Users.member_id == member_id)
+                ).first()
+                
+                if not user:
+                    print(f"⚠️  Usuario {member_id} no encontrado")
+                    return
+                
+                # ✅ Si el PVG está en 0, las ganancias deben ser $0 (periodo reseteado)
+                if (user.pvg_cache or 0) == 0:
+                    self.estimated_monthly_earnings = 0.0
+                    self.estimated_earnings_currency = ExchangeService.get_country_currency(user.country_cache or "MX")
+                    print(f"📊 Ganancias estimadas: $0.00 (PVG=0, usuario reseteado)")
+                    return
+                
+                self.estimated_earnings_currency = ExchangeService.get_country_currency(user.country_cache or "MX")
+                
+                # Obtener período actual
+                from .utils.timezone_mx import get_mexico_now
+                now = get_mexico_now()
+                current_period = session.exec(
+                    sqlmodel.select(Periods)
+                    .where(
+                        (Periods.starts_on <= now) &
+                        (Periods.ends_on >= now)
+                    )
+                ).first()
+                
+                if not current_period:
+                    print(f"⚠️  No hay período activo")
+                    self.estimated_monthly_earnings = 0.0
+                    return
+                
+                # Sumar TODAS las comisiones del período (Uninivel + Matching + Alcance)
+                total_earnings = session.exec(
+                    sqlmodel.select(sqlmodel.func.sum(Commissions.amount_converted))
+                    .where(
+                        (Commissions.member_id == member_id) &
+                        (Commissions.period_id == current_period.id) &
+                        (Commissions.bonus_type.in_([
+                            BonusType.BONO_UNINIVEL.value,
+                            BonusType.BONO_MATCHING.value,
+                            BonusType.BONO_ALCANCE.value
+                        ]))
+                    )
+                ).first()
+                
+                self.estimated_monthly_earnings = float(total_earnings) if total_earnings else 0.0
+                
+                # Desglose por tipo de bono (para debug)
+                bonos_alcance = session.exec(
+                    sqlmodel.select(sqlmodel.func.sum(Commissions.amount_converted))
+                    .where(
+                        (Commissions.member_id == member_id) &
+                        (Commissions.period_id == current_period.id) &
+                        (Commissions.bonus_type == BonusType.BONO_ALCANCE.value)
+                    )
+                ).first() or 0.0
+                
+                bonos_uninivel = session.exec(
+                    sqlmodel.select(sqlmodel.func.sum(Commissions.amount_converted))
+                    .where(
+                        (Commissions.member_id == member_id) &
+                        (Commissions.period_id == current_period.id) &
+                        (Commissions.bonus_type == BonusType.BONO_UNINIVEL.value)
+                    )
+                ).first() or 0.0
+                
+                bonos_matching = session.exec(
+                    sqlmodel.select(sqlmodel.func.sum(Commissions.amount_converted))
+                    .where(
+                        (Commissions.member_id == member_id) &
+                        (Commissions.period_id == current_period.id) &
+                        (Commissions.bonus_type == BonusType.BONO_MATCHING.value)
+                    )
+                ).first() or 0.0
+                
+                print(f"💰 Proyección mensual (comisiones calculadas):")
+                print(f"   Bonos Alcance:  ${bonos_alcance:,.2f}")
+                print(f"   Bonos Uninivel: ${bonos_uninivel:,.2f}")
+                print(f"   Bonos Matching: ${bonos_matching:,.2f}")
+                print(f"   TOTAL:          ${self.estimated_monthly_earnings:,.2f} {self.estimated_earnings_currency}")
+                
+        except Exception as e:
+            print(f"❌ Error calculando proyección de ganancias: {e}")
+            import traceback
+            traceback.print_exc()
+            self.estimated_monthly_earnings = 0.0
+    
+    async def refresh_dashboard_data(self):
+        """
+        Refresca TODOS los datos del dashboard (progresión de rango y ganancias).
+        
+        Este método debe ser llamado cada vez que cambien los PVG del usuario,
+        sin importar cuánto sea el cambio (0→1, 293→293.1, etc.).
+        
+        PATRONES APLICADOS:
+        - Reactivo: Responde automáticamente a cambios de datos
+        - KISS: Simplemente llama a los métodos existentes
+        - DRY: Reutiliza load_rank_progression y load_estimated_monthly_earnings
+        
+        CASOS DE USO:
+        - Después de crear una orden (PVG aumenta)
+        - Después de confirmar pago (PVG se actualiza)
+        - Después de cualquier actualización manual de PVG
+        - Después de reset de período (PVG vuelve a 0)
+        
+        Arquitectura: Adrian (KISS) + Giovanni (Reactivo)
+        """
+        try:
+            print("🔄 Refrescando datos del dashboard...")
+            
+            # 1. Recargar progresión de rango (incluye PVG actual)
+            await self.load_rank_progression()
+            
+            # 2. Recargar ganancias estimadas (se dispara automáticamente si PVG cambió)
+            # Nota: load_rank_progression ya llama a load_estimated_monthly_earnings si detecta cambio
+            # pero lo llamamos explícitamente aquí por si acaso
+            await self.load_estimated_monthly_earnings()
+            
+            print("✅ Dashboard refrescado correctamente")
+            
+        except Exception as e:
+            print(f"❌ Error refrescando dashboard: {e}")
+            import traceback
+            traceback.print_exc()
+
 
 def index() -> rx.Component:
     # Welcome Page (Index)
@@ -154,7 +473,11 @@ def index() -> rx.Component:
                                 rx.box(
                                     rx.text("Progresión para el siguiente rango", font_size="0.875rem", color="#FFFFFF"),
                                     rx.center(
-                                        rx.text("754,654 VG – 1,300,000 VG", font_size="2rem", font_weight="bold"),
+                                        rx.text(
+                                            f"{DashboardState.current_pvg:,} — {DashboardState.next_rank_pvg:,} PVG",
+                                            font_size="2rem", 
+                                            font_weight="bold"
+                                        ),
                                         height="6em",          # Altura del centro
                                     ),
                                     rx.progress(
@@ -162,8 +485,8 @@ def index() -> rx.Component:
                                         fill_color="#0039F2",  # Color de progreso
                                         height="8px",          # Altura de la barra
                                         width="100%",          # Ancho completo
-                                        value=754654,          # Valor actual
-                                        max=1300000,           # Valor máximo
+                                        value=DashboardState.rank_progress_percentage,
+                                        max=100,
                                     ),
                                     spacing="1",              # Espacio entre elementos
                                     bg="#5E79FF",             # Fondo del box
@@ -202,13 +525,24 @@ def index() -> rx.Component:
                             rx.box(
                                 rx.text("Reporte de usuarios", font_size="0.875rem"),
                                 rx.hstack(
-                                    rx.box(bg="#32D74B", height="8px", width="50%", border_radius="4px"),
-                                    rx.box(bg="#FF3B30", height="8px", width="50%", border_radius="4px"),
+                                    rx.box(
+                                        bg="#32D74B", 
+                                        height="8px", 
+                                        width=f"{DashboardState.qualified_percentage}%", 
+                                        border_radius="4px"
+                                    ),
+                                    rx.box(
+                                        bg="#FF3B30", 
+                                        height="8px", 
+                                        width=f"{DashboardState.non_qualified_percentage}%", 
+                                        border_radius="4px"
+                                    ),
                                     spacing="1",              # Espacio entre barras
+                                    width="100%",
                                 ),
                                 rx.hstack(
-                                    rx.text("Activos – 501"),
-                                    rx.text("Inactivos – 501", margin_left="auto")  # Alinea a la derecha
+                                    rx.text(f"Calificados – {DashboardState.qualified_count}"),
+                                    rx.text(f"No calificados – {DashboardState.non_qualified_count}", margin_left="auto")
                                 ),
                                 bg=rx.color_mode_cond(
                                     light=Custom_theme().light_colors()["tertiary"],
@@ -425,16 +759,14 @@ def index() -> rx.Component:
                     # Progresión de rango
                     rx.box(
                         rx.vstack(
-                            rx.text("Progresión siguiente rango", font_size="0.9rem", color="white", text_align="center"),
-                            rx.text(
-                                rx.cond(
-                                    AuthState.profile_data.get("pvg_cache"),
-                                    f"{AuthState.profile_data.get('pvg_cache', 0)} PVG",
-                                    "0 PVG"
-                                ),
-                                font_size="1.1rem",
-                                font_weight="bold",
+                            rx.text("Progresión siguiente rango", font_size="0.9rem", color="white"),
+                            rx.heading(
+                                f"{DashboardState.current_pvg:,} — {DashboardState.next_rank_pvg:,} VG",
+                                #font_size="1.1rem",
+                                #font_weight="bold",
+                                size="6",
                                 color="white",
+                                width="100%",
                                 text_align="center"
                             ),
                             rx.progress(
@@ -442,9 +774,10 @@ def index() -> rx.Component:
                                 fill_color="#0039F2",
                                 height="6px",
                                 width="100%",
-                                value=AuthState.profile_data.get("pvg_cache", 0),
-                                max=1300000,
+                                value=DashboardState.rank_progress_percentage,
+                                max=100,
                             ),
+                            width="100%",
                             spacing="2"
                         ),
                         bg="#5E79FF",
@@ -487,15 +820,27 @@ def index() -> rx.Component:
                         rx.vstack(
                             rx.text("Reporte de usuarios", font_size="0.9rem", font_weight="bold"),
                             rx.hstack(
-                                rx.box(bg="#32D74B", height="6px", width="50%", border_radius="3px"),
-                                rx.box(bg="#FF3B30", height="6px", width="50%", border_radius="3px"),
+                                rx.box(
+                                    bg="#32D74B", 
+                                    height="6px", 
+                                    width=f"{DashboardState.qualified_percentage}%", 
+                                    border_radius="3px"
+                                ),
+                                rx.box(
+                                    bg="#FF3B30", 
+                                    height="6px", 
+                                    width=f"{DashboardState.non_qualified_percentage}%", 
+                                    border_radius="3px"
+                                ),
                                 spacing="1",
                                 width="100%"
                             ),
                             rx.hstack(
-                                rx.text("Activos: 501", font_size="0.8rem"),
+                                rx.text(f"Calificados: {DashboardState.qualified_count}", font_size="0.9em"),
                                 rx.spacer(),
-                                rx.text("Inactivos: 501", font_size="0.8rem")
+                                rx.text(f"No calificados: {DashboardState.non_qualified_count}", font_size="0.9em"),
+                                width="100%",
+                                justify="between",
                             ),
                             spacing="2"
                         ),
@@ -512,8 +857,13 @@ def index() -> rx.Component:
                     rx.vstack(
                         rx.box(
                             rx.vstack(
-                                rx.text("Estimado ganancia mes", font_size="0.8rem", text_align="center"),
-                                rx.text("$42,659,227", font_size="1.1rem", font_weight="bold", text_align="center"),
+                                rx.text("Proyección mensual", font_size="0.8rem", text_align="center"),
+                                rx.text(
+                                    f"${DashboardState.estimated_monthly_earnings:,.2f} {DashboardState.estimated_earnings_currency}",
+                                    font_size="1.1rem",
+                                    font_weight="bold",
+                                    text_align="center"
+                                ),
                                 spacing="1"
                             ),
                             bg="#0039F2",
@@ -570,16 +920,13 @@ def index() -> rx.Component:
                             rx.link(
                                 rx.button(
                                     "Transferencia interna",
-                                    bg=rx.color_mode_cond(
-                                        light=Custom_theme().light_colors()["tertiary"],
-                                        dark=Custom_theme().dark_colors()["tertiary"]
-                                    ),
+                                    variant="outline",
                                     color=rx.color_mode_cond(
                                         light=Custom_theme().light_colors()["text"],
                                         dark=Custom_theme().dark_colors()["text"]
                                     ),
                                     border="1px solid #0039F2",
-                                    border_radius="22px",
+                                    border_radius="32px",
                                     height="48px",
                                     width="100%",
                                 ),
@@ -634,7 +981,12 @@ def index() -> rx.Component:
             dark=Custom_theme().dark_colors()["background"]
         ),
         width="100%",                  # Ancho de la ventana
-        on_mount=[AuthState.load_user_from_token],
+        on_mount=[
+            AuthState.load_user_from_token,
+            DashboardState.load_user_stats,
+            DashboardState.load_rank_progression,
+            DashboardState.load_estimated_monthly_earnings
+        ],
     )
 
 # Meta tags para PWA y configuración móvil
@@ -648,7 +1000,7 @@ meta = [
 ]
 
 app = rx.App(
-    theme=rx.theme(appearance="light")
+    theme=rx.theme(appearance="inherit")
 )
 
 app.add_page(

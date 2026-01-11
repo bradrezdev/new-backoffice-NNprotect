@@ -125,8 +125,16 @@ class RankService:
     def promote_user_rank(cls, session, member_id: int, new_rank_id: int) -> bool:
         """
         Promueve usuario a un nuevo rango (si es mayor al actual).
-        Dispara Bono por Alcance si aplica.
-        Principio DRY: Lógica centralizada para promociones.
+        Dispara Bonos por Alcance de TODOS los rangos intermedios no cobrados.
+        
+        MEJORA (Giovanni - QA Financial):
+        Si el usuario salta de rango 2 (Sin rango) → rango 5 (Innovador),
+        debe recibir bonos de:
+        - Rango 3 (Emprendedor)
+        - Rango 4 (Creativo o Visionario)
+        - Rango 5 (Innovador)
+        
+        Arquitectura: Elena (Backend) + Adrian (Senior Dev) + Giovanni (QA)
         """
         try:
             # Verificar que el nuevo rango existe
@@ -163,14 +171,48 @@ class RankService:
 
             print(f"✅ Usuario {member_id} promovido a rango {new_rank.name} (id={new_rank_id})")
 
-            # Disparar Bono por Alcance (si aplica)
+            # =================================================================
+            # DISPARAR BONOS POR ALCANCE DE TODOS LOS RANGOS INTERMEDIOS
+            # =================================================================
             from .commission_service import CommissionService
-            achievement_commission_id = CommissionService.process_achievement_bonus(
-                session, member_id, new_rank.name
-            )
-
-            if achievement_commission_id:
-                print(f"✅ Bono por Alcance generado para {member_id}")
+            
+            # Obtener todos los rangos entre el actual y el nuevo
+            start_rank = current_rank_id if current_rank_id else 1
+            intermediate_ranks = session.exec(
+                sqlmodel.select(Ranks)
+                .where(
+                    (Ranks.id > start_rank) &
+                    (Ranks.id <= new_rank_id)
+                )
+                .order_by(Ranks.id)
+            ).all()
+            
+            bonuses_generated = 0
+            total_bonus_amount = 0.0
+            
+            for rank in intermediate_ranks:
+                # Intentar generar bono para este rango
+                achievement_commission_id = CommissionService.process_achievement_bonus(
+                    session, member_id, rank.name
+                )
+                
+                if achievement_commission_id:
+                    bonuses_generated += 1
+                    print(f"   ✅ Bono por Alcance generado: {rank.name}")
+                    
+                    # Obtener monto del bono generado
+                    from database.comissions import Commissions
+                    commission = session.exec(
+                        sqlmodel.select(Commissions).where(Commissions.id == achievement_commission_id)
+                    ).first()
+                    
+                    if commission:
+                        total_bonus_amount += commission.amount_converted
+            
+            if bonuses_generated > 0:
+                print(f"🎉 Total bonos generados: {bonuses_generated} rangos = ${total_bonus_amount:,.2f}")
+            else:
+                print(f"⚠️  No se generaron bonos de alcance (ya fueron cobrados previamente)")
 
             return True
 

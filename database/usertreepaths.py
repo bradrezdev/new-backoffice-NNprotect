@@ -1,7 +1,8 @@
 import reflex as rx
-from sqlmodel import Field
+from sqlmodel import Field, SQLModel
 
-class UserTreePath(rx.Model, table=True):
+@rx.ModelRegistry.register
+class UserTreePath(SQLModel, table=True):
     """
     Estructura de árbol genealógico para el sistema MLM.
     Implementa el patrón "Path Enumeration" para consultas eficientes de jerarquía.

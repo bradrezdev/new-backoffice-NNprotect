@@ -3,6 +3,7 @@ Estado y lógica de negocio para Admin App
 """
 
 import reflex as rx
+from pydantic import BaseModel
 from typing import List, Dict, Any
 from datetime import datetime, timezone
 import sqlmodel
@@ -28,9 +29,10 @@ from NNProtect_new_website.mlm_service.loyalty_service import LoyaltyService
 from NNProtect_new_website.mlm_service.exchange_service import ExchangeService
 from NNProtect_new_website.mlm_service.genealogy_service import GenealogyService
 from NNProtect_new_website.mlm_service.rank_service import RankService
+from NNProtect_new_website.mlm_service.mlm_user_manager import MLMUserManager
 
 
-class OrganizationMember(rx.Base):
+class OrganizationMember(BaseModel):
     """Miembro de la organización"""
     nombre: str
     member_id: int
@@ -41,7 +43,7 @@ class OrganizationMember(rx.Base):
     ciudad: str
 
 
-class UserAddress(rx.Base):
+class UserAddress(BaseModel):
     """Dirección de usuario"""
     street: str
     city: str
@@ -1005,16 +1007,35 @@ class AdminState(rx.State):
                         user.pv_cache += total_pv
                         user.vn_cache += total_vn
                         
-                        # ✅ CRÍTICO: El PVG del usuario incluye su propio PV
-                        user.pvg_cache += total_pv
+                        # ✅ CRÍTICO: El PVG del usuario SIEMPRE debe ser >= a su PV
+                        # PVG = PV_personal + PV_descendientes
+                        # Como el usuario es parte de su propio grupo, su PVG mínimo es su PV
+                        # Además, recibirá incrementos de sus descendientes (línea 1047)
+                        user.pvg_cache = user.pv_cache
                         
                         # Calificar usuario si alcanza el mínimo
                         if user.pv_cache >= 1465:  # PV_MINIMO_CALIFICACION
                             user.status = UserStatus.QUALIFIED
                         
                         session.add(user)
+                        session.flush()  # Guardar la orden antes de actualizar UnilevelReports
                         
-                        # ✅ CRÍTICO: Propagar PVG a ancestros
+                        # 📊 ACTUALIZAR UNILEVEL_REPORTS (incluye PVG de ancestros y totales)
+                        try:
+                            from ..mlm_service.mlm_user_manager import MLMUserManager
+                            
+                            print(f"  🔄 Actualizando UnilevelReports para member_id={user.member_id}")
+                            MLMUserManager.update_unilevel_report_for_order(
+                                order_member_id=user.member_id,
+                                period_id=period.id
+                            )
+                            print(f"  ✅ UnilevelReports actualizado correctamente con PVG por nivel y totales")
+                        except Exception as e_unilevel:
+                            print(f"  ⚠️  Error actualizando UnilevelReports para user {user.member_id}: {e_unilevel}")
+                            import traceback
+                            traceback.print_exc()
+                        
+                        # ✅ CRÍTICO: Propagar PVG a ancestros (cache)
                         ancestor_paths = session.exec(
                             sqlmodel.select(UserTreePath)
                             .where(UserTreePath.descendant_id == user.member_id)
@@ -1031,6 +1052,19 @@ class AdminState(rx.State):
                                 session.add(ancestor)
                         
                         print(f"  ✅ Orden: {total_pv} PV → User {user.member_id} (PVG: +{total_pv}, propagado a {len(ancestor_paths)} ancestros)")
+                        
+                        # 💰 NUEVO: CALCULAR COMISIONES INSTANTÁNEAMENTE (Uninivel + Matching)
+                        # Esto permite que el dashboard muestre ganancias en tiempo real
+                        try:
+                            from ..payment_service.payment_service import PaymentService
+                            
+                            print(f"  💰 Calculando comisiones para orden {order.id}...")
+                            PaymentService._trigger_commissions(session, order)
+                            print(f"  ✅ Comisiones calculadas exitosamente")
+                        except Exception as e_comm:
+                            print(f"  ⚠️  Error calculando comisiones para orden {order.id}: {e_comm}")
+                            import traceback
+                            traceback.print_exc()
                         
                         # ✅ CRÍTICO: Verificar y actualizar rango del usuario tras cambio de PVG
                         rank_updated = RankService.check_and_update_rank(session, user.member_id)
@@ -1118,9 +1152,22 @@ class AdminState(rx.State):
 
                 print(f"DEBUG: Sponsor raíz encontrado: {root_user.first_name} {root_user.last_name}")
 
+                # 🆕 CRÍTICO: Obtener o crear período actual (SIEMPRE necesario para rank_history)
+                from NNProtect_new_website.mlm_service.period_service import PeriodService
+                current_period = PeriodService.get_current_period(session)
+                if not current_period:
+                    print("DEBUG: No hay período actual, creando...")
+                    current_period = PeriodService.auto_create_current_month_period(session)
+                    session.commit()
+                
+                if not current_period:
+                    self.show_error("No se pudo obtener o crear el período actual")
+                    return
+                
+                print(f"DEBUG: Período actual: {current_period.name} (ID: {current_period.id})")
+                
                 # Obtener productos si se van a crear órdenes
                 products_map = {}
-                current_period = None
                 
                 if self.network_create_orders:
                     print("DEBUG: Cargando productos para órdenes...")
@@ -1134,14 +1181,6 @@ class AdminState(rx.State):
                             products_map[product_name] = product
                         else:
                             print(f"WARNING: Producto {product_name} no encontrado")
-                    
-                    # Obtener período actual
-                    from NNProtect_new_website.mlm_service.period_service import PeriodService
-                    current_period = PeriodService.get_current_period(session)
-                    if not current_period:
-                        print("WARNING: No hay período actual, creando...")
-                        current_period = PeriodService.auto_create_current_month_period(session)
-                        session.commit()
 
                 # Obtener próximo member_id
                 from sqlmodel import func as sql_func
@@ -1253,6 +1292,9 @@ class AdminState(rx.State):
         last_name = f"User{level}"
         email = f"test{member_id}@nnprotect.local"
         
+        # Generar referral_link usando el método de MLMUserManager para consistencia
+        base_url = MLMUserManager.get_base_url()
+        
         user = Users(
             member_id=member_id,
             sponsor_id=sponsor_id,
@@ -1263,6 +1305,7 @@ class AdminState(rx.State):
             status=UserStatus.NO_QUALIFIED,
             pv_cache=0,
             pvg_cache=0,
+            referral_link=f"{base_url}?ref={member_id}",  # 🆕 Referral link consistente
             created_at=datetime.now(timezone.utc)
         )
         session.add(user)
@@ -1337,14 +1380,51 @@ class AdminState(rx.State):
         )
         session.add(wallet)
         
-        # 6. USER_RANK_HISTORY
+        # 6. USER_RANK_HISTORY (SIEMPRE con period_id)
+        if not current_period:
+            raise ValueError("current_period is required for UserRankHistory")
+        
         rank_history = UserRankHistory(
             member_id=member_id,
             rank_id=default_rank.id,
             achieved_on=datetime.now(timezone.utc),
-            period_id=current_period.id if current_period else None
+            period_id=current_period.id  # 🆕 SIEMPRE requerido
         )
         session.add(rank_history)
+        
+        # 🆕 6.5 UNILEVEL_REPORTS - Crear registro inicial
+        if current_period and user.id is not None:
+            from database.unilevel_report import UnilevelReports
+            
+            initial_report = UnilevelReports(
+                user_id=user.id,
+                period_id=current_period.id,
+                pv=0,
+                vn=0.0,
+                pvg_1=0,
+                vng_1=0.0,
+                pvg_2=0,
+                vng_2=0.0,
+                pvg_3=0,
+                vng_3=0.0,
+                pvg_4=0,
+                vng_4=0.0,
+                pvg_5=0,
+                vng_5=0.0,
+                pvg_6=0,
+                vng_6=0.0,
+                pvg_7=0,
+                vng_7=0.0,
+                pvg_8=0,
+                vng_8=0.0,
+                pvg_9=0,
+                vng_9=0.0,
+                pvg_10_plus=0,
+                vng_10_plus=0.0,
+                pvg_total=0,
+                vng_total=0.0
+            )
+            session.add(initial_report)
         
         # 7. ORDERS (si está habilitado)
         if products_map and current_period:
@@ -1420,8 +1500,11 @@ class AdminState(rx.State):
         user.pv_cache += total_pv
         user.vn_cache += total_vn
         
-        # ✅ CRÍTICO: El PVG del usuario incluye su propio PV
-        user.pvg_cache += total_pv
+        # ✅ CRÍTICO: El PVG del usuario SIEMPRE debe ser >= a su PV
+        # PVG = PV_personal + PV_descendientes
+        # Como el usuario es parte de su propio grupo, su PVG mínimo es su PV
+        # Además, recibirá incrementos de sus descendientes (líneas siguientes)
+        user.pvg_cache = user.pv_cache
         
         session.add(user)
         
@@ -1453,6 +1536,19 @@ class AdminState(rx.State):
             ancestor_rank_updated = RankService.check_and_update_rank(session, path.ancestor_id)
             if ancestor_rank_updated:
                 print(f"  🎉 Ancestro {path.ancestor_id} promovido a nuevo rango")
+        
+        # 💰 NUEVO: CALCULAR COMISIONES INSTANTÁNEAMENTE (Uninivel + Matching)
+        # Esto permite que el dashboard muestre ganancias en tiempo real
+        try:
+            from ..payment_service.payment_service import PaymentService
+            
+            print(f"  💰 Calculando comisiones para orden {order.id}...")
+            PaymentService._trigger_commissions(session, order)
+            print(f"  ✅ Comisiones calculadas exitosamente")
+        except Exception as e_comm:
+            print(f"  ⚠️  Error calculando comisiones para orden {order.id}: {e_comm}")
+            import traceback
+            traceback.print_exc()
 
     
     def _get_currency(self, country: str) -> str:
@@ -1798,8 +1894,8 @@ class AdminState(rx.State):
     @rx.event
     def process_period_end_and_commissions(self):
         """
-        Cierra el período actual, crea uno nuevo y procesa bonos Uninivel + Match.
-        Deposita todas las comisiones PENDING en las wallets de los usuarios.
+        Cierra el período actual, paga comisiones PENDING y crea nuevo período.
+        SIMPLIFICADO: Solo paga comisiones existentes, no calcula nuevas.
         """
         self.is_loading_commissions = True
         
@@ -1807,35 +1903,17 @@ class AdminState(rx.State):
             from database.engine_config import get_configured_engine
             from database.periods import Periods
             from database.comissions import Commissions, CommissionStatus
-            import sys
-            import os
-            import importlib.util
-            
-            # Importar dinámicamente el módulo plan_compensacion.py
-            plan_comp_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                "plan de comisiones",
-                "plan_compensacion.py"
-            )
-            
-            spec = importlib.util.spec_from_file_location("plan_compensacion", plan_comp_path)
-            if spec is None or spec.loader is None:
-                raise ImportError(f"No se pudo cargar plan_compensacion.py desde {plan_comp_path}")
-                
-            plan_comp_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(plan_comp_module)
-            CompensationPlanV2 = plan_comp_module.CompensationPlanV2
-            
             from NNProtect_new_website.mlm_service.wallet_service import WalletService
+            from NNProtect_new_website.mlm_service.period_reset_service import PeriodResetService
             
             engine = get_configured_engine()
             
             with sqlmodel.Session(engine) as session:
                 print("\n" + "="*80)
-                print("🔄 INICIANDO PROCESAMIENTO DE CIERRE DE PERÍODO Y COMISIONES")
+                print("🔄 INICIANDO CIERRE DE PERÍODO")
                 print("="*80 + "\n")
                 
-                # 1. Obtener período actual activo (sin usar .desc())
+                # 1. Obtener período actual activo
                 all_periods = session.exec(
                     sqlmodel.select(Periods)
                     .where(Periods.closed_at == None)
@@ -1852,32 +1930,22 @@ class AdminState(rx.State):
                     self.show_error("❌ No hay un período activo para cerrar")
                     return
                 
-                print(f"📅 Período actual encontrado: {current_period.name}")
-                print(f"   ID: {current_period.id}")
+                print(f"📅 Período actual: {current_period.name} (ID={current_period.id})")
                 print(f"   Inicio: {current_period.starts_on}")
                 print(f"   Fin: {current_period.ends_on}\n")
                 
-                # 2. Ejecutar process_end_of_month (calcula Match y Auto)
-                print("💰 Ejecutando process_end_of_month...")
-                end_of_month_results = CompensationPlanV2.process_end_of_month(
-                    session, current_period.id
-                )
-                
-                print(f"\n✅ process_end_of_month completado:")
-                print(f"   - Match bonuses: {end_of_month_results.get('match', {}).get('bonuses_calculated', 0)}")
-                print(f"   - Auto bonuses: {end_of_month_results.get('auto', {}).get('processed', 0)}")
-                print(f"   - Volúmenes reseteados: {end_of_month_results.get('volumes_reset', False)}\n")
-                
-                # 3. Obtener todas las comisiones PENDING del período
+                # 2. Obtener todas las comisiones PENDING del período
                 pending_commissions = session.exec(
                     sqlmodel.select(Commissions)
-                    .where(Commissions.period_id == current_period.id)
-                    .where(Commissions.status == CommissionStatus.PENDING.value)
+                    .where(
+                        (Commissions.period_id == current_period.id) &
+                        (Commissions.status == CommissionStatus.PENDING.value)
+                    )
                 ).all()
                 
                 print(f"💸 Comisiones PENDING encontradas: {len(pending_commissions)}\n")
                 
-                # 4. Depositar cada comisión en la wallet del usuario
+                # 3. Depositar cada comisión en la wallet del usuario
                 deposited_count = 0
                 deposited_total = 0.0
                 failed_count = 0
@@ -1902,20 +1970,18 @@ class AdminState(rx.State):
                     else:
                         failed_count += 1
                 
-                session.commit()
-                
                 print(f"\n💰 RESUMEN DE DEPÓSITOS:")
                 print(f"   ✅ Exitosos: {deposited_count}")
                 print(f"   ❌ Fallidos: {failed_count}")
                 print(f"   💵 Total depositado: ${deposited_total:.2f}\n")
                 
-                # 5. Cerrar el período actual
+                # 4. Cerrar el período actual
                 current_period.closed_at = datetime.now(timezone.utc)
                 session.add(current_period)
                 
-                print(f"🔒 Período {current_period.name} cerrado exitosamente")
+                print(f"🔒 Período {current_period.name} cerrado exitosamente\n")
                 
-                # 6. Crear nuevo período (si no existe)
+                # 5. Crear nuevo período
                 now = datetime.now(timezone.utc)
                 next_month = now.month + 1 if now.month < 12 else 1
                 next_year = now.year if now.month < 12 else now.year + 1
@@ -1930,6 +1996,7 @@ class AdminState(rx.State):
                 if existing_period:
                     print(f"⚠️  Período {new_period_name} ya existe (ID: {existing_period.id})")
                     new_period = existing_period
+                    users_reset = 0
                 else:
                     new_period = Periods(
                         name=new_period_name,
@@ -1939,15 +2006,25 @@ class AdminState(rx.State):
                     )
                     
                     session.add(new_period)
-                    session.commit()
+                    session.flush()
                     
                     print(f"✨ Nuevo período creado: {new_period.name} (ID: {new_period.id})")
+                    
+                    # 6. Resetear TODOS los usuarios para el nuevo período
+                    if new_period.id:
+                        users_reset = PeriodResetService.reset_all_users_for_new_period(
+                            session, new_period.id
+                        )
+                    else:
+                        users_reset = 0
+                
+                session.commit()
                 
                 # Guardar resultados
                 self.commission_results = {
                     "closed_period": current_period.name,
                     "new_period": new_period.name,
-                    "match_bonuses": end_of_month_results.get('match_processed', 0),
+                    "match_bonuses": 0,
                     "auto_bonuses": 0,
                     "commissions_deposited": deposited_count,
                     "commissions_failed": failed_count,
@@ -1955,7 +2032,7 @@ class AdminState(rx.State):
                 }
                 
                 print("\n" + "="*80)
-                print("✅ PROCESAMIENTO COMPLETADO EXITOSAMENTE")
+                print("✅ CIERRE DE PERÍODO COMPLETADO")
                 print("="*80 + "\n")
                 
                 self.show_success(
@@ -1964,12 +2041,6 @@ class AdminState(rx.State):
                     f"Comisiones depositadas: {deposited_count} (${deposited_total:.2f})"
                 )
                 
-        except ImportError as e:
-            error_msg = f"Error importando módulos: {str(e)}"
-            print(f"❌ {error_msg}")
-            self.show_error(error_msg)
-            import traceback
-            traceback.print_exc()
         except Exception as e:
             error_msg = f"Error procesando comisiones: {str(e)}"
             print(f"❌ {error_msg}")

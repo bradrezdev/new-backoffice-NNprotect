@@ -1,5 +1,5 @@
 import reflex as rx
-from sqlmodel import Field
+from sqlmodel import Field, SQLModel
 from datetime import datetime, date, timezone
 from enum import Enum
 
@@ -8,7 +8,8 @@ class UserGender(Enum):
     MALE = "MALE"                  # Masculino
     FEMALE = "FEMALE"                  # Femenino
 
-class UserProfiles(rx.Model, table=True):
+@rx.ModelRegistry.register
+class UserProfiles(SQLModel, table=True):
     """
     Perfiles extendidos de usuarios.
     Contiene información personal y de contacto adicional.

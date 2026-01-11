@@ -23,9 +23,6 @@ class Users(rx.Model, table=True):
         UniqueConstraint('member_id', name='uq_users_member_id'),
     )
 
-    # Clave primaria
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
     # Vinculo con Supabase Auth - UUID del usuario en auth.users
     supabase_user_id: str | None = Field(default=None, index=True, unique=True)
 

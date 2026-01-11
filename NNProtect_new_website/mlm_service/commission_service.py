@@ -159,7 +159,7 @@ class CommissionService:
 
                     # Obtener moneda del comprador (origen) y patrocinador (destino)
                     buyer_currency = ExchangeService.get_country_currency(order.country)
-                    sponsor_currency = ExchangeService.get_country_currency(sponsor_user.country_cache or sponsor_user.country)
+                    sponsor_currency = ExchangeService.get_country_currency(sponsor_user.country_cache or sponsor_user.country_cache)
 
                     # Convertir PV a VN en la moneda del patrocinador
                     # Si ambos tienen la misma moneda, no hay conversión
@@ -361,7 +361,7 @@ class CommissionService:
                 print(f"❌ Usuario {member_id} no encontrado")
                 return []
 
-            user_currency = ExchangeService.get_country_currency(user.country)
+            user_currency = ExchangeService.get_country_currency(user.country_cache)
 
             # 4. Calcular comisión por cada nivel
             commission_ids = []
@@ -569,7 +569,7 @@ class CommissionService:
                 print(f"❌ Usuario {member_id} no encontrado")
                 return []
 
-            user_currency = ExchangeService.get_country_currency(user.country)
+            user_currency = ExchangeService.get_country_currency(user.country_cache)
 
             # 5. Obtener todos los descendientes (downline completo)
             downline = GenealogyService.get_downline(session, member_id)
@@ -706,7 +706,7 @@ class CommissionService:
                     return None
 
             # 5. Obtener monto según país
-            user_currency = ExchangeService.get_country_currency(user.country)
+            user_currency = ExchangeService.get_country_currency(user.country_cache)
             amount = cls.ACHIEVEMENT_BONUS_AMOUNTS[new_rank_name].get(user_currency)
 
             if not amount:

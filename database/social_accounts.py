@@ -1,5 +1,5 @@
 import reflex as rx
-from sqlmodel import Field
+from sqlmodel import Field, SQLModel
 from enum import Enum
 
 class SocialNetwork(Enum):
@@ -9,7 +9,8 @@ class SocialNetwork(Enum):
     INSTAGRAM = "instagram"               # Instagram
     X = "x"                               # Twitter (X)
 
-class SocialAccounts(rx.Model, table=True):
+@rx.ModelRegistry.register
+class SocialAccounts(SQLModel, table=True):
     """
     Cuentas sociales vinculadas a usuarios.
     Permite integración con redes sociales y otros proveedores de identidad.

@@ -16,7 +16,9 @@ from database.roles import Roles
 from database.roles_users import RolesUsers
 from database.auth_credentials import AuthCredentials
 from database.usertreepaths import UserTreePath
+from database.unilevel_report import UnilevelReports
 from .rank_service import RankService
+from .wallet_service import WalletService
 import os
 
 class MLMUserManager:
@@ -83,6 +85,59 @@ class MLMUserManager:
             if not rank_assigned:
                 print(f"⚠️  Advertencia: No se pudo asignar rango inicial a usuario {member_id}")
             
+            # 🆕 CREAR REGISTRO INICIAL EN UNILEVEL_REPORTS
+            try:
+                from database.periods import Periods
+                from sqlmodel import desc
+                from database.unilevel_report import UnilevelReports
+                
+                # Obtener el período actual
+                current_period = session.exec(
+                    sqlmodel.select(Periods).order_by(desc(Periods.starts_on)).limit(1)
+                ).first()
+                
+                if current_period:
+                    initial_report = UnilevelReports(
+                        user_id=new_user.id,
+                        period_id=current_period.id,
+                        pv=0,
+                        vn=0.0,
+                        pvg_1=0,
+                        vng_1=0.0,
+                        pvg_2=0,
+                        vng_2=0.0,
+                        pvg_3=0,
+                        vng_3=0.0,
+                        pvg_4=0,
+                        vng_4=0.0,
+                        pvg_5=0,
+                        vng_5=0.0,
+                        pvg_6=0,
+                        vng_6=0.0,
+                        pvg_7=0,
+                        vng_7=0.0,
+                        pvg_8=0,
+                        vng_8=0.0,
+                        pvg_9=0,
+                        vng_9=0.0,
+                        pvg_10_plus=0,
+                        vng_10_plus=0.0,
+                        pvg_total=0,
+                        vng_total=0.0
+                    )
+                    session.add(initial_report)
+                    print(f"✅ UnilevelReport inicial creado para usuario {member_id} en período {current_period.name}")
+                else:
+                    print(f"⚠️  No se encontró período actual para crear UnilevelReport")
+            except Exception as e:
+                print(f"⚠️  Error creando UnilevelReport inicial: {e}")
+            
+            # 🆕 CREAR WALLET
+            try:
+                WalletService.create_wallet(session, member_id, "MXN")
+            except Exception as e:
+                print(f"⚠️  Error creando Wallet inicial: {e}")
+
             print(f"✅ Usuario MLM creado - Member ID: {member_id}, Sponsor ID: {sponsor_id}")
             return new_user
             
@@ -891,31 +946,353 @@ class MLMUserManager:
             traceback.print_exc()
             return []
 
+    @staticmethod
+    def get_period_volumes(member_id: int) -> dict:
+        """
+        Obtiene volúmenes por periodo y por nivel desde la tabla precalculada unilevel_report.
+        Retorna los últimos 6 periodos con PV y PVG desglosados por niveles (1-9).
+        
+        Args:
+            member_id: ID del usuario (member_id en Users)
+            
+        Returns:
+            Diccionario con estructura plana para acceso fácil desde Reflex
+            {
+                "period_names": ["2025-10", "2025-09", ...],
+                "pv_0": "1,500", "pv_1": "1,200", ...,
+                "level_1_0": "3,200", "level_1_1": "2,800", ...,
+                ...
+            }
+        """
+        try:
+            from database.periods import Periods
+            from database.unilevel_report import UnilevelReports
+            from database.users import Users
+            
+            with rx.session() as session:
+                print(f"🔄 Obteniendo volúmenes por periodo para member_id: {member_id}")
+                
+                # 1️⃣ Obtener user_id desde member_id
+                user = session.exec(
+                    sqlmodel.select(Users).where(Users.member_id == member_id)
+                ).first()
+                
+                if not user:
+                    print(f"⚠️  Usuario con member_id={member_id} no encontrado")
+                    # Retornar estructura vacía
+                    result = {"period_names": [f"Mes {i+1}" for i in range(6)]}
+                    for idx in range(6):
+                        result[f"pv_{idx}"] = "0"
+                        for level in range(1, 10):
+                            result[f"level_{level}_{idx}"] = "0"
+                    return result
+                
+                user_id = user.id
+                
+                # 2️⃣ Obtener últimos 6 periodos
+                periods = session.exec(
+                    sqlmodel.select(Periods)
+                    .order_by(sqlmodel.desc(Periods.starts_on))
+                    .limit(6)
+                ).all()
+                
+                # 3️⃣ Crear estructura plana con datos de unilevel_report
+                result = {"period_names": []}
+                
+                for idx, period in enumerate(periods):
+                    result["period_names"].append(period.name)
+                    
+                    # Buscar reporte de este usuario en este periodo
+                    report = session.exec(
+                        sqlmodel.select(UnilevelReports)
+                        .where(
+                            UnilevelReports.user_id == user_id,
+                            UnilevelReports.period_id == period.id
+                        )
+                    ).first()
+                    
+                    if report:
+                        result[f"pv_{idx}"] = f"{report.pv:,}"
+                        result[f"level_1_{idx}"] = f"{report.pvg_1:,}"
+                        result[f"level_2_{idx}"] = f"{report.pvg_2:,}"
+                        result[f"level_3_{idx}"] = f"{report.pvg_3:,}"
+                        result[f"level_4_{idx}"] = f"{report.pvg_4:,}"
+                        result[f"level_5_{idx}"] = f"{report.pvg_5:,}"
+                        result[f"level_6_{idx}"] = f"{report.pvg_6:,}"
+                        result[f"level_7_{idx}"] = f"{report.pvg_7:,}"
+                        result[f"level_8_{idx}"] = f"{report.pvg_8:,}"
+                        result[f"level_9_{idx}"] = f"{report.pvg_9:,}"
+                        print(f"  ✅ Periodo '{period.name}': PV={report.pv}")
+                    else:
+                        # Sin reporte, todos en 0
+                        result[f"pv_{idx}"] = "0"
+                        for level in range(1, 10):
+                            result[f"level_{level}_{idx}"] = "0"
+                        print(f"  ⚠️  Periodo '{period.name}': Sin reporte")
+                
+                # 4️⃣ Rellenar con periodos vacíos hasta completar 6
+                while len(result["period_names"]) < 6:
+                    idx = len(result["period_names"])
+                    period_num = idx + 1
+                    result["period_names"].append(f"Mes {period_num}")
+                    result[f"pv_{idx}"] = "0"
+                    for level in range(1, 10):
+                        result[f"level_{level}_{idx}"] = "0"
+                
+                print(f"✅ Retornando volúmenes de {len(result['period_names'])} periodos")
+                return result
+                
+        except Exception as e:
+            print(f"❌ Error obteniendo volúmenes por periodo: {e}")
+            import traceback
+            traceback.print_exc()
+            # Retornar estructura vacía
+            result = {"period_names": [f"Mes {i+1}" for i in range(6)]}
+            for idx in range(6):
+                result[f"pv_{idx}"] = "0"
+                for level in range(1, 10):
+                    result[f"level_{level}_{idx}"] = "0"
+            return result
+
+    @staticmethod
+    def update_unilevel_report_for_order(order_member_id: int, period_id: int):
+        """
+        Actualiza la tabla unilevel_report para todos los ancestros del usuario que hizo la orden.
+        Se debe llamar cada vez que se complete una orden.
+        
+        Args:
+            order_member_id: member_id del usuario que hizo la orden
+            period_id: ID del periodo de la orden
+        """
+        try:
+            from database.unilevel_report import UnilevelReports
+            from database.users import Users
+            from database.orders import Orders
+            
+            with rx.session() as session:
+                print(f"🔄 Actualizando unilevel_report para orden de member_id={order_member_id}, periodo={period_id}")
+                
+                # 1️⃣ Obtener user_id del comprador
+                buyer = session.exec(
+                    sqlmodel.select(Users).where(Users.member_id == order_member_id)
+                ).first()
+                
+                if not buyer:
+                    print(f"⚠️  Usuario comprador no encontrado")
+                    return
+                
+                # 2️⃣ Actualizar el PV personal del comprador
+                pv_total = session.exec(
+                    sqlmodel.select(sqlmodel.func.sum(Orders.total_pv))
+                    .where(
+                        Orders.member_id == order_member_id,
+                        Orders.period_id == period_id,
+                        Orders.status == "completed"
+                    )
+                ).first() or 0
+                
+                buyer_report = session.exec(
+                    sqlmodel.select(UnilevelReports)
+                    .where(
+                        UnilevelReports.user_id == buyer.id,
+                        UnilevelReports.period_id == period_id
+                    )
+                ).first()
+                
+                # Calcular VN total del comprador
+                vn_total = session.exec(
+                    sqlmodel.select(sqlmodel.func.sum(Orders.total_vn))
+                    .where(
+                        Orders.member_id == order_member_id,
+                        Orders.period_id == period_id,
+                        Orders.status == "completed"
+                    )
+                ).first() or 0.0
+                
+                if buyer_report:
+                    buyer_report.pv = int(pv_total)
+                    buyer_report.vn = float(vn_total)
+                else:
+                    buyer_report = UnilevelReports(
+                        user_id=buyer.id,
+                        period_id=period_id,
+                        pv=int(pv_total),
+                        vn=float(vn_total)
+                    )
+                    session.add(buyer_report)
+                
+                # 🆕 Calcular totales para el comprador (no tiene PVG, solo PV personal)
+                buyer_report.pvg_total = 0
+                buyer_report.vng_total = 0.0
+                
+                # 3️⃣ Obtener todos los ancestros y actualizar sus PVG por nivel
+                ancestors = session.exec(
+                    sqlmodel.select(UserTreePath)
+                    .where(UserTreePath.descendant_id == order_member_id)
+                ).all()
+                
+                for ancestor_path in ancestors:
+                    if ancestor_path.depth == 0:
+                        continue  # Skip self
+                    
+                    ancestor_member_id = ancestor_path.ancestor_id
+                    depth = ancestor_path.depth
+                    
+                    # Obtener user_id del ancestro
+                    ancestor_user = session.exec(
+                        sqlmodel.select(Users).where(Users.member_id == ancestor_member_id)
+                    ).first()
+                    
+                    if not ancestor_user:
+                        continue
+                    
+                    # Calcular PVG para este nivel
+                    descendants_at_this_level = session.exec(
+                        sqlmodel.select(UserTreePath.descendant_id)
+                        .where(
+                            UserTreePath.ancestor_id == ancestor_member_id,
+                            UserTreePath.depth == depth
+                        )
+                    ).all()
+                    
+                    pvg_for_level = session.exec(
+                        sqlmodel.select(sqlmodel.func.sum(Orders.total_pv))
+                        .where(
+                            Orders.member_id.in_(descendants_at_this_level),
+                            Orders.period_id == period_id,
+                            Orders.status == "completed"
+                        )
+                    ).first() or 0
+                    
+                    vng_for_level = session.exec(
+                        sqlmodel.select(sqlmodel.func.sum(Orders.total_vn))
+                        .where(
+                            Orders.member_id.in_(descendants_at_this_level),
+                            Orders.period_id == period_id,
+                            Orders.status == "completed"
+                        )
+                    ).first() or 0.0
+                    
+                    # Actualizar/crear reporte del ancestro
+                    ancestor_report = session.exec(
+                        sqlmodel.select(UnilevelReports)
+                        .where(
+                            UnilevelReports.user_id == ancestor_user.id,
+                            UnilevelReports.period_id == period_id
+                        )
+                    ).first()
+                    
+                    if not ancestor_report:
+                        ancestor_report = UnilevelReports(
+                            user_id=ancestor_user.id,
+                            period_id=period_id
+                        )
+                        session.add(ancestor_report)
+                    
+                    # Actualizar el PVG y VNG del nivel correspondiente
+                    if depth == 1:
+                        ancestor_report.pvg_1 = int(pvg_for_level)
+                        ancestor_report.vng_1 = float(vng_for_level)
+                    elif depth == 2:
+                        ancestor_report.pvg_2 = int(pvg_for_level)
+                        ancestor_report.vng_2 = float(vng_for_level)
+                    elif depth == 3:
+                        ancestor_report.pvg_3 = int(pvg_for_level)
+                        ancestor_report.vng_3 = float(vng_for_level)
+                    elif depth == 4:
+                        ancestor_report.pvg_4 = int(pvg_for_level)
+                        ancestor_report.vng_4 = float(vng_for_level)
+                    elif depth == 5:
+                        ancestor_report.pvg_5 = int(pvg_for_level)
+                        ancestor_report.vng_5 = float(vng_for_level)
+                    elif depth == 6:
+                        ancestor_report.pvg_6 = int(pvg_for_level)
+                        ancestor_report.vng_6 = float(vng_for_level)
+                    elif depth == 7:
+                        ancestor_report.pvg_7 = int(pvg_for_level)
+                        ancestor_report.vng_7 = float(vng_for_level)
+                    elif depth == 8:
+                        ancestor_report.pvg_8 = int(pvg_for_level)
+                        ancestor_report.vng_8 = float(vng_for_level)
+                    elif depth == 9:
+                        ancestor_report.pvg_9 = int(pvg_for_level)
+                        ancestor_report.vng_9 = float(vng_for_level)
+                    elif depth >= 10:
+                        ancestor_report.pvg_10_plus = int(pvg_for_level)
+                        ancestor_report.vng_10_plus = float(vng_for_level)
+                    
+                    # 🆕 Calcular totales agregados
+                    ancestor_report.pvg_total = (
+                        (ancestor_report.pvg_1 or 0) +
+                        (ancestor_report.pvg_2 or 0) +
+                        (ancestor_report.pvg_3 or 0) +
+                        (ancestor_report.pvg_4 or 0) +
+                        (ancestor_report.pvg_5 or 0) +
+                        (ancestor_report.pvg_6 or 0) +
+                        (ancestor_report.pvg_7 or 0) +
+                        (ancestor_report.pvg_8 or 0) +
+                        (ancestor_report.pvg_9 or 0) +
+                        (ancestor_report.pvg_10_plus or 0)
+                    )
+                    
+                    ancestor_report.vng_total = (
+                        (ancestor_report.vng_1 or 0.0) +
+                        (ancestor_report.vng_2 or 0.0) +
+                        (ancestor_report.vng_3 or 0.0) +
+                        (ancestor_report.vng_4 or 0.0) +
+                        (ancestor_report.vng_5 or 0.0) +
+                        (ancestor_report.vng_6 or 0.0) +
+                        (ancestor_report.vng_7 or 0.0) +
+                        (ancestor_report.vng_8 or 0.0) +
+                        (ancestor_report.vng_9 or 0.0) +
+                        (ancestor_report.vng_10_plus or 0.0)
+                    )
+                
+                session.commit()
+                print(f"✅ unilevel_report actualizado correctamente")
+                
+        except Exception as e:
+            print(f"❌ Error actualizando unilevel_report: {e}")
+            import traceback
+            traceback.print_exc()
+
     # 🎯 MÉTODOS PARA GESTIÓN AUTOMÁTICA DE RANGOS
     @staticmethod
     def get_user_current_month_rank(session, member_id: int) -> str:
         """
-        Obtiene el rango actual del mes del usuario (name del rango más alto del mes).
-        Retorna "Sin rango" si no tiene rangos este mes.
+        Obtiene el rango actual del período activo del usuario.
+        Retorna "Sin rango" si no tiene rangos en el período actual.
+        
+        ACTUALIZADO: Filtra por period_id del período actual en lugar de año/mes.
+        Esto asegura que el rango se tome del período corriendo.
         """
         try:
-            from datetime import datetime, timezone
             from database.user_rank_history import UserRankHistory
             from database.ranks import Ranks
+            from database.periods import Periods
+            from ..utils.timezone_mx import get_mexico_now
 
-            # Usar UTC para comparación (achieved_on está en UTC)
-            now = datetime.now(timezone.utc)
-            current_year = now.year
-            current_month = now.month
+            # Obtener período actual
+            now = get_mexico_now()
+            current_period = session.exec(
+                sqlmodel.select(Periods)
+                .where(
+                    (Periods.starts_on <= now) &
+                    (Periods.ends_on >= now)
+                )
+            ).first()
 
-            # JOIN explícito entre Ranks y UserRankHistory
+            if not current_period:
+                print(f"⚠️  No hay período activo")
+                return "Sin rango"
+
+            # JOIN explícito entre Ranks y UserRankHistory, filtrando por period_id
             latest_rank = session.exec(
                 sqlmodel.select(Ranks)
                 .join(UserRankHistory, Ranks.id == UserRankHistory.rank_id)
                 .where(
-                    UserRankHistory.member_id == member_id,
-                    sqlmodel.extract('year', UserRankHistory.achieved_on) == current_year,
-                    sqlmodel.extract('month', UserRankHistory.achieved_on) == current_month
+                    (UserRankHistory.member_id == member_id) &
+                    (UserRankHistory.period_id == current_period.id)
                 )
                 .order_by(sqlmodel.desc(UserRankHistory.rank_id))
             ).first()

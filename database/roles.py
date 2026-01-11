@@ -1,9 +1,10 @@
 import reflex as rx
 
-from sqlmodel import Field
+from sqlmodel import Field, SQLModel
 from enum import Enum
 
-class Roles(rx.Model, table=True):
+@rx.ModelRegistry.register
+class Roles(SQLModel, table=True):
     """
     Roles asignados a usuarios.
     Permite un sistema de permisos flexible basado en roles.

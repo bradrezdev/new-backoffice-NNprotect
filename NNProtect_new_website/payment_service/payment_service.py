@@ -218,31 +218,40 @@ class PaymentService:
         """
         Dispara cálculo de comisiones para una orden confirmada.
 
-        Comisiones disparadas:
+        Comisiones disparadas INSTANTÁNEAMENTE:
         - Bono Directo (25% VN) - si total_vn > 0
         - Bono Rápido (30%/10%/5%) - solo si orden contiene kits
+        - Bono Uninivel - para toda la línea ascendente según rango
+        - Bono Matching - para embajadores en la línea ascendente
 
-        Nota: Bono Uninivel se procesa mensualmente al cierre de período.
+        ACTUALIZADO: Ahora calcula Uninivel y Matching en tiempo real.
+        Esto permite que los usuarios vean sus ganancias proyectadas inmediatamente.
+
+        Arquitectura: Adrian (Senior Dev) + Giovanni (QA Financial)
 
         Args:
             session: Sesión de base de datos
             order: Orden confirmada
         """
         try:
-            print(f"💰 Disparando comisiones para orden {order.id}...")
+            print(f"\n💰 Disparando comisiones para orden {order.id}...")
+            print(f"   👤 Comprador: member_id={order.member_id}")
+            print(f"   💵 Total VN: ${order.total_vn:.2f}")
+            print(f"   📦 Total PV: {order.total_pv}")
+            print(f"   📅 Período: {order.period_id}")
 
             # 1. Bono Directo (25% del VN total)
             # Aplica tanto para kits como productos regulares
             if order.total_vn > 0:
-                direct_commission = CommissionService.process_direct_bonus(
+                direct_commission_id = CommissionService.process_direct_bonus(
                     session=session,
                     buyer_id=order.member_id,
                     order_id=order.id,
                     vn_amount=order.total_vn
                 )
 
-                if direct_commission:
-                    print(f"✅ Bono Directo generado para orden {order.id}")
+                if direct_commission_id:
+                    print(f"   ✅ Bono Directo generado (commission_id={direct_commission_id})")
 
             # 2. Bono Rápido (solo si la orden contiene kits)
             # Los kits pagan bono rápido instantáneo a 3 niveles
@@ -252,19 +261,364 @@ class PaymentService:
             )
 
             if commission_ids:
-                print(f"✅ Bono Rápido generado para {len(commission_ids)} patrocinadores")
+                print(f"   ✅ Bono Rápido generado para {len(commission_ids)} patrocinadores")
 
-            # 3. Bono Uninivel - NO se procesa aquí
-            # Se procesará mensualmente al cierre del período (día 31)
-            # Aplica para TODOS los productos (kits y regulares)
+            # 3. Bono Uninivel - NUEVO: Se calcula INSTANTÁNEAMENTE
+            # Se calcula para TODOS los ancestros del comprador según su rango
+            # Esto permite que los usuarios vean sus ganancias proyectadas en tiempo real
+            print(f"\n   🔄 Calculando Bono Uninivel para ancestros del comprador...")
+            cls._trigger_unilevel_for_ancestors(session, order)
 
-            print(f"✅ Comisiones instantáneas disparadas para orden {order.id}")
+            # 4. Bono Matching - NUEVO: Se calcula INSTANTÁNEAMENTE
+            # Solo para embajadores en la línea ascendente
+            print(f"\n   🔄 Calculando Bono Matching para embajadores...")
+            cls._trigger_matching_for_ambassadors(session, order)
+
+            print(f"\n✅ TODAS las comisiones disparadas para orden {order.id}")
 
         except Exception as e:
             print(f"❌ Error disparando comisiones para orden {order.id}: {e}")
             # No lanzar excepción, comisiones se pueden recalcular
             import traceback
             traceback.print_exc()
+
+    @classmethod
+    def _trigger_unilevel_for_ancestors(cls, session, order: Orders) -> None:
+        """
+        Calcula el Bono Uninivel INCREMENTALMENTE para los ancestros del comprador.
+        
+        ARQUITECTURA OPTIMIZADA (Adrian + Elena + Giovanni):
+        - Calcula comisiones SOLO para los ancestros directos del comprador
+        - AGREGA comisiones nuevas (no borra las existentes)
+        - Usa el VN de ESTA orden específica
+        - Escalable: O(ancestros) en lugar de O(todos los usuarios)
+        
+        Flujo:
+        1. Obtener ancestros del comprador con su profundidad
+        2. Para cada ancestro:
+           - Verificar su rango actual
+           - Calcular % según rango y profundidad
+           - Crear comisión Uninivel con VN de esta orden
+        
+        Arquitectura: Adrian (Senior Dev) + Elena (Backend) + Giovanni (QA Financial)
+        
+        Args:
+            session: Sesión de base de datos
+            order: Orden confirmada
+        """
+        try:
+            from database.comissions import Commissions, BonusType, CommissionStatus
+            from database.usertreepaths import UserTreePath
+            from database.users import Users
+            from database.ranks import Ranks
+            from database.user_rank_history import UserRankHistory
+            from ..mlm_service.exchange_service import ExchangeService
+            
+            # Porcentajes del Bono Uninivel por rango
+            UNILEVEL_BONUS_PERCENTAGES = {
+                "Visionario": [5, 8, 10],
+                "Emprendedor": [5, 8, 10, 10],
+                "Creativo": [5, 8, 10, 10, 5],
+                "Innovador": [5, 8, 10, 10, 5, 4],
+                "Embajador Transformador": [5, 8, 10, 10, 5, 4, 4, 3, 3, 0.5],
+                "Embajador Inspirador": [5, 8, 10, 10, 5, 4, 4, 3, 3, 1.0],
+                "Embajador Consciente": [5, 8, 10, 10, 5, 4, 4, 3, 3, 1.5],
+                "Embajador Solidario": [5, 8, 10, 10, 5, 4, 4, 3, 3, 2.0]
+            }
+            
+            if not order.period_id:
+                print(f"   ⚠️  Orden {order.id} no tiene period_id asignado")
+                return
+            
+            if not order.total_vn or order.total_vn <= 0:
+                print(f"   ⚠️  Orden {order.id} no tiene VN")
+                return
+
+            # 1. Obtener todos los ancestros del comprador con su profundidad
+            ancestor_paths = session.exec(
+                sqlmodel.select(UserTreePath)
+                .where(
+                    (UserTreePath.descendant_id == order.member_id) &
+                    (UserTreePath.depth > 0)
+                )
+                .order_by(UserTreePath.depth)
+            ).all()
+
+            print(f"   📊 Calculando Uninivel para {len(ancestor_paths)} ancestros del comprador...")
+            
+            commissions_created = 0
+
+            for ancestor_path in ancestor_paths:
+                ancestor_id = ancestor_path.ancestor_id
+                depth = ancestor_path.depth
+                
+                # 2. Obtener rango actual del ancestro en este período
+                rank_history = session.exec(
+                    sqlmodel.select(UserRankHistory)
+                    .where(
+                        (UserRankHistory.member_id == ancestor_id) &
+                        (UserRankHistory.period_id == order.period_id)
+                    )
+                    .order_by(sqlmodel.desc(UserRankHistory.rank_id))
+                ).first()
+                
+                if not rank_history:
+                    continue  # Usuario no tiene rango en este período
+                
+                # 3. Obtener información del rango
+                rank = session.exec(
+                    sqlmodel.select(Ranks).where(Ranks.id == rank_history.rank_id)
+                ).first()
+                
+                if not rank:
+                    continue
+                
+                # 4. Obtener porcentajes de Uninivel según rango
+                percentages = UNILEVEL_BONUS_PERCENTAGES.get(rank.name, [])
+                
+                if not percentages:
+                    continue  # Rango sin porcentajes (ej: "Sin rango")
+                
+                # 5. Verificar si este ancestro puede recibir comisión de este nivel
+                if depth > len(percentages) and depth <= 9:
+                    continue  # Fuera del alcance del rango
+                
+                # 6. Obtener porcentaje según profundidad
+                if depth <= 9:
+                    percentage = percentages[depth - 1]
+                elif depth >= 10 and len(percentages) >= 10:
+                    # Nivel 10+ para embajadores
+                    percentage = percentages[9]
+                else:
+                    continue
+                
+                # 7. Calcular comisión para este ancestro
+                commission_amount = order.total_vn * (percentage / 100)
+                
+                # 8. Obtener moneda del ancestro
+                ancestor_user = session.exec(
+                    sqlmodel.select(Users).where(Users.member_id == ancestor_id)
+                ).first()
+                
+                if not ancestor_user:
+                    continue
+                
+                ancestor_currency = ExchangeService.get_country_currency(
+                    ancestor_user.country_cache or "MX"
+                )
+                
+                # 9. Crear comisión Uninivel INCREMENTAL
+                commission = Commissions(
+                    member_id=ancestor_id,
+                    bonus_type=BonusType.BONO_UNINIVEL.value,
+                    source_member_id=order.member_id,
+                    source_order_id=order.id,
+                    period_id=order.period_id,
+                    level_depth=depth if depth <= 10 else 10,
+                    amount_vn=order.total_vn,
+                    currency_origin=order.currency,
+                    amount_converted=commission_amount,
+                    currency_destination=ancestor_currency,
+                    exchange_rate=1.0,
+                    status=CommissionStatus.PENDING.value,
+                    calculated_at=datetime.now(timezone.utc),
+                    notes=f"Uninivel {percentage}% - Nivel {depth} - Orden {order.id} - VN: ${order.total_vn:.2f}"
+                )
+                
+                session.add(commission)
+                commissions_created += 1
+
+            if commissions_created > 0:
+                session.flush()
+                print(f"   ✅ Uninivel: {commissions_created} comisiones creadas incrementalmente")
+            else:
+                print(f"   ℹ️  No se generaron comisiones Uninivel (ancestros sin rango elegible)")
+
+        except Exception as e:
+            print(f"   ❌ Error calculando Uninivel incremental: {e}")
+            import traceback
+            traceback.print_exc()
+            # Hacer rollback para evitar transacciones inválidas
+            try:
+                session.rollback()
+            except:
+                pass
+
+    @classmethod
+    def _trigger_matching_for_ambassadors(cls, session, order: Orders) -> None:
+        """
+        Calcula el Bono Matching INCREMENTALMENTE para embajadores ancestros del comprador.
+        
+        ARQUITECTURA OPTIMIZADA (Adrian + Elena + Giovanni):
+        - El Matching se calcula SOLO cuando se crea una comisión Uninivel
+        - Solo se calcula para embajadores (rank_id >= 6) en la línea ascendente
+        - Se aplica % del Matching sobre el Uninivel recién generado
+        - Escalable: O(embajadores en línea) en lugar de O(todos los embajadores)
+        
+        Flujo:
+        1. Buscar embajadores en la línea ascendente del comprador
+        2. Para cada embajador:
+           - Buscar comisiones Uninivel recién creadas de sus patrocinados directos
+           - Aplicar % de Matching según su rango
+           - Crear comisión Matching incremental
+        
+        Nota: El Matching se ejecuta DESPUÉS del Uninivel porque depende de él.
+        
+        Arquitectura: Adrian (Senior Dev) + Elena (Backend) + Giovanni (QA Financial)
+        
+        Args:
+            session: Sesión de base de datos
+            order: Orden confirmada
+        """
+        try:
+            from database.comissions import Commissions, BonusType, CommissionStatus
+            from database.usertreepaths import UserTreePath
+            from database.users import Users
+            from database.ranks import Ranks
+            from database.user_rank_history import UserRankHistory
+            from ..mlm_service.exchange_service import ExchangeService
+            
+            # Porcentajes del Bono Matching por rango
+            MATCHING_BONUS_PERCENTAGES = {
+                "Embajador Transformador": [30],
+                "Embajador Inspirador": [30, 20],
+                "Embajador Consciente": [30, 20, 10],
+                "Embajador Solidario": [30, 20, 10, 5]
+            }
+            
+            if not order.period_id:
+                print(f"   ⚠️  Orden {order.id} no tiene period_id asignado")
+                return
+
+            # 1. Obtener ancestros del comprador que sean embajadores (rank_id >= 6)
+            ancestor_paths = session.exec(
+                sqlmodel.select(UserTreePath)
+                .where(
+                    (UserTreePath.descendant_id == order.member_id) &
+                    (UserTreePath.depth > 0)
+                )
+            ).all()
+            
+            if not ancestor_paths:
+                print(f"   ℹ️  Comprador no tiene ancestros (usuario raíz)")
+                return
+
+            print(f"   📊 Verificando {len(ancestor_paths)} ancestros para Matching...")
+            
+            commissions_created = 0
+
+            for ancestor_path in ancestor_paths:
+                ancestor_id = ancestor_path.ancestor_id
+                
+                # 2. Verificar si el ancestro es embajador (rank_id >= 6)
+                rank_history = session.exec(
+                    sqlmodel.select(UserRankHistory)
+                    .where(
+                        (UserRankHistory.member_id == ancestor_id) &
+                        (UserRankHistory.period_id == order.period_id)
+                    )
+                    .order_by(sqlmodel.desc(UserRankHistory.rank_id))
+                ).first()
+                
+                if not rank_history or rank_history.rank_id < 6:
+                    continue  # No es embajador
+                
+                # 3. Obtener información del rango
+                rank = session.exec(
+                    sqlmodel.select(Ranks).where(Ranks.id == rank_history.rank_id)
+                ).first()
+                
+                if not rank:
+                    continue
+                
+                # 4. Obtener porcentajes de Matching según rango
+                matching_percentages = MATCHING_BONUS_PERCENTAGES.get(rank.name, [])
+                
+                if not matching_percentages:
+                    continue  # Rango sin Matching
+                
+                # 5. Obtener patrocinados DIRECTOS del embajador
+                direct_sponsored = session.exec(
+                    sqlmodel.select(UserTreePath.descendant_id)
+                    .where(
+                        (UserTreePath.ancestor_id == ancestor_id) &
+                        (UserTreePath.depth == 1)
+                    )
+                ).all()
+                
+                if not direct_sponsored:
+                    continue
+                
+                # 6. Para cada patrocinado directo, buscar sus comisiones Uninivel de ESTA orden
+                for sponsored_id in direct_sponsored:
+                    uninivel_commissions = session.exec(
+                        sqlmodel.select(Commissions)
+                        .where(
+                            (Commissions.member_id == sponsored_id) &
+                            (Commissions.source_order_id == order.id) &
+                            (Commissions.bonus_type == BonusType.BONO_UNINIVEL.value) &
+                            (Commissions.status == CommissionStatus.PENDING.value)
+                        )
+                    ).all()
+                    
+                    if not uninivel_commissions:
+                        continue
+                    
+                    # 7. Calcular Matching: % del Uninivel del patrocinado directo
+                    # Nivel 1 de Matching = 30% del Uninivel
+                    matching_percentage = matching_percentages[0]  # Primer nivel de Matching
+                    
+                    for uninivel_comm in uninivel_commissions:
+                        matching_amount = uninivel_comm.amount_converted * (matching_percentage / 100)
+                        
+                        # 8. Obtener moneda del embajador
+                        ancestor_user = session.exec(
+                            sqlmodel.select(Users).where(Users.member_id == ancestor_id)
+                        ).first()
+                        
+                        if not ancestor_user:
+                            continue
+                        
+                        ancestor_currency = ExchangeService.get_country_currency(
+                            ancestor_user.country_cache or "MX"
+                        )
+                        
+                        # 9. Crear comisión Matching INCREMENTAL
+                        matching_commission = Commissions(
+                            member_id=ancestor_id,
+                            bonus_type=BonusType.BONO_MATCHING.value,
+                            source_member_id=sponsored_id,
+                            source_order_id=order.id,
+                            period_id=order.period_id,
+                            level_depth=1,  # Nivel 1 de Matching
+                            amount_vn=uninivel_comm.amount_converted,
+                            currency_origin=uninivel_comm.currency_destination,
+                            amount_converted=matching_amount,
+                            currency_destination=ancestor_currency,
+                            exchange_rate=1.0,
+                            status=CommissionStatus.PENDING.value,
+                            calculated_at=datetime.now(timezone.utc),
+                            notes=f"Matching {matching_percentage}% del Uninivel de {sponsored_id} - Orden {order.id}"
+                        )
+                        
+                        session.add(matching_commission)
+                        commissions_created += 1
+
+            if commissions_created > 0:
+                session.flush()
+                print(f"   ✅ Matching: {commissions_created} comisiones creadas incrementalmente")
+            else:
+                print(f"   ℹ️  No se generaron comisiones Matching (no hay embajadores elegibles)")
+
+        except Exception as e:
+            print(f"   ❌ Error calculando Matching incremental: {e}")
+            import traceback
+            traceback.print_exc()
+            # Hacer rollback para evitar transacciones inválidas
+            try:
+                session.rollback()
+            except:
+                pass
 
     @classmethod
     def validate_wallet_payment_available(

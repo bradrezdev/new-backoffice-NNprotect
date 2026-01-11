@@ -14,18 +14,20 @@ class ProductDataService:
     """
     
     @staticmethod
-    def get_products_for_store(user_id: int) -> List[Dict]:
+    def get_products_for_store(user_id: int, limit: Optional[int] = None, offset: Optional[int] = None) -> List[Dict]:
         """
-        Obtiene productos formateados para mostrar en la tienda.
+        Obtiene productos formateados para mostrar en la tienda con soporte de paginación.
         Principio DRY: reutiliza ProductManager.
         
         Args:
             user_id: ID del usuario autenticado
+            limit: Límite de productos
+            offset: Desplazamiento
             
         Returns:
             List[Dict]: Productos formateados para la tienda
         """
-        products = ProductManager.get_all_products()
+        products = ProductManager.get_all_products(limit=limit, offset=offset)
         return ProductManager.format_product_data_for_store(products, user_id)
     
     @staticmethod

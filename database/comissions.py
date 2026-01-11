@@ -26,7 +26,6 @@ class Commissions(rx.Model, table=True):
     Registro de todas las comisiones generadas en el sistema.
     Almacena el monto en VN original y el monto convertido a la moneda del receptor.
     """
-    id: int | None = Field(default=None, primary_key=True, index=True)
     
     # Receptor de la comisión
     member_id: int = Field(foreign_key="users.member_id", index=True)

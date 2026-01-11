@@ -28,6 +28,11 @@ def _get_db_engine_with_pool():
         return rx.Model._engine
     
     # Crear engine con pool optimizado
+    # Configurar argumentos de conexión según el tipo de base de datos
+    connect_args = {}
+    if DATABASE_URL.startswith("postgresql"):
+        connect_args["connect_timeout"] = 10
+    
     engine = create_engine(
         DATABASE_URL,
         poolclass=QueuePool,
@@ -36,9 +41,7 @@ def _get_db_engine_with_pool():
         pool_pre_ping=True,        # 🔥 CRÍTICO: Testear antes de usar
         pool_recycle=3600,         # Reciclar cada hora
         echo=False,                # No mostrar queries SQL
-        connect_args={
-            "connect_timeout": 10  # Timeout de 10s para conexión inicial
-        }
+        connect_args=connect_args
     )
     
     # Guardar el engine en rx.Model

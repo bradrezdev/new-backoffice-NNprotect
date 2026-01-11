@@ -33,8 +33,6 @@ class Cashback(rx.Model, table=True):
         Index('idx_cb_applied_order', 'applied_to_order_id'),
     )
 
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
     # Usuario y período
     member_id: int = Field(foreign_key="users.member_id", index=True)
     period_id: int = Field(foreign_key="periods.id", index=True)
@@ -100,8 +98,6 @@ class CashbackUsage(rx.Model, table=True):
         Index('idx_cbu_order', 'order_id'),
         Index('idx_cbu_order_item', 'order_item_id'),
     )
-
-    id: int | None = Field(default=None, primary_key=True, index=True)
 
     # Referencias
     cashback_id: int = Field(foreign_key="cashback.id", index=True)

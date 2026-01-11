@@ -7,7 +7,6 @@ class Periods(rx.Model, table=True):
     Modelo para periodos de comisiones y actividades.
     Define los periodos en los que se calculan las comisiones y otras actividades.
     """
-    id: int | None = Field(default=None, primary_key=True, index=True)
     
     # Nombre del periodo (único)
     name: str = Field(unique=True, index=True)

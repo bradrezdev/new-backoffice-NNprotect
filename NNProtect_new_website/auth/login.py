@@ -114,7 +114,7 @@ def login() -> rx.Component:
                 rx.vstack(
                     # Logo centrado
                     rx.center(
-                        rx.image(src="/logo_login.png", width="100%", height="auto"),
+                        rx.image(src="/logo_login.svg", width="75%", height="auto"),
                         width="100%",
                         top="0",
                     ),
@@ -130,7 +130,6 @@ def login() -> rx.Component:
                                 margin_bottom="1rem"
                             ),
                             
-                            rx.text("Correo electrónico", font_weight="bold", font_size="16px"),
                             rx.input(
                                 placeholder="Escribe tu correo electrónico",
                                 type="text",
@@ -147,7 +146,6 @@ def login() -> rx.Component:
                                 font_size="16px",
                             ),
 
-                            rx.text("Contraseña", font_weight="bold", font_size="16px"),
                             rx.input(
                                 placeholder="Escribe tu contraseña",
                                 type="password",

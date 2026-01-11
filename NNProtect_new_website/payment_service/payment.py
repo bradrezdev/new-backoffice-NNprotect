@@ -1,6 +1,7 @@
 """Nueva Backoffice NN Protect | Método de pago"""
 
 import reflex as rx
+import sqlmodel
 from typing import Optional
 from datetime import datetime, timezone
 from ..shared_ui.theme import Custom_theme
@@ -225,7 +226,38 @@ class PaymentState(rx.State):
                         self.success_message = payment_result["message"]
                         self.order_result = payment_result
                         
-                        print("   🧹 Limpiando carrito...")
+                        print("\n📊 Paso 7: Actualizando UnilevelReports para usuario y ancestros...")
+                        try:
+                            from NNProtect_new_website.mlm_service.mlm_user_manager import MLMUserManager
+                            from database.periods import Periods
+                            from sqlmodel import desc
+                            
+                            # Obtener período actual
+                            current_period = session.exec(
+                                sqlmodel.select(Periods).order_by(desc(Periods.starts_on)).limit(1)
+                            ).first()
+                            
+                            if not current_period:
+                                print("   ⚠️  No se encontró período actual")
+                            else:
+                                print(f"   ✓ Período actual: {current_period.name} (ID={current_period.id})")
+                                print(f"   🔄 Llamando a update_unilevel_report_for_order...")
+                                
+                                # Llamar al método que actualiza PV del comprador Y PVG de todos los ancestros por nivel
+                                MLMUserManager.update_unilevel_report_for_order(
+                                    order_member_id=member_id,
+                                    period_id=current_period.id
+                                )
+                                
+                                print("   ✅ UnilevelReports actualizado para usuario y todos los ancestros")
+                                    
+                        except Exception as e_unilevel:
+                            print(f"   ⚠️  Error actualizando UnilevelReports: {e_unilevel}")
+                            import traceback
+                            traceback.print_exc()
+                            # No fallar el proceso si esto falla
+                        
+                        print("\n   🧹 Limpiando carrito...")
                         # Limpiar carrito
                         cart_state.clear_cart()
                         print("   ✓ Carrito limpio")

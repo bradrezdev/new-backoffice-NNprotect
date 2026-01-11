@@ -52,6 +52,73 @@ class NetworkReportsState(rx.State):
 	monthly_registrations: List[Dict[str, Any]] = []
 	all_registrations: List[Dict[str, Any]] = []
 	is_loading: bool = False
+	
+	# Progresión de rango
+	current_pvg: int = 0
+	next_rank_pvg: int = 0
+	
+	# 🆕 Volúmenes por periodo - Variables individuales para compatibilidad con Reflex
+	period_names: List[str] = ["N/A", "N/A", "N/A", "N/A", "N/A", "N/A"]
+	pv_0: str = "0"
+	pv_1: str = "0"
+	pv_2: str = "0"
+	pv_3: str = "0"
+	pv_4: str = "0"
+	pv_5: str = "0"
+	level_1_0: str = "0"
+	level_1_1: str = "0"
+	level_1_2: str = "0"
+	level_1_3: str = "0"
+	level_1_4: str = "0"
+	level_1_5: str = "0"
+	level_2_0: str = "0"
+	level_2_1: str = "0"
+	level_2_2: str = "0"
+	level_2_3: str = "0"
+	level_2_4: str = "0"
+	level_2_5: str = "0"
+	level_3_0: str = "0"
+	level_3_1: str = "0"
+	level_3_2: str = "0"
+	level_3_3: str = "0"
+	level_3_4: str = "0"
+	level_3_5: str = "0"
+	level_4_0: str = "0"
+	level_4_1: str = "0"
+	level_4_2: str = "0"
+	level_4_3: str = "0"
+	level_4_4: str = "0"
+	level_4_5: str = "0"
+	level_5_0: str = "0"
+	level_5_1: str = "0"
+	level_5_2: str = "0"
+	level_5_3: str = "0"
+	level_5_4: str = "0"
+	level_5_5: str = "0"
+	level_6_0: str = "0"
+	level_6_1: str = "0"
+	level_6_2: str = "0"
+	level_6_3: str = "0"
+	level_6_4: str = "0"
+	level_6_5: str = "0"
+	level_7_0: str = "0"
+	level_7_1: str = "0"
+	level_7_2: str = "0"
+	level_7_3: str = "0"
+	level_7_4: str = "0"
+	level_7_5: str = "0"
+	level_8_0: str = "0"
+	level_8_1: str = "0"
+	level_8_2: str = "0"
+	level_8_3: str = "0"
+	level_8_4: str = "0"
+	level_8_5: str = "0"
+	level_9_0: str = "0"
+	level_9_1: str = "0"
+	level_9_2: str = "0"
+	level_9_3: str = "0"
+	level_9_4: str = "0"
+	level_9_5: str = "0"
 
 	@rx.var
 	def today_registrations_count(self) -> str:
@@ -160,6 +227,114 @@ class NetworkReportsState(rx.State):
 			self.all_registrations = []
 		finally:
 			self.is_loading = False
+
+	@rx.event
+	async def load_period_volumes(self):
+		"""Carga volúmenes (PV/PVG) por periodo del usuario autenticado."""
+		self.is_loading = True
+		yield
+		
+		try:
+			auth_state = await self.get_state(AuthState)
+			member_id = auth_state.profile_data.get("member_id") if auth_state.profile_data else None
+			
+			if not member_id:
+				print("❌ Usuario no autenticado o member_id no encontrado")
+				return
+				
+			print(f"🔄 Cargando volúmenes por periodo para member_id: {member_id}")
+			volumes = MLMUserManager.get_period_volumes(member_id)
+			
+			# Asignar valores individuales a las variables de estado
+			self.period_names = volumes.get("period_names", ["N/A", "N/A", "N/A", "N/A", "N/A", "N/A"])
+			self.pv_0 = volumes.get("pv_0", "0")
+			self.pv_1 = volumes.get("pv_1", "0")
+			self.pv_2 = volumes.get("pv_2", "0")
+			self.pv_3 = volumes.get("pv_3", "0")
+			self.pv_4 = volumes.get("pv_4", "0")
+			self.pv_5 = volumes.get("pv_5", "0")
+			
+			# Niveles 1-9, períodos 0-5
+			for level in range(1, 10):
+				for period in range(6):
+					setattr(self, f"level_{level}_{period}", volumes.get(f"level_{level}_{period}", "0"))
+			
+			print(f"✅ Cargados volúmenes de {len(self.period_names)} periodos")
+			
+		except Exception as e:
+			print(f"❌ Error cargando volúmenes por periodo: {e}")
+		finally:
+			self.is_loading = False
+	
+	@rx.event
+	async def load_rank_progression(self):
+		"""Carga la progresión del usuario hacia el siguiente rango."""
+		try:
+			from database.user_rank_history import UserRankHistory
+			from database.ranks import Ranks
+			from database.users import Users
+			from datetime import datetime, timezone
+			import sqlmodel
+			
+			# Obtener member_id desde AuthState
+			auth_state = await self.get_state(AuthState)
+			profile_data = auth_state.profile_data
+			
+			# Validar que profile_data existe y tiene member_id
+			if not isinstance(profile_data, dict) or "member_id" not in profile_data:
+				print("⚠️  No se pudo obtener member_id del usuario")
+				return
+			
+			member_id = profile_data["member_id"]
+			
+			with rx.session() as session:
+				# Obtener PVG actual del usuario
+				user = session.exec(
+					sqlmodel.select(Users).where(Users.member_id == member_id)
+				).first()
+				
+				if not user:
+					print(f"⚠️  Usuario {member_id} no encontrado")
+					return
+				
+				self.current_pvg = user.pvg_cache or 0
+				
+				# Obtener rank_id actual del mes
+				now = datetime.now(timezone.utc)
+				current_rank_history = session.exec(
+					sqlmodel.select(UserRankHistory)
+					.where(
+						UserRankHistory.member_id == member_id,
+						sqlmodel.extract('year', UserRankHistory.achieved_on) == now.year,
+						sqlmodel.extract('month', UserRankHistory.achieved_on) == now.month
+					)
+					.order_by(sqlmodel.desc(UserRankHistory.rank_id))
+				).first()
+				
+				current_rank_id = current_rank_history.rank_id if current_rank_history else 1
+				
+				# Obtener siguiente rango
+				next_rank = session.exec(
+					sqlmodel.select(Ranks)
+					.where(Ranks.id == current_rank_id + 1)
+					.order_by(Ranks.id)
+				).first()
+				
+				if next_rank:
+					self.next_rank_pvg = next_rank.pvg_required
+				else:
+					# Usuario está en el rango máximo
+					current_rank = session.exec(
+						sqlmodel.select(Ranks).where(Ranks.id == current_rank_id)
+					).first()
+					self.next_rank_pvg = current_rank.pvg_required if current_rank else 0
+				
+				print(f"📊 Progresión de rango - PVG: {self.current_pvg}/{self.next_rank_pvg}")
+				
+		except Exception as e:
+			print(f"❌ Error cargando progresión de rango: {e}")
+			import traceback
+			traceback.print_exc()
 
 def network_reports() -> rx.Component:
 	"""Página de reportes de red"""
@@ -303,13 +478,13 @@ def network_reports() -> rx.Component:
 										),
 										rx.vstack(
 											rx.text("Volumen grupal:", font_weight="bold"),
-											rx.text("754,654", color="#0039F2", font_size="2rem"),
+											rx.text(f"{NetworkReportsState.current_pvg:,}", color="#0039F2", font_size="2rem"),
 											align="center",
 											spacing="1"
 										),
 										rx.vstack(
 											rx.text("Siguiente rango:", font_weight="bold"),
-											rx.text("1,300,000", color="#5E79FF", font_size="2rem"),
+											rx.text(f"{NetworkReportsState.next_rank_pvg:,}", color="#5E79FF", font_size="2rem"),
 											align="center",
 											spacing="1"
 										),
@@ -317,127 +492,137 @@ def network_reports() -> rx.Component:
 										width="100%"
 									),
 									rx.divider(),
-									# Tabla de volúmenes
+									# Tabla de volúmenes - DATOS DINÁMICOS (se carga automáticamente en on_mount)
 									rx.text("Detalle por niveles:", font_weight="bold", margin_bottom="0.5rem"),
-									rx.table.root(
-										rx.table.header(
-											rx.table.row(
-												rx.table.column_header_cell("Nivel", align="left"),
-												rx.table.column_header_cell("Mes actual"),
-												rx.table.column_header_cell("Mes 1"),
-												rx.table.column_header_cell("Mes 2"),
-												rx.table.column_header_cell("Mes 3"),
-												rx.table.column_header_cell("Mes 4"),
-												rx.table.column_header_cell("Mes 5"),
-												align="center",
+									rx.cond(
+										NetworkReportsState.period_names[0] != "Mes 1",
+										rx.table.root(
+											rx.table.header(
+												rx.table.row(
+													rx.table.column_header_cell("Nivel", align="left"),
+													rx.table.column_header_cell(NetworkReportsState.period_names[0]),
+													rx.table.column_header_cell(NetworkReportsState.period_names[1]),
+													rx.table.column_header_cell(NetworkReportsState.period_names[2]),
+													rx.table.column_header_cell(NetworkReportsState.period_names[3]),
+													rx.table.column_header_cell(NetworkReportsState.period_names[4]),
+													rx.table.column_header_cell(NetworkReportsState.period_names[5]),
+													align="center",
+												),
+												text_align="center"
 											),
-											text_align="center"
+											rx.table.body(
+												# Volumen personal (PV)
+												rx.table.row(
+													rx.table.row_header_cell("Volumen personal", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.pv_0, color=rx.color("green", 11)),
+													rx.table.cell(NetworkReportsState.pv_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.pv_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.pv_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.pv_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.pv_5, color=rx.color("gray", 11))
+												),
+												# Primer nivel
+												rx.table.row(
+													rx.table.row_header_cell("Primer nivel", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.level_1_0, color=rx.color("blue", 11)),
+													rx.table.cell(NetworkReportsState.level_1_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_1_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_1_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_1_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_1_5, color=rx.color("gray", 11))
+												),
+												# Segundo nivel
+												rx.table.row(
+													rx.table.row_header_cell("Segundo nivel", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.level_2_0, color=rx.color("orange", 11)),
+													rx.table.cell(NetworkReportsState.level_2_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_2_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_2_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_2_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_2_5, color=rx.color("gray", 11))
+												),
+												# Tercer nivel
+												rx.table.row(
+													rx.table.row_header_cell("Tercer nivel", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.level_3_0, color=rx.color("purple", 11)),
+													rx.table.cell(NetworkReportsState.level_3_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_3_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_3_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_3_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_3_5, color=rx.color("gray", 11))
+												),
+												# Cuarto nivel
+												rx.table.row(
+													rx.table.row_header_cell("Cuarto nivel", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.level_4_0, color=rx.color("cyan", 11)),
+													rx.table.cell(NetworkReportsState.level_4_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_4_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_4_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_4_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_4_5, color=rx.color("gray", 11))
+												),
+												# Quinto nivel
+												rx.table.row(
+													rx.table.row_header_cell("Quinto nivel", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.level_5_0, color=rx.color("pink", 11)),
+													rx.table.cell(NetworkReportsState.level_5_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_5_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_5_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_5_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_5_5, color=rx.color("gray", 11))
+												),
+												# Sexto nivel
+												rx.table.row(
+													rx.table.row_header_cell("Sexto nivel", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.level_6_0, color=rx.color("indigo", 11)),
+													rx.table.cell(NetworkReportsState.level_6_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_6_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_6_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_6_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_6_5, color=rx.color("gray", 11))
+												),
+												# Séptimo nivel
+												rx.table.row(
+													rx.table.row_header_cell("Séptimo nivel", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.level_7_0, color=rx.color("teal", 11)),
+													rx.table.cell(NetworkReportsState.level_7_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_7_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_7_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_7_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_7_5, color=rx.color("gray", 11))
+												),
+												# Octavo nivel
+												rx.table.row(
+													rx.table.row_header_cell("Octavo nivel", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.level_8_0, color=rx.color("amber", 11)),
+													rx.table.cell(NetworkReportsState.level_8_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_8_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_8_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_8_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_8_5, color=rx.color("gray", 11))
+												),
+												# Noveno nivel
+												rx.table.row(
+													rx.table.row_header_cell("Noveno nivel", font_weight="bold", align="left"),
+													rx.table.cell(NetworkReportsState.level_9_0, color=rx.color("red", 11)),
+													rx.table.cell(NetworkReportsState.level_9_1, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_9_2, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_9_3, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_9_4, color=rx.color("gray", 11)),
+													rx.table.cell(NetworkReportsState.level_9_5, color=rx.color("gray", 11))
+												),
+												text_align="center"
+											),
+											variant="surface",
+											width="100%",
+											border_radius="15px"
 										),
-										rx.table.body(
-											rx.table.row(
-												rx.table.row_header_cell("Volumen personal", font_weight="bold", align="left"),
-												rx.table.cell("38,000", color=rx.color("green", 11)),
-												rx.table.cell("35,200", color=rx.color("gray", 11)),
-												rx.table.cell("31,200", color=rx.color("gray", 11)),
-												rx.table.cell("33,600", color=rx.color("gray", 11)),
-												rx.table.cell("36,800", color=rx.color("gray", 11)),
-												rx.table.cell("34,500", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Primer nivel", font_weight="bold", align="left"),
-												rx.table.cell("55,000", color=rx.color("blue", 11)),
-												rx.table.cell("44,800", color=rx.color("gray", 11)),
-												rx.table.cell("40,000", color=rx.color("gray", 11)),
-												rx.table.cell("43,200", color=rx.color("gray", 11)),
-												rx.table.cell("48,000", color=rx.color("gray", 11)),
-												rx.table.cell("46,500", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Segundo nivel", font_weight="bold", align="left"),
-												rx.table.cell("72,000", color=rx.color("orange", 11)),
-												rx.table.cell("64,000", color=rx.color("gray", 11)),
-												rx.table.cell("56,000", color=rx.color("gray", 11)),
-												rx.table.cell("60,000", color=rx.color("gray", 11)),
-												rx.table.cell("68,000", color=rx.color("gray", 11)),
-												rx.table.cell("62,500", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Tercer nivel", font_weight="bold", align="left"),
-												rx.table.cell("81,000", color=rx.color("purple", 11)),
-												rx.table.cell("68,000", color=rx.color("gray", 11)),
-												rx.table.cell("60,000", color=rx.color("gray", 11)),
-												rx.table.cell("64,000", color=rx.color("gray", 11)),
-												rx.table.cell("72,000", color=rx.color("gray", 11)),
-												rx.table.cell("70,500", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Cuarto nivel", font_weight="bold", align="left"),
-												rx.table.cell("102,000", color=rx.color("cyan", 11)),
-												rx.table.cell("91,000", color=rx.color("gray", 11)),
-												rx.table.cell("81,200", color=rx.color("gray", 11)),
-												rx.table.cell("84,000", color=rx.color("gray", 11)),
-												rx.table.cell("95,200", color=rx.color("gray", 11)),
-												rx.table.cell("88,800", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Quinto nivel", font_weight="bold", align="left"),
-												rx.table.cell("97,000", color=rx.color("pink", 11)),
-												rx.table.cell("72,000", color=rx.color("gray", 11)),
-												rx.table.cell("64,000", color=rx.color("gray", 11)),
-												rx.table.cell("67,200", color=rx.color("gray", 11)),
-												rx.table.cell("76,800", color=rx.color("gray", 11)),
-												rx.table.cell("71,500", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Sexto nivel", font_weight="bold", align="left"),
-												rx.table.cell("93,000", color=rx.color("indigo", 11)),
-												rx.table.cell("51,200", color=rx.color("gray", 11)),
-												rx.table.cell("44,800", color=rx.color("gray", 11)),
-												rx.table.cell("48,000", color=rx.color("gray", 11)),
-												rx.table.cell("54,400", color=rx.color("gray", 11)),
-												rx.table.cell("52,000", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Séptimo nivel", font_weight="bold", align="left"),
-												rx.table.cell("89,000", color=rx.color("teal", 11)),
-												rx.table.cell("32,000", color=rx.color("gray", 11)),
-												rx.table.cell("28,800", color=rx.color("gray", 11)),
-												rx.table.cell("30,400", color=rx.color("gray", 11)),
-												rx.table.cell("33,600", color=rx.color("gray", 11)),
-												rx.table.cell("31,200", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Octavo nivel", font_weight="bold", align="left"),
-												rx.table.cell("63,000", color=rx.color("amber", 11)),
-												rx.table.cell("19,200", color=rx.color("gray", 11)),
-												rx.table.cell("16,000", color=rx.color("gray", 11)),
-												rx.table.cell("17,600", color=rx.color("gray", 11)),
-												rx.table.cell("20,800", color=rx.color("gray", 11)),
-												rx.table.cell("18,500", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Noveno nivel", font_weight="bold", align="left"),
-												rx.table.cell("46,000", color=rx.color("red", 11)),
-												rx.table.cell("13,600", color=rx.color("gray", 11)),
-												rx.table.cell("12,000", color=rx.color("gray", 11)),
-												rx.table.cell("12,800", color=rx.color("gray", 11)),
-												rx.table.cell("12,800", color=rx.color("gray", 11)),
-												rx.table.cell("12,200", color=rx.color("gray", 11))
-											),
-											rx.table.row(
-												rx.table.row_header_cell("Décimo nivel", font_weight="bold", align="left"),
-												rx.table.cell("21,000", color=rx.color("lime", 11)),
-												rx.table.cell("10,400", color=rx.color("gray", 11)),
-												rx.table.cell("9,600", color=rx.color("gray", 11)),
-												rx.table.cell("8,800", color=rx.color("gray", 11)),
-												rx.table.cell("8,000", color=rx.color("gray", 11)),
-												rx.table.cell("7,500", color=rx.color("gray", 11))
-											),
-											text_align="center"
-										),
-										variant="surface",
-										width="100%",
-										border_radius="15px"
+										rx.text(
+											"Haz clic en 'Cargar' para ver los volúmenes por periodo.",
+											color=rx.color("gray", 11),
+											text_align="center",
+											padding="2rem"
+										)
 									),
 									align="start",
 									spacing="3",
@@ -695,13 +880,13 @@ def network_reports() -> rx.Component:
 							),
 							rx.hstack(
 								rx.text("Volumen grupal:", font_weight="bold", font_size="0.9rem"),
-								rx.text(AuthState.profile_data.get("pvg_cache", 0), color="#0039F2", font_size="1.2rem", font_weight="bold"),
+								rx.text(f"{NetworkReportsState.current_pvg:,}", color="#0039F2", font_size="1.2rem", font_weight="bold"),
 								justify="between",
 								width="100%"
 							),
 							rx.hstack(
 								rx.text("Siguiente rango:", font_weight="bold", font_size="0.9rem"),
-								rx.text("1,300,000", color="#5E79FF", font_size="1.2rem", font_weight="bold"),
+								rx.text(f"{NetworkReportsState.next_rank_pvg:,}", color="#5E79FF", font_size="1.2rem", font_weight="bold"),
 								justify="between",
 								width="100%"
 							),
@@ -709,142 +894,144 @@ def network_reports() -> rx.Component:
 							width="100%"
 						),
 						rx.divider(),
-						# Tabla completa de niveles móvil con scroll horizontal
+						# Tabla completa de niveles móvil con scroll horizontal - DATOS DINÁMICOS
 						rx.text("Detalle por niveles:", font_weight="bold", font_size="0.9rem", margin_bottom="0.5rem"),
-						rx.box(
-							rx.scroll_area(
-								rx.table.root(
-									rx.table.header(
-										rx.table.row(
-											rx.table.column_header_cell("Nivel", align="left", min_width="100px"),
-											rx.table.column_header_cell("Mes actual", min_width="90px"),
-											rx.table.column_header_cell("Mes 1", min_width="80px"),
-											rx.table.column_header_cell("Mes 2", min_width="80px"),
-											rx.table.column_header_cell("Mes 3", min_width="80px"),
-											rx.table.column_header_cell("Mes 4", min_width="80px"),
-											rx.table.column_header_cell("Mes 5", min_width="80px"),
-											text_align="center",
-											align="center",
+						rx.cond(
+							NetworkReportsState.period_names[0] != "Mes 1",
+							rx.box(
+								rx.scroll_area(
+									rx.table.root(
+										rx.table.header(
+											rx.table.row(
+												rx.table.column_header_cell("Nivel", align="left", min_width="100px"),
+												rx.table.column_header_cell(NetworkReportsState.period_names[0], min_width="90px"),
+												rx.table.column_header_cell(NetworkReportsState.period_names[1], min_width="80px"),
+												rx.table.column_header_cell(NetworkReportsState.period_names[2], min_width="80px"),
+												rx.table.column_header_cell(NetworkReportsState.period_names[3], min_width="80px"),
+												rx.table.column_header_cell(NetworkReportsState.period_names[4], min_width="80px"),
+												rx.table.column_header_cell(NetworkReportsState.period_names[5], min_width="80px"),
+												text_align="center",
+												align="center",
+											),
 										),
+										rx.table.body(
+											# Volumen personal
+											rx.table.row(
+												rx.table.row_header_cell("Volumen personal", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.pv_0, color=rx.color("green", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.pv_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.pv_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.pv_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.pv_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.pv_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+											# Primer nivel
+											rx.table.row(
+												rx.table.row_header_cell("Primero", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.level_1_0, color=rx.color("blue", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_1_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_1_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_1_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_1_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_1_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+											# Segundo nivel
+											rx.table.row(
+												rx.table.row_header_cell("Segundo", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.level_2_0, color=rx.color("orange", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_2_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_2_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_2_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_2_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_2_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+											# Tercer nivel
+											rx.table.row(
+												rx.table.row_header_cell("Tercero", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.level_3_0, color=rx.color("purple", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_3_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_3_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_3_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_3_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_3_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+											# Cuarto nivel
+											rx.table.row(
+												rx.table.row_header_cell("Cuarto", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.level_4_0, color=rx.color("cyan", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_4_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_4_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_4_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_4_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_4_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+											# Quinto nivel
+											rx.table.row(
+												rx.table.row_header_cell("Quinto", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.level_5_0, color=rx.color("pink", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_5_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_5_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_5_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_5_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_5_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+											# Sexto nivel
+											rx.table.row(
+												rx.table.row_header_cell("Sexto", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.level_6_0, color=rx.color("indigo", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_6_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_6_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_6_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_6_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_6_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+											# Séptimo nivel
+											rx.table.row(
+												rx.table.row_header_cell("Séptimo", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.level_7_0, color=rx.color("teal", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_7_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_7_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_7_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_7_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_7_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+											# Octavo nivel
+											rx.table.row(
+												rx.table.row_header_cell("Octavo", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.level_8_0, color=rx.color("amber", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_8_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_8_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_8_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_8_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_8_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+											# Noveno nivel
+											rx.table.row(
+												rx.table.row_header_cell("Noveno", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
+												rx.table.cell(NetworkReportsState.level_9_0, color=rx.color("red", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_9_1, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_9_2, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_9_3, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_9_4, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												rx.table.cell(NetworkReportsState.level_9_5, color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
+												align="center"
+											),
+										),
+										variant="surface",
+										border_radius="15px",
+										min_width="590px",
+										font_size="0.8rem",
+										size="1"
 									),
-									rx.table.body(
-										rx.table.row(
-											rx.table.row_header_cell("Volumen personal", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("38,000", color=rx.color("green", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("35,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("31,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("33,600", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("36,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("34,500", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Primer nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("55,000", color=rx.color("blue", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("44,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("40,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("43,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("48,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("46,500", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Segundo nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("72,000", color=rx.color("orange", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("64,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("56,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("60,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("68,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("62,500", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Tercer nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("81,000", color=rx.color("purple", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("68,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("60,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("64,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("72,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("70,500", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Cuarto nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("102,000", color=rx.color("cyan", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("91,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("81,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("84,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("95,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("88,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Quinto nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("97,000", color=rx.color("pink", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("72,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("64,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("67,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("76,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("71,500", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Sexto nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("93,000", color=rx.color("indigo", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("51,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("44,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("48,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("54,400", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("52,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Séptimo nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("89,000", color=rx.color("teal", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("32,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("28,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("30,400", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("33,600", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("31,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Octavo nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("63,000", color=rx.color("amber", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("19,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("16,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("17,600", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("20,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("18,500", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Noveno nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("46,000", color=rx.color("red", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("13,600", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("12,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("12,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("12,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("12,200", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-										rx.table.row(
-											rx.table.row_header_cell("Décimo nivel", font_weight="bold", font_size="0.8rem", min_width="100px", align="left"),
-											rx.table.cell("21,000", color=rx.color("lime", 11), font_size="0.8rem", font_weight="bold", min_width="90px", text_align="center"),
-											rx.table.cell("10,400", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("9,600", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("8,800", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("8,000", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											rx.table.cell("7,500", color=rx.color("gray", 11), font_size="0.8rem", min_width="80px", text_align="center"),
-											align="center"
-										),
-									),
-									variant="surface",
-									border_radius="15px",
-									min_width="590px",  # Ancho mínimo para todas las columnas (100+90+80*5)
-									font_size="0.8rem",
-									size="1"
-								),
 								# Configuración del scroll area siguiendo patrón de store.py
 								scrollbars="horizontal",  # Solo scroll horizontal
 								type="scroll",  # Aparece al hacer scroll
@@ -852,42 +1039,51 @@ def network_reports() -> rx.Component:
 								width="100%",  # Ancho completo
 								padding="0",  # Sin padding extra
 							),
-							# Indicador visual de scroll horizontal
-							rx.hstack(
-								rx.box(
-									width="25px",
-									height="3px",
-									bg=rx.color_mode_cond(
-										light="rgba(0,0,0,0.2)",
-										dark="rgba(255,255,255,0.3)"
+								# Indicador visual de scroll horizontal
+								rx.hstack(
+									rx.box(
+										width="25px",
+										height="3px",
+										bg=rx.color_mode_cond(
+											light="rgba(0,0,0,0.2)",
+											dark="rgba(255,255,255,0.3)"
+										),
+										border_radius="2px",
+										opacity="0.5"
 									),
-									border_radius="2px",
-									opacity="0.5"
-								),
-								rx.box(
-									width="40px",
-									height="3px",
-									bg=rx.color_mode_cond(
-										light=Custom_theme().light_colors()["primary"],
-										dark=Custom_theme().dark_colors()["primary"]
+									rx.box(
+										width="40px",
+										height="3px",
+										bg=rx.color_mode_cond(
+											light=Custom_theme().light_colors()["primary"],
+											dark=Custom_theme().dark_colors()["primary"]
+										),
+										border_radius="2px"
 									),
-									border_radius="2px"
-								),
-								rx.box(
-									width="25px",
-									height="3px",
-									bg=rx.color_mode_cond(
-										light="rgba(0,0,0,0.2)",
-										dark="rgba(255,255,255,0.3)"
+									rx.box(
+										width="25px",
+										height="3px",
+										bg=rx.color_mode_cond(
+											light="rgba(0,0,0,0.2)",
+											dark="rgba(255,255,255,0.3)"
+										),
+										border_radius="2px",
+										opacity="0.5"
 									),
-									border_radius="2px",
-									opacity="0.5"
+									spacing="1",
+									justify="center",
+									margin_top="0.5rem"
 								),
-								spacing="1",
-								justify="center",
-								margin_top="0.5rem"
+								width="100%"
 							),
-							width="100%"
+							# Mensaje si no hay datos cargados
+							rx.text(
+								"Cargando datos...",
+								color=rx.color("gray", 11),
+								font_size="0.8rem",
+								text_align="center",
+								padding="2rem"
+							),
 						),
 						spacing="2",
 						width="100%"
@@ -1105,7 +1301,11 @@ def network_reports() -> rx.Component:
 			),
 			width="100%",
 		),
-		on_mount=NetworkReportsState.load_all_registrations,
+		on_mount=[
+			NetworkReportsState.load_all_registrations,
+			NetworkReportsState.load_period_volumes,
+			NetworkReportsState.load_rank_progression
+		],
 		bg=rx.color_mode_cond(
 			light=Custom_theme().light_colors()["background"],
 			dark=Custom_theme().dark_colors()["background"]

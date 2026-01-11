@@ -8,7 +8,6 @@ class ExchangeRates(rx.Model, table=True):
     Tasas de cambio fijas establecidas por la compañía.
     Permite cambiar tasas en el futuro sin afectar comisiones pasadas.
     """
-    id: int | None = Field(default=None, primary_key=True, index=True)
 
     # Par de monedas
     from_currency: str = Field(max_length=10, index=True)  # COP

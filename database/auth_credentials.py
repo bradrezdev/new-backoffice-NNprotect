@@ -1,9 +1,10 @@
 import reflex as rx
-from sqlmodel import Field, func
+from sqlmodel import Field, func, SQLModel
 from datetime import datetime, timezone
 from NNProtect_new_website.utils.timezone_mx import get_mexico_now
 
-class AuthCredentials(rx.Model, table=True):
+@rx.ModelRegistry.register
+class AuthCredentials(SQLModel, table=True):
     """
     Credenciales de autenticación con timestamps en UTC puro.
     """
