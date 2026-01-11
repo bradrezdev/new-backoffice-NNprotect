@@ -108,8 +108,8 @@ def shopping_cart() -> rx.Component:
                                             rx.button(
                                                 rx.icon("minus", size=12),
                                                 size="1",
-                                                variant="soft",
-                                                border_radius="6px",
+                                                variant="outline",
+                                                border_radius="32px",
                                                 min_width="28px",
                                                 height="28px",
                                                 _hover={"bg": "rgba(239, 68, 68, 0.1)"},
@@ -118,17 +118,13 @@ def shopping_cart() -> rx.Component:
                                             rx.box(
                                                 rx.text(
                                                     item["quantity"],
-                                                    font_size="0.8rem",
-                                                    font_weight="medium",
+                                                    font_size="0.9em",
+                                                    font_weight="bold",
                                                     text_align="center"
                                                 ),
                                                 min_width="32px",
                                                 height="28px",
-                                                border_radius="6px",
-                                                bg=rx.color_mode_cond(
-                                                    light="rgba(0,0,0,0.05)",
-                                                    dark="rgba(255,255,255,0.1)"
-                                                ),
+                                                border_radius="32px",
                                                 display="flex",
                                                 align_items="center",
                                                 justify_content="center"
@@ -138,7 +134,7 @@ def shopping_cart() -> rx.Component:
                                                 rx.icon("plus", size=12),
                                                 size="1",
                                                 variant="soft",
-                                                border_radius="6px",
+                                                border_radius="32px",
                                                 min_width="28px",
                                                 height="28px",
                                                 _hover={"bg": "rgba(34, 197, 94, 0.1)"},
@@ -150,12 +146,14 @@ def shopping_cart() -> rx.Component:
 
                                         # Botón eliminar - CORREGIDO
                                         rx.button(
-                                            rx.icon("trash-2", size=14),
-                                            variant="ghost",
-                                            size="1",
-                                            border_radius="6px",
-                                            padding="6px",
+                                            "Eliminar",
+                                            #rx.icon("trash-2", size=16),
+                                            variant="outline",
+                                            size="2",
+                                            border_radius="32px",
+                                            #padding="6px",
                                             _hover={"bg": "rgba(239, 68, 68, 0.1)"},
+                                            width="100%",
                                             margin_top="0.5em",
                                             on_click=CountProducts.remove_from_cart(item["id"]),  # ✅ CORREGIDO: sin lambda
                                         ),
@@ -172,9 +170,9 @@ def shopping_cart() -> rx.Component:
                                     light=Custom_theme().light_colors()["tertiary"],
                                     dark=Custom_theme().dark_colors()["tertiary"]
                                 ),
-                                border_radius="29px",
+                                border_radius="32px",
                                 padding="16px",
-                                border="1px solid rgba(0,0,0,0.05)",
+                                #border="1px solid rgba(0,0,0,0.05)",
                                 margin_bottom="12px",
                                 width="100%"
                             )
@@ -264,7 +262,7 @@ def shopping_cart() -> rx.Component:
                                     bg=Custom_theme().light_colors()["primary"],
                                     color="white",
                                     size="4",
-                                    border_radius="15px",
+                                    border_radius="32px",
                                     padding="16px",
                                     width="100%",
                                     _hover={"opacity": 0.9, "transform": "translateY(-1px)"},

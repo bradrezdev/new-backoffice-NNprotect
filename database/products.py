@@ -33,16 +33,16 @@ class Products(rx.Model, table=True):
     - Precio distribuidor por país: price_mx, price_usa, price_colombia
     - Precio público por país: public_mx, public_usa, public_colombia
     """
-    # Clave primaria
-    id: int | None = Field(default=None, primary_key=True, index=True)
     
     # Información básica del producto
     product_name: str = Field(max_length=255, nullable=False)
-    SKU: Optional[str] = Field(default=None, max_length=100)
+    active_ingredient: str = Field(default=None, max_length=255)
+    SKU: Optional[str] = Field(default=None, max_length=100, index=True)
     description: Optional[str] = Field(default=None, max_length=500)
-    presentation: str = Field(max_length=50, nullable=False)
-    type: str = Field(max_length=50, nullable=False)
-    
+    presentation: str = Field(max_length=50, nullable=False, index=True)
+    type: str = Field(max_length=50, nullable=False, index=True)
+    quantity: str = Field(default=None)
+
     # Puntos de valor por país
     pv_mx: int = Field(default=0, nullable=False)
     pv_usa: int = Field(default=0, nullable=False)
@@ -64,7 +64,7 @@ class Products(rx.Model, table=True):
     public_colombia: float = Field(default=None)
 
     # Etiqueta para asignar como "nuevo" a ciertos productos
-    is_new: bool = Field(default=False)
+    is_new: bool = Field(default=False, index=True)
 
     def get_purchase_count(self, db_session):
         """

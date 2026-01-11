@@ -49,8 +49,6 @@ class LoyaltyPoints(rx.Model, table=True):
         Index('idx_lp_consecutive', 'consecutive_months'),
     )
 
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
     # Usuario (único)
     member_id: int = Field(foreign_key="users.member_id", unique=True, index=True)
 
@@ -118,8 +116,6 @@ class LoyaltyPointsHistory(rx.Model, table=True):
         Index('idx_lph_event_type', 'event_type'),
     )
 
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
     # Usuario y período
     member_id: int = Field(foreign_key="users.member_id", index=True)
     period_id: int = Field(foreign_key="periods.id", index=True)
@@ -161,8 +157,6 @@ class LoyaltyRewards(rx.Model, table=True):
         Index('idx_lr_status', 'status'),
         Index('idx_lr_earned', 'earned_at'),
     )
-
-    id: int | None = Field(default=None, primary_key=True, index=True)
 
     # Usuario receptor
     member_id: int = Field(foreign_key="users.member_id", index=True)

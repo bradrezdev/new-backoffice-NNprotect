@@ -22,8 +22,6 @@ class Orders(rx.Model, table=True):
     Una orden puede contener múltiples productos (OrderItems).
     Reemplaza completamente la tabla Transactions.
     """
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
     # Comprador
     member_id: int = Field(foreign_key="users.member_id", index=True)
 

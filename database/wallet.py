@@ -60,8 +60,6 @@ class Wallets(rx.Model, table=True):
         Index('idx_wallet_status', 'status'),
     )
 
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
     # Usuario (único)
     member_id: int = Field(foreign_key="users.member_id", unique=True, index=True)
 
@@ -112,8 +110,6 @@ class WalletTransactions(rx.Model, table=True):
         Index('idx_wt_order', 'order_id'),
         Index('idx_wt_uuid', 'transaction_uuid'),
     )
-
-    id: int | None = Field(default=None, primary_key=True, index=True)
 
     # UUID para idempotencia (evita duplicados)
     transaction_uuid: str = Field(unique=True, index=True, default_factory=lambda: str(uuid.uuid4()))
@@ -178,11 +174,10 @@ class WalletWithdrawals(rx.Model, table=True):
         Index('idx_ww_requested', 'requested_at'),
     )
 
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
     # Usuario
     member_id: int = Field(foreign_key="users.member_id", index=True)
 
+    
     # Transacción de wallet asociada
     wallet_transaction_id: int = Field(foreign_key="wallettransactions.id", unique=True, index=True)
 

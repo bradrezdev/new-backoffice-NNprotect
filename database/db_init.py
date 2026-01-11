@@ -7,6 +7,7 @@ import reflex as rx
 import sqlmodel
 from datetime import datetime, timezone
 from calendar import monthrange
+from sqlalchemy.exc import OperationalError
 
 from .periods import Periods
 
@@ -49,9 +50,10 @@ def initialize_database():
 
             session.add(initial_period)
             session.commit()
-
             print(f"✅ Período inicial creado: {period_name} ({first_day.date()} - {last_day.date()})")
 
+    except OperationalError as e:
+        print(f"⚠️ No se pudo inicializar la BD (posiblemente faltan migraciones): {e}")
     except Exception as e:
         print(f"❌ Error inicializando base de datos: {e}")
         import traceback

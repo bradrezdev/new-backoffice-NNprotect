@@ -170,62 +170,72 @@ def income_reports() -> rx.Component:
                     rx.grid(
                         rx.box(
                             rx.vstack(
-                                rx.text("Ingresos Totales", font_size="0.8rem", text_align="center"),
-                                rx.text("$12,450.75", font_size="1.3rem", font_weight="bold", color="green", text_align="center"),
-                                spacing="1"
+                                rx.text("Ingresos totales", font_size="0.8rem", text_align="center"),
+                                rx.scroll_area(
+                                    rx.text("$312,450.75", font_size="1.3rem", font_weight="bold", color="green", text_align="left", margin_bottom="0.25em"),
+                                ),
+                                spacing="0",
                             ),
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            border_radius="12px",
+                            border_radius="32px",
+                            overflow="hidden",
+                            padding="1em",
+                            width="100%"
+                        ),
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Billetera", font_size="0.8rem", text_align="center"),
+                                rx.scroll_area(
+                                    rx.text("$3,567.50", font_size="1.3rem", font_weight="bold", color="blue", text_align="left", margin_bottom="0.25em"),
+                                ),
+                                spacing="0"
+                            ),
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["tertiary"],
+                                dark=Custom_theme().dark_colors()["tertiary"]
+                            ),
+                            border_radius="32px",
+                            overflow="hidden",
                             padding="1rem",
                             width="100%"
                         ),
                         rx.box(
                             rx.vstack(
-                                rx.text("Comisiones", font_size="0.8rem", text_align="center"),
-                                rx.text("$3,567.50", font_size="1.3rem", font_weight="bold", color="blue", text_align="center"),
-                                spacing="1"
+                                rx.text("Ganancias Uninivel", font_size="0.8rem", text_align="center"),
+                                rx.scroll_area(
+                                    rx.text("$7,890.00", font_size="1.3rem", font_weight="bold", color="orange", text_align="left", margin_bottom="0.25em"),
+                                ),
+                                spacing="0"
                             ),
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            border_radius="12px",
+                            border_radius="32px",
                             padding="1rem",
                             width="100%"
                         ),
                         rx.box(
                             rx.vstack(
-                                rx.text("Ventas", font_size="0.8rem", text_align="center"),
-                                rx.text("$7,890.00", font_size="1.3rem", font_weight="bold", color="orange", text_align="center"),
-                                spacing="1"
+                                rx.text("Ganancias Matching", font_size="0.8rem", text_align="center"),
+                                rx.scroll_area(
+                                    rx.text("$1,890.25", font_size="1.3rem", font_weight="bold", color="purple", text_align="left", margin_bottom="0.25em"),
+                                ),
+                                spacing="0",
                             ),
                             bg=rx.color_mode_cond(
                                 light=Custom_theme().light_colors()["tertiary"],
                                 dark=Custom_theme().dark_colors()["tertiary"]
                             ),
-                            border_radius="12px",
-                            padding="1rem",
-                            width="100%"
-                        ),
-                        rx.box(
-                            rx.vstack(
-                                rx.text("Bonos", font_size="0.8rem", text_align="center"),
-                                rx.text("$1,890.25", font_size="1.3rem", font_weight="bold", color="purple", text_align="center"),
-                                spacing="1"
-                            ),
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["tertiary"],
-                                dark=Custom_theme().dark_colors()["tertiary"]
-                            ),
-                            border_radius="12px",
+                            border_radius="32px",
                             padding="1rem",
                             width="100%"
                         ),
                         columns="2",
-                        spacing="2",
+                        spacing="3",
                         width="100%",
                         margin_bottom="2rem"
                     ),

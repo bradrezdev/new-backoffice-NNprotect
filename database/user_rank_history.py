@@ -7,7 +7,6 @@ class UserRankHistory(rx.Model, table=True):
     """
     Historial de rangos con timestamps en UTC puro.
     """
-    id: int | None = Field(default=None, primary_key=True, index=True)
     member_id: int = Field(index=True, foreign_key="users.member_id")
     rank_id: int = Field(default=None, index=True, foreign_key="ranks.id")
 

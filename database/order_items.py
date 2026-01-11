@@ -8,8 +8,7 @@ class OrderItems(rx.Model, table=True):
     Cada línea representa un producto y su cantidad.
     Los valores de precio/PV/VN se congelan al agregar al carrito.
     """
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
+    
     # Relaciones
     order_id: int = Field(foreign_key="orders.id", index=True)
     product_id: int = Field(foreign_key="products.id", index=True)

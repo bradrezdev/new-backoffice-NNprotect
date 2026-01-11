@@ -11,6 +11,8 @@ from typing import Optional
 from calendar import monthrange
 
 from database.periods import Periods
+from database.users import Users, UserStatus
+from database.user_rank_history import UserRankHistory
 from ..utils.timezone_mx import get_mexico_now
 
 
@@ -46,6 +48,67 @@ class PeriodService:
         except Exception as e:
             print(f"❌ Error obteniendo período actual: {e}")
             return None
+
+    @classmethod
+    def reset_users_for_new_period(cls, session, new_period: Periods) -> bool:
+        """
+        Reinicia los datos de todos los usuarios para el nuevo período.
+        Principio KISS: Una función, una responsabilidad clara.
+        
+        Resetea:
+        - status → NO_QUALIFIED
+        - pv_cache → 0
+        - pvg_cache → 0
+        - vn_cache → 0
+        - Crea registro en user_rank_history con rank_id=1
+        
+        Args:
+            session: Sesión de base de datos
+            new_period: Período recién creado
+            
+        Returns:
+            True si se ejecutó correctamente
+        """
+        try:
+            print(f"\n🔄 Reiniciando usuarios para período {new_period.name}...")
+            
+            # Obtener todos los usuarios
+            all_users = session.exec(sqlmodel.select(Users)).all()
+            
+            users_updated = 0
+            rank_records_created = 0
+            
+            for user in all_users:
+                # Resetear caches y status
+                user.status = UserStatus.NO_QUALIFIED
+                user.pv_cache = 0
+                user.pvg_cache = 0
+                user.vn_cache = 0
+                session.add(user)
+                users_updated += 1
+                
+                # Crear registro en user_rank_history con rank 1
+                rank_history = UserRankHistory(
+                    member_id=user.member_id,
+                    rank_id=1,
+                    period_id=new_period.id,
+                    achieved_on=datetime.now(timezone.utc)
+                )
+                session.add(rank_history)
+                rank_records_created += 1
+            
+            session.flush()
+            
+            print(f"   ✅ {users_updated} usuarios reiniciados")
+            print(f"   ✅ {rank_records_created} registros de rango creados (rank_id=1)")
+            
+            return True
+            
+        except Exception as e:
+            print(f"   ❌ Error reiniciando usuarios: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     @classmethod
     def create_period_for_month(cls, session, year: int, month: int) -> Optional[Periods]:
@@ -90,6 +153,10 @@ class PeriodService:
             session.flush()
 
             print(f"✅ Período creado: {period_name} ({first_day.date()} - {last_day.date()})")
+            
+            # Reiniciar usuarios para el nuevo período
+            cls.reset_users_for_new_period(session, new_period)
+            
             return new_period
 
         except Exception as e:

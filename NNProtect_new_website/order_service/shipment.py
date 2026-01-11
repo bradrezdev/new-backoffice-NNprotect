@@ -77,56 +77,53 @@ def shipment_method() -> rx.Component:
                         text_align="center"
                     ),
 
-                    # Opciones de envío - Tarjetas principales
+                    # Opciones de envío - Solo RECOLECCIÓN disponible temporalmente
                     rx.vstack(
-                        # Opción 1: Envío a Domicilio
+                        # ❌ Opción 1: Envío a Domicilio - DESHABILITADA TEMPORALMENTE
                         rx.box(
                             rx.vstack(
                                 rx.hstack(
-                                    rx.icon("truck", size=20, color=Custom_theme().light_colors()["primary"]),
-                                    rx.text("Envío a Domicilio", font_weight="semibold", font_size="1rem"),
+                                    rx.icon("truck", size=20, color="gray"),
+                                    rx.text("Envío a Domicilio", font_weight="semibold", font_size="1rem", color="gray"),
                                     align="center",
                                     spacing="2"
                                 ),
                                 rx.text(
-                                    "Recibe tu pedido en la puerta de tu casa",
+                                    "Temporalmente no disponible",
                                     font_size="0.8rem",
                                     color="gray",
-                                    margin_top="0.5em"
+                                    margin_top="0.5em",
+                                    font_style="italic"
                                 ),
                                 rx.hstack(
-                                    rx.text("$99.00 MXN", font_weight="bold", font_size="0.9rem", color=Custom_theme().light_colors()["primary"]),
-                                    rx.text("• 2-3 días hábiles", font_size="0.8rem", color="gray"),
+                                    rx.text("No disponible", font_weight="medium", font_size="0.8rem", color="gray"),
                                     spacing="2",
                                     margin_top="0.5em"
                                 ),
                                 align="start",
                                 spacing="1"
                             ),
-                            bg=rx.color_mode_cond(
-                                light=Custom_theme().light_colors()["tertiary"],
-                                dark=Custom_theme().dark_colors()["tertiary"]
-                            ),
+                            bg="rgba(128, 128, 128, 0.1)",
                             border_radius="29px",
                             padding="20px",
-                            border="2px solid transparent",
-                            _hover={"border": f"2px solid {Custom_theme().light_colors()['primary']}"},
-                            transition="all 0.2s ease",
+                            border="2px solid rgba(128, 128, 128, 0.2)",
+                            opacity="0.6",
                             margin_bottom="1em",
                             width="100%"
                         ),
 
-                        # Opción 2: Recoger en CEDIS
+                        # ✅ Opción 2: Recoger en CEDIS - ÚNICA OPCIÓN DISPONIBLE
                         rx.box(
                             rx.vstack(
                                 rx.hstack(
                                     rx.icon("package", size=20, color=Custom_theme().light_colors()["primary"]),
                                     rx.text("Recoger en CEDIS", font_weight="semibold", font_size="1rem"),
+                                    rx.badge("DISPONIBLE", color_scheme="green", size="1"),
                                     align="center",
                                     spacing="2"
                                 ),
                                 rx.text(
-                                    "Recoge tu pedido en uno de nuestros centros",
+                                    "Recoge tu pedido en uno de nuestros centros de distribución",
                                     font_size="0.8rem",
                                     color="gray",
                                     margin_top="0.5em"
@@ -146,8 +143,7 @@ def shipment_method() -> rx.Component:
                             ),
                             border_radius="29px",
                             padding="20px",
-                            border="2px solid transparent",
-                            _hover={"border": f"2px solid {Custom_theme().light_colors()['primary']}"},
+                            border=f"2px solid {Custom_theme().light_colors()['primary']}",
                             transition="all 0.2s ease",
                             margin_bottom="2em",
                             width="100%"
@@ -157,9 +153,9 @@ def shipment_method() -> rx.Component:
                         width="100%"
                     ),
 
-                    # Sección condicional: Domicilios guardados
+                    # ❌ Sección de domicilios guardados - DESHABILITADA (solo recolección disponible)
                     rx.cond(
-                        True,  # Aquí iría la condición para mostrar domicilios
+                        False,  # Ocultar domicilios mientras solo hay recolección
                         rx.vstack(
                             rx.text(
                                 "Selecciona una dirección de envío",
@@ -353,11 +349,16 @@ def shipment_method() -> rx.Component:
                             bg=Custom_theme().light_colors()["primary"],
                             color="white",
                             size="4",
-                            border_radius="15px",
-                            width="100%",
+                            border_radius="32px",
+                            width="90.5%",
                             _hover={"opacity": 0.9, "transform": "translateY(-1px)"},
                             transition="all 0.2s ease",
-                            margin_top="2em"
+                            #margin_top="2em",
+                            position="fixed",
+                            bottom="1em",
+                            left="1em",
+                            right="1em",
+                            justify="end",
                         ),
                         href="/payment",
                         width="100%"
@@ -367,6 +368,7 @@ def shipment_method() -> rx.Component:
                     width="100%",
                     padding="0 1em",
                 ),
+                height="100vh",
             ),
             width="100%",
         ),

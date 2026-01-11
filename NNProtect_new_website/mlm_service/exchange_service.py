@@ -114,7 +114,7 @@ class ExchangeService:
             return None
 
     @classmethod
-    def get_country_currency(cls, country: str) -> str:
+    def get_country_currency(cls, country_cache: str) -> str:
         """
         Obtiene el código de moneda para un país.
         Principio KISS: Mapeo simple.
@@ -125,7 +125,7 @@ class ExchangeService:
         Returns:
             Código de moneda (MXN, USD, COP)
         """
-        return cls.COUNTRY_CURRENCIES.get(country, "MXN")
+        return cls.COUNTRY_CURRENCIES.get(country_cache, "MXN")
 
     @classmethod
     def create_exchange_rate(

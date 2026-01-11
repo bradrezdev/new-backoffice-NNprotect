@@ -213,7 +213,12 @@ class WalletService:
                 print(f"❌ No existe wallet para usuario {member_id}")
                 return False
 
-            # 2. Verificar balance suficiente
+            # 2. Verificar que wallet esté ACTIVE
+            if wallet.status != WalletStatus.ACTIVE.value:
+                print(f"❌ Wallet de usuario {member_id} no está activa (status: {wallet.status})")
+                return False
+
+            # 3. Verificar balance suficiente
             if not wallet.has_sufficient_balance(amount):
                 print(f"❌ Balance insuficiente: tiene {wallet.balance} {currency}, necesita {amount} {currency}")
                 return False

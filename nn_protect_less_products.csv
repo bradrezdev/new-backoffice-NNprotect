@@ -1,0 +1,11 @@
+id,product_name,active_ingredient,SKU,description,presentation,type,quantity,pv_mx,pv_usa,pv_colombia,vn_mx,vn_usa,vn_colombia,price_mx,price_usa,price_colombia,public_mx,public_usa,public_colombia,is_new
+1,Kit 1 Supplement Protect,,,5 suplementos,kit,kit,,1670,1670,1670,1670,108,387990,1996,120,479000,0,0,0,False
+2,Cúrcuma + Vitamina D3,Cúrcuma + Vitamina D3,,,líquido,suplemento,30 ml,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000,False
+3,Dreaming Deep,Melatonina + GABA + L-Theanina,,,líquido,suplemento,30 ml,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000,False
+4,Chía,Omega 3 y 6,,,líquido,suplemento,30 ml,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000,False
+5,Citrus,"Vitamina C, D y E",,,líquido,suplemento,30 ml,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000,False
+6,Jengibre,Jengibre + Vitamina D3 y C,,,líquido,suplemento,30 ml,293,293,293,293,18.9,67400,349.30,21.00,83300,499,30.00,119000,False
+7,Glutatión,Glutatión + Vitamina C,,,líquido,suplemento,15 ml,322,322,322,322,20.7,74200,384.30,23.10,91700,549,33.00,131000,True
+8,NAD+ Triptófano,NAD + Triptófano,,,líquido,suplemento,15 ml,412,412,412,412,24.5,94500,489.3,27.30,116690,699,39.00,166700,True
+9,Serum de cúrcuma,Cúrcuma + Colágeno + Elastina,,,skincare,skincare,30 ml,322,322,322,322,20.79,74200,384.30,23.10,91700,549,33.00,131000,False
+10,Sanitizante,,,,líquido,desinfección,280 ml,205,205,205,205,14.49,47000,244.30,16.10,58100,349,23.00,83000,False

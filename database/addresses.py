@@ -16,12 +16,10 @@ class Addresses(rx.Model, table=True):
     Tabla de direcciones.
     Contiene información de direcciones asociadas a usuarios.
     """
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
     # Información de dirección
-    street: str = Field(index=True)
-    neighborhood: str = Field(index=True)
-    city: str = Field(index=True)
-    state: str = Field(index=True)
-    country: str = Field(max_length=50, index=True)  # ✅ Texto plano en lugar de ENUM
-    zip_code: str = Field(index=True)
+    street: str = Field()
+    neighborhood: str = Field()
+    city: str = Field()
+    state: str = Field()
+    country: str = Field(max_length=50)  # ✅ Texto plano en lugar de ENUM
+    zip_code: str = Field()

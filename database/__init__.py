@@ -13,6 +13,7 @@ from .ranks import Ranks
 from .roles_users import RolesUsers
 from .roles import Roles
 from .social_accounts import SocialAccounts, SocialNetwork
+from .unilevel_report import UnilevelReports
 from .user_rank_history import UserRankHistory
 from .userprofiles import UserProfiles, UserGender
 from .users_addresses import UserAddresses
@@ -39,6 +40,7 @@ __all__ = [
     "Users", "UserStatus",
     "UserAddresses",
     "UserRankHistory",
+    "UnilevelReports",
     "UserTreePath",
     "Periods",
     "Products", "ProductType", "ProductPresentation",
@@ -56,5 +58,5 @@ __all__ = [
     "LoyaltyStatus", "LoyaltyEventType", "RewardType", "RewardStatus",
     # Travel campaigns system
     "TravelCampaigns", "NNTravelPoints", "NNTravelPointsHistory",
-    "CampaignStatus", "TravelEventType"
+    "CampaignStatus", "TravelEventType",
 ]

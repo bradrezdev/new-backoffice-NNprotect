@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 
 class UserAddresses(rx.Model, table=True):
     """Direcciones de usuario con timestamps en UTC puro."""
-    id: int = Field(primary_key=True, index=True)
     user_id: int = Field(foreign_key="users.id")
     address_id: int = Field(foreign_key="addresses.id")
     address_name: str = Field(default=None, index=True)

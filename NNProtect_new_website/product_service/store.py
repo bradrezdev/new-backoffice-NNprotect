@@ -8,7 +8,7 @@ from ..shared_ui.layout import main_container_derecha, mobile_header, desktop_si
 # Import de estados
 from .store_state import SlideToAnyWhere
 from .store_products_state import StoreState
-from .product_components import product_card, product_card_horizontal, new_products_card, most_requested_products_card, supplement_products_card, skincare_products_card, sanitized_products_card
+from .product_components import product_card, product_card_horizontal, new_products_card, most_requested_products_card, supplement_products_card, skincare_products_card, sanitized_products_card, product_card_desktop
 
 """
 # Función para crear tarjetas de productos
@@ -181,7 +181,7 @@ def store() -> rx.Component:
                         rx.box(
                             # Imagen de fondo (fondo absoluto)
                             rx.image(
-                                src="/hero_dreamingdeep.jpg",
+                                src="image",
                                 height="100%",
                                 width="100%",
                                 object_fit="cover",
@@ -215,68 +215,61 @@ def store() -> rx.Component:
                         # ---------- POPULARES DEL MES ----------
                         rx.text("Populares del mes", font_size="1.7rem", font_weight="bold", margin_bottom="0.7em"),
                         rx.grid(
-                            # Tarjeta de producto
-                            rx.hstack(
-                                *[rx.vstack(
-                                    rx.image(src="/product_{}.png".format(i), height="90px", object_fit="contain"),
-                                    rx.text("Nombre del producto", font_weight="bold", font_size="1rem"),
-                                    rx.text("$999.00 MXN", font_weight="medium", font_size="1rem"),
-                                    rx.hstack(
-                                        rx.button("-", width="28px", height="28px", border_radius="50%", bg="#f0f0f0"),
-                                        rx.text("0", font_size="1rem", margin_x="1em"),
-                                        rx.button("+", width="28px", height="28px", border_radius="50%", bg="#f0f0f0"),
-                                        margin_top="8px",
-                                    ),
-                                    rx.button("Agregar al carrito", bg="#0039F2", color="white", border_radius="14px", margin_top="8px"),
-                                    spacing="1",
-                                    align="center"
-                                ) for i in range(1,5)], # Lista de productos populares.
-                                justify="between",
-                                ),
-                                width="100%",
-                                padding="64px",
-                                bg=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["tertiary"],
-                                    dark=Custom_theme().dark_colors()["tertiary"]
-                                ),
-                        border_radius="64px",
-                        #box_shadow="0px 4px 18px #00000016",
-                        min_width="240px",
-                        margin_bottom="32px",
-                    ),
+                            rx.foreach(
+                                StoreState.popular_products,
+                                product_card_desktop
+                            ),
+                            columns="4",
+                            spacing="4",
+                            width="100%",
+                            padding="32px",
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["tertiary"],
+                                dark=Custom_theme().dark_colors()["tertiary"]
+                            ),
+                            border_radius="64px",
+                            margin_bottom="32px",
+                        ),
 
                         # ---------- PRODUCTOS ----------
                         rx.text("Productos", font_size="1.7rem", font_weight="bold", margin_bottom="0.7em"),
                         rx.grid(
-                            # Tarjeta de producto
-                            *[rx.hstack(
-                                *[rx.vstack(
-                                    rx.image(src="/product_{}.png".format(i), height="90px", object_fit="contain"),
-                                    rx.text("Nombre del producto", font_weight="bold", font_size="1rem"),
-                                    rx.text("$999.00 MXN", font_weight="medium", font_size="1rem"),
-                                    rx.hstack(
-                                        rx.button("-", width="28px", height="28px", border_radius="50%", bg="#f0f0f0"),
-                                        rx.text("0", font_size="1rem", margin_x="1em"),
-                                        rx.button("+", width="28px", height="28px", border_radius="50%", bg="#f0f0f0"),
-                                        margin="8px 0 8px 0",
-                                    ),
-                                    rx.button("Agregar al carrito", bg="#0039F2", color="white", border_radius="14px", margin_top="0.6em"),
-                                    margin="32px",
-                                    spacing="1",
-                                    align="center"
-                                ) for i in range(1,5)], # Lista de productos populares.
-                                justify="between",
-                                ) for i in range(1,4)],  # Tres filas de productos.
-                                width="100%",
-                                padding="32px",
-                                bg=rx.color_mode_cond(
-                                    light=Custom_theme().light_colors()["tertiary"],
-                                    dark=Custom_theme().dark_colors()["tertiary"]
+                            rx.foreach(
+                                StoreState.products_feed,
+                                product_card_desktop
+                            ),
+                            columns="4",
+                            spacing="4",
+                            width="100%",
+                            padding="32px",
+                            bg=rx.color_mode_cond(
+                                light=Custom_theme().light_colors()["tertiary"],
+                                dark=Custom_theme().dark_colors()["tertiary"]
+                            ),
+                            border_radius="64px",
+                            min_width="240px",
+                            min_height="275px",
+                        ),
+                        # Load More - Infinite Scroll Implementation
+                        rx.cond(
+                            StoreState.feed_has_more,
+                            rx.center(
+                                rx.cond(
+                                    StoreState.is_loading_feed,
+                                    rx.spinner(color="blue", size="3"),
+                                    rx.button(
+                                        "Cargar más productos",
+                                        on_click=StoreState.load_more_products,
+                                        variant="soft",
+                                        color_scheme="blue",
+                                        size="3",
+                                        margin_top="1em",
+                                        cursor="pointer"
+                                    )
                                 ),
-                                border_radius="64px",
-                                #box_shadow="0px 4px 18px #00000016",
-                                min_width="240px",
-                                min_height="275px",
+                                width="100%",
+                                padding="20px"
+                            )
                         ),
                     ),
                     width="100%",
@@ -302,19 +295,26 @@ def store() -> rx.Component:
                     rx.text("Tienda", size="8", font_weight="bold", padding_x="0.5em"),
                     
                     # Categorías móvil
-                    rx.hstack(
-                        *[rx.button(
-                            categoria["name"],
-                            _hover={"border": f"2px solid {Custom_theme().light_colors()['primary']}"},  # Cambia el borde al pasar el mouse
-                            variant="outline",
-                            size="2",
-                            border_radius="15px",
-                            on_click=categoria["action"] if categoria["action"] else None
-                        ) for i, categoria in enumerate(categorias_data)],
-                        spacing="2",
-                        width="100%",
-                        margin_bottom="1.5em",
-                        padding="0 1em"
+                    rx.scroll_area(
+                        rx.hstack(
+                            *[rx.button(
+                                categoria["name"],
+                                _hover={"border": f"2px solid {Custom_theme().light_colors()['primary']}"},  # Cambia el borde al pasar el mouse
+                                variant="outline",
+                                size="2",
+                                border_radius="32px",
+                                on_click=categoria["action"] if categoria["action"] else None
+                            ) for i, categoria in enumerate(categorias_data)],
+                            spacing="2",
+                            width="100%",
+                            #margin_bottom="1.5em",
+                            padding="0 1em"
+                        ),
+                        scrollbars="horizontal",  # Scroll horizontal
+                        type="scroll",  # Aparece al hacer scroll
+                        height="auto",  # Altura automática
+                        width="100%",  # Ancho completo
+                        padding="0 0 1em 0",  # Padding vertical
                     ),
 
                     # Últimas novedades móvil
@@ -496,4 +496,5 @@ def store() -> rx.Component:
         position="absolute",
         width="100%",
         height="max-content",
+        on_mount=StoreState.on_load,  # ✅ Carga productos cuando el usuario visita la página
     )

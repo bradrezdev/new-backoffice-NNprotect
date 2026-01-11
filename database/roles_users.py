@@ -1,8 +1,9 @@
 import reflex as rx
 
-from sqlmodel import Field
+from sqlmodel import Field, SQLModel
 
-class RolesUsers(rx.Model, table=True):
+@rx.ModelRegistry.register
+class RolesUsers(SQLModel, table=True):
     """
     Tabla intermedia para la relación muchos a muchos entre usuarios y roles.
     Permite asignar múltiples roles a un usuario y viceversa.

@@ -38,17 +38,31 @@ class ProductManager:
         return mapping.get(country_str.upper())
 
     @staticmethod
-    def get_all_products() -> List[Products]:
+    def get_all_products(limit: Optional[int] = None, offset: Optional[int] = None) -> List[Products]:
         """
-        Obtiene todos los productos de la base de datos.
+        Obtiene todos los productos de la base de datos con paginación opcional.
         
+        Args:
+            limit: Número máximo de registros a retornar
+            offset: Número de registros a saltar
+            
         Returns:
-            List[Products]: Lista de todos los productos
+            List[Products]: Lista de productos
         """
         try:
             with rx.session() as session:
                 from sqlmodel import select
                 statement = select(Products)
+                
+                # Aplicar ordenamiento por defecto para consistencia en paginación
+                if hasattr(Products, 'id'):
+                    statement = statement.order_by(Products.id)
+                
+                if offset is not None:
+                    statement = statement.offset(offset)
+                if limit is not None:
+                    statement = statement.limit(limit)
+                    
                 products = session.exec(statement).all()
                 return list(products)
         except Exception as e:
@@ -239,7 +253,8 @@ class ProductManager:
                     "pv": pv,
                     "vn": vn,
                     "currency": currency,
-                    "formatted_price": f"{currency}{price:.2f}"
+                    "formatted_price": f"{currency}{price:.2f}",
+                    "is_new": product.is_new,  # ✅ Incluir flag para filtrar en memoria
                 })
         
         return formatted_products

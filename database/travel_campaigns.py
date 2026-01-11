@@ -25,8 +25,6 @@ class TravelCampaigns(rx.Model, table=True):
     """
     __tablename__ = "travelcampaigns"
 
-    id: int | None = Field(default=None, primary_key=True, index=True)
-
     # Identificación de la campaña
     name: str = Field(max_length=100, unique=True, index=True)  # "Campaña 2025-H1"
     description: str | None = Field(default=None, max_length=255)
@@ -72,8 +70,6 @@ class NNTravelPoints(rx.Model, table=True):
         Index('idx_nntp_campaign', 'campaign_id'),
         Index('idx_nntp_qualifies', 'qualifies_for_travel'),
     )
-
-    id: int | None = Field(default=None, primary_key=True, index=True)
 
     # Usuario y campaña
     member_id: int = Field(foreign_key="users.member_id", index=True)
@@ -131,8 +127,6 @@ class NNTravelPointsHistory(rx.Model, table=True):
         Index('idx_nntph_member_created', 'member_id', 'created_at'),
         Index('idx_nntph_event_type', 'event_type'),
     )
-
-    id: int | None = Field(default=None, primary_key=True, index=True)
 
     # Usuario y campaña
     member_id: int = Field(foreign_key="users.member_id", index=True)

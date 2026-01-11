@@ -1,6 +1,7 @@
 __pycache__/
 .states
 .env
+.env.staging
 assets/external/
 *.py[cod]
 *.db
@@ -9,3 +10,6 @@ assets/external/
 .DS_Store
 ._*
 create_pwa_files.py
+reports/
+.coverage
+htmlcov/

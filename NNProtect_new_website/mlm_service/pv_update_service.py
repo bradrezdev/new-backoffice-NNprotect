@@ -82,13 +82,20 @@ class PVUpdateService:
             # 3. Actualizar PVG de todos los ancestros (excluyendo el comprador)
             cls._update_pvg_for_ancestors(session, buyer.member_id, order.total_pv)
 
+            # 3b. Actualizar tabla unilevel_report para el comprador y ancestros
+            print("📊 Actualizando unilevel_report...")
+            from .mlm_user_manager import MLMUserManager
+            MLMUserManager.update_unilevel_report_for_order(order.member_id, order.period_id)
+
             # 4. Verificar y actualizar rango del comprador
             rank_updated = RankService.check_and_update_rank(session, buyer.member_id)
 
             if rank_updated:
                 print(f"🎖️  Rango actualizado para member_id={buyer.member_id}")
 
-            session.commit()
+            # ⚠️ NO hacer commit aquí - el PaymentService hará el commit final
+            # Esto garantiza atomicidad: todo o nada
+            session.flush()  # Solo flush para verificar constraints
             return True
 
         except Exception as e:

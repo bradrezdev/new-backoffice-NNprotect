@@ -425,6 +425,11 @@ def mobile_header():
                 backdrop_filter="blur(8px)",
             ),
         ),
+        bg=rx.color_mode_cond(
+            light=Custom_theme().light_colors()["menu-background"],
+            dark=Custom_theme().dark_colors()["menu-background"],
+        ),
+        backdrop_filter="blur(2px)",
         width="100%",
         padding="1rem",
         justify="between",

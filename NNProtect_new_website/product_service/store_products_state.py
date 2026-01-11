@@ -3,7 +3,7 @@ Estado para la tienda de productos NN Protect.
 Maneja la carga y visualización de productos con precios por país.
 """
 import reflex as rx
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from database.addresses import Countries
 from .product_data.product_data_service import ProductDataService
 from ..auth_service.auth_state import UserDataManager
@@ -20,7 +20,10 @@ class CountProducts(rx.State):
     
     # Sistema de carrito - Principio KISS: variables simples y claras
     cart_total: int = 0
-    cart_items: Dict[str, int] = {}
+    cart_items: Dict[str, int] = {}  # Keys son strings: str(product_id)
+    
+    # User ID para obtener precios correctos por país
+    user_id: int = 1  # Por defecto usuario de prueba
 
     @rx.event
     def increment(self, product_id: int):
@@ -36,7 +39,7 @@ class CountProducts(rx.State):
             self.counts[product_id] = current - 1
 
     @rx.var
-    def get_count_reactive(self) -> Dict[str, int]:
+    def get_count_reactive(self) -> dict:
         """
         Método reactivo que devuelve un diccionario con todos los contadores.
         Principio DRY: un solo método para acceder a todos los contadores de forma reactiva.
@@ -79,8 +82,8 @@ class CountProducts(rx.State):
         self.cart_total = 0
         self.cart_items = {}
 
-    @rx.var
-    def cart_items_detailed(self) -> List[Dict]:
+    @rx.var(cache=True, auto_deps=False)
+    def cart_items_detailed(self) -> List[Dict[str, Any]]:
         """
         Propiedad computada que devuelve los productos del carrito con información completa.
         Principio DRY: un solo lugar para obtener datos completos del carrito.
@@ -138,8 +141,11 @@ class CountProducts(rx.State):
 
     @rx.var
     def cart_shipping_cost(self) -> float:
-        """Costo de envío basado en el subtotal"""
-        return 99.00 if self.cart_subtotal < 1000 else 0.00
+        """
+        Costo de envío basado en el método seleccionado.
+        TEMPORALMENTE: Solo recolección disponible (costo = 0.00)
+        """
+        return 0.00  # Recolección gratis - Envío a domicilio deshabilitado temporalmente
 
     @rx.var
     def cart_final_total(self) -> float:
@@ -184,40 +190,41 @@ class CountProducts(rx.State):
             del self.cart_items[key]
             self.cart_total -= removed_quantity
 
+# ===================== CACHE GLOBAL (Fuera de la clase para persistencia) =====================
+# Cache compartido entre todas las instancias del State (funciona en producción)
+_GLOBAL_PRODUCTS_CACHE: Dict[str, Any] = {
+    "all_products": [],
+    "popular_products": [], # Popular sigue siendo una query especial
+    "timestamp": 0.0
+}
+
 class StoreState(rx.State):
     """
     Estado de la tienda que maneja productos y país del usuario.
     Sigue principios POO para encapsular la lógica de estado.
+    
+    🚀 Implementa State Cache GLOBAL para optimizar rendimiento:
+    - Carga TODOS los productos en una sola query.
+    - Filtra en memoria para categorías.
+    - Cache GLOBAL compartido entre todas las instancias.
     """
     
-    # Lista de productos suplementos
-    _products: List[Dict] = []
+    # ===================== CONFIGURACIÓN =====================
+    CACHE_DURATION: int = 300  # 5 minutos
+    
+    # ===================== DATOS PÚBLICOS (UI) =====================
+    # Cache maestro de productos (copia local del global)
+    _all_products_cache: List[Dict[str, Any]] = []
+    _popular_products_cache: List[Dict[str, Any]] = []
+    
+    # PRODUCT FEED (INFINITE SCROLL)
+    products_feed: List[Dict[str, Any]] = []
+    feed_page: int = 0
+    feed_limit: int = 12
+    feed_has_more: bool = True
+    is_loading_feed: bool = False
+    
     _products_loaded: bool = False
-
-    # Lista de productos de cuidado de la piel
-    _skincare_products: List[Dict] = []
-    _skincare_products_loaded: bool = False
-
-    # Productos más nuevos
-    _latest_products: List[Dict] = []
-    _latest_products_loaded: bool = False
-
-    # Productos más populares
-    _popular_products: List[Dict] = []
-    _popular_products_loaded: bool = False
-
-    # Productos por tipo
-    _kit_inicio_products: List[Dict] = []
-    _kit_inicio_products_loaded: bool = False
-    
-    _supplement_products: List[Dict] = []
-    _supplement_products_loaded: bool = False
-    
-    _skincare_products_new: List[Dict] = []
-    _skincare_products_new_loaded: bool = False
-    
-    _sanitize_products: List[Dict] = []
-    _sanitize_products_loaded: bool = False
 
     # País del usuario para mostrar precios correctos
     user_id: int = 1  # Por defecto usuario de prueba
@@ -227,141 +234,184 @@ class StoreState(rx.State):
     error_message: str = ""
 
     @rx.var
-    def products(self) -> List[Dict]:
+    def products(self) -> List[Dict[str, Any]]:
         """
-        Propiedad computada que carga productos automáticamente.
-        Se ejecuta la primera vez que se accede a los productos.
+        Devuelve TODOS los productos desde el cache maestro.
         """
-        if not self._products_loaded:
-            try:
-                self._products = ProductDataService.get_products_for_store(self.user_id)
-                self._products_loaded = True
-            except Exception as e:
-                print(f"❌ Error cargando productos: {e}")
-                self._products = []
-        return self._products
+        return self._all_products_cache
 
-
-
+    @rx.event
     def on_load(self):
         """
         Evento que se ejecuta al cargar la página.
-        Carga los productos automáticamente.
         """
-        self.load_products()
+        # Cargar productos (usa cache si está disponible)
+        self.load_products_cached()
+        # Iniciar feed de productos
+        if not self.products_feed:
+            self.load_more_products()
+
+    @rx.event
+    def load_more_products(self):
+        """
+        Carga la siguiente página de productos para el scroll infinito.
+        """
+        if self.is_loading_feed or not self.feed_has_more:
+            return
+
+        self.is_loading_feed = True
+        try:
+            # Calcular offset
+            offset = self.feed_page * self.feed_limit
+            
+            # Obtener nuevos productos
+            new_products = ProductDataService.get_products_for_store(
+                self.user_id, 
+                limit=self.feed_limit, 
+                offset=offset
+            )
+            
+            if new_products:
+                self.products_feed.extend(new_products)
+                self.feed_page += 1
+                
+                # Si recibimos menos del límite, no hay más
+                if len(new_products) < self.feed_limit:
+                    self.feed_has_more = False
+            else:
+                self.feed_has_more = False
+                
+        except Exception as e:
+            print(f"❌ Error loading feed: {e}")
+        finally:
+            self.is_loading_feed = False
 
     def load_products(self):
+        """ Alias para load_products_cached """
+        self.load_products_cached()
+    
+    @rx.event
+    def load_products_cached(self):
         """
-        Carga productos desde la base de datos.
-        Principio KISS: carga simple sin filtros complejos.
+        🚀 Carga centralizada de productos.
+        
+        Estrategia:
+        1. Verificar Cache Global.
+        2. Si válido: Copiar a estado local.
+        3. Si inválido: 
+           - Hacer UNA query para traer TODOS los productos.
+           - Hacer una query extra para populares.
+           - Actualizar Cache Global.
         """
+        import time
+        global _GLOBAL_PRODUCTS_CACHE
+        
+        current_time = time.time()
+        last_update = _GLOBAL_PRODUCTS_CACHE.get("timestamp", 0.0)
+        cache_age = current_time - last_update
+        cache_is_valid = (_GLOBAL_PRODUCTS_CACHE.get("all_products")) and (cache_age < self.CACHE_DURATION)
+        
+        if cache_is_valid:
+            print(f"📦 GLOBAL Cache HIT - Edad: {int(cache_age)}s")
+            self._all_products_cache = _GLOBAL_PRODUCTS_CACHE["all_products"]
+            self._popular_products_cache = _GLOBAL_PRODUCTS_CACHE["popular_products"]
+            self._products_loaded = True
+            return
+
+        # Cache MISS - Cargar de DB
         self.is_loading = True
         self.error_message = ""
+        print(f"🔍 GLOBAL Cache MISS - Cargando productos de DB...")
         
         try:
-            # Por ahora usar usuario de prueba
-            # TODO: Integrar con autenticación para obtener user_id del usuario actual
-            self.user_id = 1  # Usuario de prueba con member_id=1
+            # TODO: Integrar con autenticación real
+            self.user_id = 1
             
-            # Cargar productos con precios según país del usuario
-            self._products = ProductDataService.get_products_for_store(self.user_id)
+            # 1. Cargar TODOS los productos (Single Query)
+            all_products = ProductDataService.get_products_for_store(self.user_id)
+            
+            # 2. Cargar populares (Query separada necesaria por joined load compleja)
+            # Podríamos optimizar esto luego trayendo solo IDs, pero por ahora está bien.
+            popular = ProductManager.get_popular_products_formatted(self.user_id, limit=5)
+            
+            # Actualizar Global Cache
+            _GLOBAL_PRODUCTS_CACHE["all_products"] = all_products
+            _GLOBAL_PRODUCTS_CACHE["popular_products"] = popular
+            _GLOBAL_PRODUCTS_CACHE["timestamp"] = current_time
+            
+            # Actualizar Local State
+            self._all_products_cache = all_products
+            self._popular_products_cache = popular
             self._products_loaded = True
+            
+            print(f"✅ Cache Actualizado: {len(all_products)} productos cargados.")
             
         except Exception as e:
             self.error_message = f"Error cargando productos: {str(e)}"
             print(f"❌ {self.error_message}")
+            self._all_products_cache = []
+            self._popular_products_cache = []
             
         finally:
             self.is_loading = False
 
-    def get_supplements(self) -> List[Dict]:
-        """
-        Obtiene solo productos de tipo suplemento.
-        Principio DRY: reutiliza productos cargados.
-        """
-        return [p for p in self._products if p["type"] == "suplemento"]
+    # ===================== GETTERS FILTRADOS (IN-MEMORY) =====================
+    # Calculados al vuelo desde _all_products_cache sin tocar la DB
+
+    @rx.var
+    def latest_products(self) -> List[Dict[str, Any]]:
+        """Productos nuevos (is_new=True)"""
+        # Filtrar localmente
+        return [p for p in self._all_products_cache if p.get("is_new") is True]
+
+    @rx.var
+    def popular_products(self) -> List[Dict[str, Any]]:
+        """Productos populares (cargados aparte)"""
+        return self._popular_products_cache
+
+    @rx.var
+    def kit_inicio_products(self) -> List[Dict[str, Any]]:
+        """Productos tipo 'kit de inicio'"""
+        return [p for p in self._all_products_cache if p.get("type") == "kit de inicio"]
+
+    @rx.var
+    def supplement_products(self) -> List[Dict[str, Any]]:
+        """Productos tipo 'suplemento'"""
+        return [p for p in self._all_products_cache if p.get("type") == "suplemento"]
+
+    @rx.var
+    def skincare_products(self) -> List[Dict[str, Any]]:
+        """Productos tipo 'skincare'"""
+        return [p for p in self._all_products_cache if p.get("type") == "skincare"]
+
+    @rx.var
+    def sanitize_products(self) -> List[Dict[str, Any]]:
+        """Productos tipo 'desinfectante'"""
+        return [p for p in self._all_products_cache if p.get("type") == "desinfectante"]
+
+    @rx.event
+    def invalidate_cache(self):
+        """Forzar recarga de productos"""
+        global _GLOBAL_PRODUCTS_CACHE
+        _GLOBAL_PRODUCTS_CACHE["timestamp"] = 0.0
+        print("🗑️ Cache invalidado manualmente.")
+        self.load_products_cached()
+
+    # Métodos legacy para compatibilidad (redirigen a las properties)
+    def get_supplements(self) -> List[Dict[str, Any]]:
+        return self.supplement_products
     
-    def get_skincare_products(self) -> List[Dict]:
-        """
-        Obtiene solo productos de cuidado de la piel.
-        """
-        return [p for p in self._products if p["type"] == "skincare"]
+    def get_skincare_products(self) -> List[Dict[str, Any]]:
+        return self.skincare_products
     
-    def get_latest_products(self, limit: int = 6) -> List[Dict]:
-        """
-        Obtiene los últimos productos (primeros N productos).
-        Principio YAGNI: implementación simple sin fecha de creación.
-        """
-        return self._products[:limit]
+    def get_latest_products_enc(self, limit: int = 6):
+        return self.latest_products[:limit]
     
-    @rx.var
-    def latest_products(self) -> List[Dict]:
-        """Productos más nuevos (is_new = True)"""
-        if not self._latest_products_loaded:
-            try:
-                self._latest_products = ProductManager.get_latest_products_formatted(self.user_id)
-                self._latest_products_loaded = True
-            except Exception as e:
-                print(f"❌ Error cargando productos nuevos: {e}")
-                self._latest_products = []
-        return self._latest_products
+    # Legacy event handlers vacíos o redirigidos si la UI los llama directamente
+    @rx.event
+    def load_category_products(self):
+        self.load_products_cached()
 
-    @rx.var  
-    def popular_products(self) -> List[Dict]:
-        """Top 5 productos más vendidos"""
-        if not self._popular_products_loaded:
-            try:
-                self._popular_products = ProductManager.get_popular_products_formatted(self.user_id, limit=5)
-                self._popular_products_loaded = True
-            except Exception as e:
-                print(f"❌ Error cargando productos populares: {e}")
-                self._popular_products = []
-        return self._popular_products
-
-    @rx.var
-    def kit_inicio_products(self) -> List[Dict]:
-        """Productos del tipo 'kit de inicio'"""
-        if not self._kit_inicio_products_loaded:
-            try:
-                self._kit_inicio_products = ProductManager.get_kit_inicio_products_formatted(self.user_id)
-                self._kit_inicio_products_loaded = True
-            except Exception as e:
-                print(f"❌ Error cargando kits de inicio: {e}")
-                self._kit_inicio_products = []
-        return self._kit_inicio_products
-
-    @rx.var
-    def supplement_products(self) -> List[Dict]:
-        """Productos del tipo 'suplemento'"""
-        if not self._supplement_products_loaded:
-            try:
-                self._supplement_products = ProductManager.get_supplement_products_formatted(self.user_id)
-                self._supplement_products_loaded = True
-            except Exception as e:
-                print(f"❌ Error cargando suplementos: {e}")
-                self._supplement_products = []
-        return self._supplement_products
-
-    @rx.var
-    def skincare_products(self) -> List[Dict]:
-        """Productos del tipo 'skincare'"""
-        if not self._skincare_products_loaded:
-            try:
-                self._skincare_products = ProductManager.get_skincare_products_formatted(self.user_id)
-                self._skincare_products_loaded = True
-            except Exception as e:
-                print(f"❌ Error cargando productos skincare: {e}")
-                self._skincare_products = []
-        return self._skincare_products
-
-    @rx.var
-    def sanitize_products(self) -> List[Dict]:
-        """Productos del tipo 'desinfectante'"""
-        if not self._sanitize_products_loaded:
-            try:
-                self._sanitize_products = ProductManager.get_sanitize_products_formatted(self.user_id)
-                self._sanitize_products_loaded = True
-            except Exception as e:
-                print(f"❌ Error cargando productos desinfectantes: {e}")
-                self._sanitize_products = []
-        return self._sanitize_products
+    @rx.event
+    def load_category_products_cached(self):
+        self.load_products_cached()
